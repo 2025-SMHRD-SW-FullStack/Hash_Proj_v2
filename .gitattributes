@@ -1,0 +1,9 @@
+# 자동 CRLF 통일
+* text=auto
+
+# Java 파일 = diff, utf-8
+*.java text diff=java
+
+# Ignore binary
+*.jar binary
+*.png binary

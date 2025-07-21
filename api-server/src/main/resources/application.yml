@@ -1,0 +1,8 @@
+spring:
+  profiles:
+    active: dev       # 기본 실행은 dev
+    group:
+      dev:
+        - secret-dev
+      prod:
+        - secret-prod
