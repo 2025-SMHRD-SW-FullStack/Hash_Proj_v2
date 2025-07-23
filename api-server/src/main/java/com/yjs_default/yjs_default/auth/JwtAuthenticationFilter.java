@@ -34,6 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         List<String> excludedPaths = List.of(
                 "/api/auth/signup",
                 "/api/auth/login",
+                "/api/auth/refresh",
                 "/api/email/**",
                 "/swagger-ui/**",
                 "/swagger-ui.html",
@@ -52,17 +53,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = jwtTokenProvider.resolveToken(request);
 
-        if (token != null && jwtTokenProvider.validateToken(token)) {
-            Long userId = jwtTokenProvider.getUserId(token);
-            UserDetails userDetails = userDetailsService.loadUserById(userId);
+        if (token != null) {
+            if (jwtTokenProvider.validateToken(token)) {
+                Long userId = jwtTokenProvider.getUserId(token);
+                UserDetails userDetails = userDetailsService.loadUserById(userId);
 
-            UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-            SecurityContextHolder.getContext().setAuthentication(auth);
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            } else {
+                // ❌ 유효하지 않은 토큰이면 여기서 즉시 401 응답하고 종료
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"message\": \"Invalid or expired token\"}");
+                return;
+            }
+        } else {
+            // ❌ 아예 토큰이 없는 경우도 401 줘야 프론트가 refresh 시도함
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\": \"Access token missing\"}");
+            return;
         }
-
         filterChain.doFilter(request, response);
     }
 }
