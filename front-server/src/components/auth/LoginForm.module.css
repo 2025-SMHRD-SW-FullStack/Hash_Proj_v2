@@ -1,0 +1,54 @@
+/* 로그인 css */
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo {
+    margin-top: 80px;
+    width: var(--logo-size);
+    margin-bottom: 50px;
+}
+
+.logo:hover {
+    cursor: pointer;
+}
+
+.form {
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form button {
+    height: 40px;
+    background-color: var(--color-primary);
+    /* background: linear-gradient(to bottom, #6759B6, #4A3BA1); */
+    padding: 10px;
+    border: 0;
+    border-radius: 10px;
+    margin: 30px 0;
+    text-align: center;
+}
+
+.form button:hover {
+    opacity: 0.9;
+}
+
+.form a {
+    text-align: center;
+    text-decoration: underline;
+    color: var(--color-gray70);
+}
+
+.form a:hover {
+    color: var(--color-primary);
+}
+
+.submitBtn:disabled {
+    background-color: var(--color-gray50);
+    cursor: not-allowed;
+}

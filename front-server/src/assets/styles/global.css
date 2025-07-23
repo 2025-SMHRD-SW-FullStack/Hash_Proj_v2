@@ -1,0 +1,115 @@
+/* 전역 변수 설정 */
+:root {
+    /* 헤더 크기 */
+    --header-height: 80px;
+    --nav-height: 40px;
+
+    /* 폰트 크기 */
+    --font-size-h1: 2rem; /* 32px */
+    --font-size-h2: 1.75rem; /* 28px */
+    --font-size-h3: 1.5rem; /* 24px */
+    --font-size-h4: 1.25rem; /* 20px */
+    --font-size-body: 1rem; /* 16px */
+    --font-size-small: 0.875rem; /* 14px */
+    --font-size-xsmall: 0.75rem; /* 12px */
+
+    /* 색상 */
+    --color-text: #333;
+    --color-background: #fff;
+    --color-primary: #6759B6;
+    --color-sub: #EFEDFF;
+    --color-error: #FF8787;
+    --color-black: #1C1C1E;
+    --color-gray90: #2F3233;
+    --color-gray80: #555555;
+    --color-gray70: #707070;
+    --color-gray50: #999797;
+    --color-gray30: #C2C1C1;
+    --color-gray10: #EBEAEA;
+    --color-white: #fff;
+
+    /* 간격 */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /* 폰트 */
+    --font-family-base: 'Noto Sans KR', sans-serif;
+
+    /* 로고 */
+    --logo-size: 120px;
+}
+
+/* 기본 설정 */
+
+/* 전체 요소 초기화 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 기본 폰트 설정 */
+html {
+    font-size: 16px;
+    font-family: var(--font-family-base);
+    scroll-behavior: smooth; /* 내부 링크 이동 시 부드럽게 스크롤 */
+}
+
+/* body 기본 설정 */
+body {
+    font-size: var(--font-size-body);
+    line-height: 1.6;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    word-break: keep-all; /* 한국어 줄바꿈 시 단어 잘리는 현상 방지 */
+    -webkit-font-smoothing: antialiased; /* 맥/크롬 등에서 폰트 렌더링 부드럽게 */
+}
+
+/* 링크 태그 스타일 제거 */
+a {
+    text-decoration: none;
+    color: inherit; 
+}
+
+/* 리스트 스타일 제거 */
+ul, ol {
+    list-style: none;
+}
+
+/* 버튼 초기화 */
+button {
+    all: unset;
+    cursor: pointer;
+    color: var(--color-white);
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-body);
+}
+
+input, textarea {
+    font-family: inherit;
+    font-size: inherit;
+    border: none;
+    outline: none;
+    background-color: transparent;
+}
+
+/* 타이포그래피 */
+h1 { font-size: var(--font-size-h1); font-weight: bold; }
+h2 { font-size: var(--font-size-h2); font-weight: bold; }
+h3 { font-size: var(--font-size-h3); font-weight: 600; }
+h4 { font-size: var(--font-size-h4); font-weight: 600; }
+p  { font-size: var(--font-size-body); }
+
+.small   { font-size: var(--font-size-small); }
+.x-small { font-size: var(--font-size-xsmall); }
+
+/* 화면 전체 영역 사이즈 */
+.global-container {
+    max-width: 1200px;
+    margin: 0 auto; /* 가운데 정렬 */
+    padding: 40px 60px 0 60px;
+}
+

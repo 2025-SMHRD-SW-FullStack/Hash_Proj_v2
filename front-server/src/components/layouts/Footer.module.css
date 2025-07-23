@@ -1,0 +1,12 @@
+.wrapper {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    background-color: var(--color-gray80);
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 16px;
+    color: #333;
+}

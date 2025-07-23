@@ -1,0 +1,157 @@
+/* input 공통 레이아웃 css */
+
+.field {
+    position: relative;
+    width: 100%;
+}
+
+.field input {
+    width: 100%;
+    height: 75px;
+    border: 1px solid var(--color-gray30);
+    padding-top: 20px;
+    padding-left: 25px;
+    padding-right: 40px;
+    font-size: var(--font-size-body);
+
+    /* transition: all 0.2s ease; */
+}
+
+.field input:focus {
+    border: 3px solid var(--color-primary);
+    padding-top: 20px;
+}
+
+.field label {
+    position: absolute;
+    top: 25px;
+    left: 25px;
+    font-size: var(--font-size-body);
+    color: var(--color-gray50);
+
+    transition: all 0.2s ease;
+    z-index: 2;
+}
+
+.field input:focus + label,
+.field input:not(:placeholder-shown) + label {
+    top: 10px;
+    left: 25px;
+    font-size: var(--font-size-xsmall);
+    color: var(--color-primary);
+}
+
+.first input {
+    border-radius: 10px 10px 0 0;
+    border-bottom: none;
+}
+
+.last input {
+    border-radius: 0 0 10px 10px;
+    border-top: none;
+}
+
+/* input 태그 1개만 있을 때 */
+.single input {
+    border-radius: 10px;
+}
+
+/* input 태그 2개만 있을 때 */
+.singleFirst input {
+    border-radius: 10px 10px 0 0;
+    border-bottom: 1px solid var(--color-gray30);
+}
+
+.singleMiddle input {
+    border-top: none;
+    /* border-bottom: none; */
+}
+
+.singleMiddle2 input {
+    border-top: none;
+    border-bottom: none;
+}
+
+.singleLast input {
+    border-radius: 0 0 10px 10px;
+    border-top: none;
+}
+
+/* 필수 입력 사항일 때 */
+.required {
+    color: var(--color-error);
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+.icon {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    height: 25px;
+}
+
+.icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* 라디오 그룹에 적용되도록 추가 */
+.radioGroup {
+    display: flex;
+    margin-top: -3.1px;
+}
+
+.radioButton {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    height: 75px;
+    padding: 12px 0;
+    border-top: 1px solid var(--color-gray30);
+    border-bottom: 1px solid var(--color-gray30);
+    cursor: pointer;
+    font-size: 16px;
+    color: #999;
+    position: relative;
+    transition: all 0.2s;
+    z-index: 2;
+}
+
+.radioButton input {
+    /* display: none; */
+    height: 20px;
+}
+
+.radioButton:first-child {
+    border-radius: 0 0 0 10px;
+    border-left: 1px solid var(--color-gray30);
+    border-right: 0.5px solid var(--color-gray10);
+}
+
+.radioButton:last-child {
+    border-radius: 0 0 10px 0;
+    border-left: 0.5px solid var(--color-gray30);
+    border-right: 1px solid var(--color-gray30);
+}
+
+.selected {
+    font-weight: bold;
+    color: var(--color-primary);
+}
+
+.radioButton:first-child.selected {
+    border-radius: 0 0 0 10px;
+    border: 3px solid var(--color-primary);
+    /* border-top: 1.5px solid var(--color-primary); */
+}
+
+.radioButton:last-child.selected {
+    border-radius: 0 0 10px 0;
+    border: 3px solid var(--color-primary);
+    /* border-top: 1.5px solid var(--color-primary); */
+}
+

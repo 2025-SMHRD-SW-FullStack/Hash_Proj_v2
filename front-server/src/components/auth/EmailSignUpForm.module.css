@@ -1,0 +1,139 @@
+/* 이메일로 회원가입 css */
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.wrapper h3 {
+    align-self: flex-start;
+    margin-left: calc(50% - 250px);
+    margin-bottom: 30px;
+    margin-top: 80px;
+}
+
+.inputInfoText {
+    color: var(--color-gray50);
+    align-self: flex-end;
+    margin-right: calc(50% - 250px);
+    margin-bottom: 10px;
+}
+
+.inputInfoText > span {
+    color: var(--color-error);
+    font-weight: bold;
+}
+
+.logo {
+    margin-top: 30px;
+    width: var(--logo-size);
+
+    /* 입력창과 왼쪽 정렬 */
+    align-self: flex-start;
+    margin-left: calc(50% - 250px);
+}
+
+.logo:hover {
+    cursor: pointer;
+}
+
+.form {
+    width: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.emailBox {
+    /* position: relative; */
+    display: flex;
+    flex-direction: row;
+    margin-top: 30px;
+}
+
+.emailBox > :nth-child(2) {
+    margin: 0 5px;
+}
+
+.emailBox > :nth-child(3) {
+    margin-right: 10px;
+}
+
+.emailBox p {
+    color: var(--color-black);
+    align-self: center;
+}
+
+.selectBox {
+    font-size: var(--font-size-body);
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid var(--color-gray30);
+    color: var(--color-gray70);
+}
+
+.mailBtn, .submitBtn {
+    height: 40px;
+    background-color: var(--color-primary);
+    /* background: linear-gradient(to bottom, #6759B6, #4A3BA1); */
+    padding: 10px;
+    border: 0;
+    border-radius: 10px;
+    margin: 15px 0 30px 0;
+    text-align: center;
+}
+
+.form div button:first-child {
+    width: 370px;
+}
+
+.form div button:last-child {
+    background-color: var(--color-gray70);
+    width: 110px;
+}
+
+.mailBtn {
+    margin-top: 10px;
+}
+
+.submitBtn {
+    margin-top: 60px;
+}
+
+.submitBtn:disabled {
+    background-color: var(--color-gray50);
+    cursor: not-allowed;
+}
+
+.passwordBox {
+    margin-bottom: 30px;
+}
+
+.restBox {
+    margin-bottom: 30px;
+}
+
+.verifyMessage {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    /* font-weight: bold; */
+}
+
+.errorText {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    /* font-weight: bold; */
+}
+
+.success {
+    color: #03EA65;
+}
+
+.error {
+    color: #ff5656;
+}
