@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Collection;
 
 @Entity
 @Table(
@@ -134,6 +135,7 @@ public class User {
         this.phoneVerified = true;
         this.phoneVerifiedAt = LocalDateTime.now();
     }
+
 
     public enum Gender { M, F, UNKNOWN }
     public enum AgeGroup {

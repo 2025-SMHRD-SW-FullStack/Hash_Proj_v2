@@ -7,19 +7,14 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "point_account")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Table(name="point_accounts", uniqueConstraints=@UniqueConstraint(name="uk_point_user", columnNames={"user_id"}))
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class PointAccount {
+    @Id @GeneratedValue(strategy=GenerationType.IDENTITY)
+    private Long id;
 
-    @Id
-    @Column(name = "user_id")
-    private Long userId;          // = User.id (1:1)
+    @Column(name="user_id", nullable=false) private Long userId;
+    @Column(name="balance", nullable=false) @Builder.Default private Long balance = 0L;
 
-    @Column(nullable = false)
-    private long balance;         // 현재 잔액
-
-    @UpdateTimestamp
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    @UpdateTimestamp private LocalDateTime updatedAt;
 }

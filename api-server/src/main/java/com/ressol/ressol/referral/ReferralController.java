@@ -13,7 +13,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/me/referral")
 @RequiredArgsConstructor
-@Tag(name = "Referral", description = "추천 코드 API (최소)")
+@Tag(name = "추천인 API", description = "추천 코드 API (최소)")
 public class ReferralController {
 
     private final ReferralService referralService;
