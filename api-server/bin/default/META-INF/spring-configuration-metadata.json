@@ -1,0 +1,60 @@
+{
+  "groups": [
+    {
+      "name": "review",
+      "type": "com.ressol.ressol.config.ReviewProperties",
+      "sourceType": "com.ressol.ressol.config.ReviewProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "review.ai-base-url",
+      "type": "java.lang.String",
+      "description": "http:\/\/localhost:8000 처럼 AI 서버 기본 URL",
+      "sourceType": "com.ressol.ressol.config.ReviewProperties"
+    },
+    {
+      "name": "review.free-regens",
+      "type": "java.lang.Integer",
+      "description": "무료 재생성 횟수",
+      "sourceType": "com.ressol.ressol.config.ReviewProperties"
+    },
+    {
+      "name": "review.max-chars",
+      "type": "java.lang.Integer",
+      "description": "최대 글자수 상한",
+      "sourceType": "com.ressol.ressol.config.ReviewProperties"
+    },
+    {
+      "name": "review.max-regens",
+      "type": "java.lang.Integer",
+      "description": "재생성 최대 횟수",
+      "sourceType": "com.ressol.ressol.config.ReviewProperties"
+    },
+    {
+      "name": "review.platform-char-limit",
+      "type": "java.util.Map<java.lang.String,java.lang.Integer>",
+      "description": "플랫폼별 기본 글자수 (예: NAVER_STORE:700, COUPANG:400) yml 키: review.platform-char-limit",
+      "sourceType": "com.ressol.ressol.config.ReviewProperties"
+    },
+    {
+      "name": "review.regen-point-cost",
+      "type": "java.lang.Integer",
+      "description": "무료 초과 재생성 1회당 포인트 비용",
+      "sourceType": "com.ressol.ressol.config.ReviewProperties"
+    },
+    {
+      "name": "review.snapshot-interval-sec",
+      "type": "java.lang.Integer",
+      "description": "스냅샷 최소 간격(초)",
+      "sourceType": "com.ressol.ressol.config.ReviewProperties"
+    },
+    {
+      "name": "review.snapshot-keep-max",
+      "type": "java.lang.Integer",
+      "description": "스냅샷 보관 최대 개수",
+      "sourceType": "com.ressol.ressol.config.ReviewProperties"
+    }
+  ],
+  "hints": []
+}
