@@ -15,40 +15,28 @@ public class CustomUserDetails implements UserDetails {
 
     private final User user;
 
-    @Override
-    public String getUsername() {
-        // 로그인 식별자
-        return user.getEmail();
-    }
-
-    @Override
-    public String getPassword() {
-        return user.getPassword();
-    }
-
+    // === 권한 ===
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // ⭐ ROLE_ 매핑 (기본 USER)
-        Role role = user.getRole() != null ? user.getRole() : Role.USER;
+        // ROLE_ 프리픽스 필수 (hasRole("ADMIN") 과 매칭됨)
+        Role role = (user.getRole() != null) ? user.getRole() : Role.USER;
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
-    @Override
-    public boolean isAccountNonExpired() { return true; }
+    // === 인증 기본 필드 ===
+    @Override public String getUsername() { return user.getEmail(); }
+    @Override public String getPassword() { return user.getPassword(); }
 
-    @Override
-    public boolean isAccountNonLocked() { return true; }
+    // === 계정 상태 ===
+    @Override public boolean isAccountNonExpired()   { return true; }
+    @Override public boolean isAccountNonLocked()    { return true; }
+    @Override public boolean isCredentialsNonExpired(){ return true; }
+    @Override public boolean isEnabled()             { return user.isEnabled(); }
 
-    @Override
-    public boolean isCredentialsNonExpired() { return true; }
-
-    @Override
-    public boolean isEnabled() {
-        // 활성화 플래그. (리쏠: email/phone 인증과 별개로 운영에서 계정 disable 시 이 값만 false)
-        return user.isEnabled();
-    }
-
-    public User getUser() { return user; }
-
+    // === 편의 ===
+    public User getUser()   { return user; }
     public Long getUserId() { return user.getId(); }
+
+    // ✅ 리플렉션/공용 가드 호환용 브리지 (AuthSupport의 getId() 호출 대응)
+    public Long getId()     { return user.getId(); }
 }

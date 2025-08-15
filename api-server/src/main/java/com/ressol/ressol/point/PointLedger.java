@@ -1,3 +1,4 @@
+// src/main/java/com/ressol/ressol/point/PointLedger.java
 package com.ressol.ressol.point;
 
 import jakarta.persistence.*;
@@ -7,45 +8,30 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "point_ledger",
-        uniqueConstraints = {
-                // 멱등성: 동일 사용자/유형/관련ID 중복 방지
-                @UniqueConstraint(name = "uk_point_idem", columnNames = {"user_id", "type", "related_id"})
-        },
-        indexes = {
-                @Index(name = "idx_point_user", columnList = "user_id"),
-                @Index(name = "idx_point_user_type", columnList = "user_id,type")
-        }
-)
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Table(name="point_ledger", indexes={@Index(name="ix_ledger_user_time", columnList="user_id,created_at")})
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class PointLedger {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public enum Reason {
+        REVIEW_APPROVED,
+        MANUAL_CREDIT,
+        REFERRAL_SIGNUP,   // 추천가입 보상
+        REDEEM_REQUESTED   // 교환(차감) 신청
+    }
+
+    @Id @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @Column(name="user_id", nullable=false) private Long userId;
 
-    @Column(nullable = false)
-    private long amount;                 // +적립 / -차감
+    // 차감은 음수 허용
+    @Column(name="delta", nullable=false) private Long delta;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private PointType type;
+    @Enumerated(EnumType.STRING) @Column(nullable=false)
+    private Reason reason;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private PointStatus status;
+    @Column(name="application_id") private Long applicationId;
 
-    @Column(name = "related_id")
-    private Long relatedId;              // 같은 이벤트를 식별(게시글ID, 리뷰ID, 피추천인 유저ID 등)
-
-    @Column(length = 200)
-    private String memo;
-
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @CreationTimestamp @Column(name="created_at")
     private LocalDateTime createdAt;
 }
