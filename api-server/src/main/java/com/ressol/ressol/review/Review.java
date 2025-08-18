@@ -24,6 +24,9 @@ public class Review {
     @Lob private String content;
     @Lob @Column(name="photos_json") private String photosJson;
 
+    @Column(name="review_url", length = 500)  // ✅ 네이버 리뷰 URL 보존
+    private String reviewUrl;
+
     @Enumerated(EnumType.STRING) @Column(nullable=false)
     private Status status;
 
