@@ -3,6 +3,7 @@ package com.ressol.ressol.point;
 import com.ressol.ressol.auth.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -10,9 +11,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@Tag(name="사용자 · 포인트", description="포인트 잔액/교환")
 @RestController
-@RequestMapping("/api/me/points")
-@Tag(name = "Point", description = "포인트 API")
+@RequestMapping("/api/points")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 public class PointController {
 
@@ -30,7 +32,7 @@ public class PointController {
                                                       @RequestParam("amount") long amount,
                                                       @RequestParam(value = "channel", required = false) String channel,
                                                       @RequestParam(value = "note", required = false) String note) {
-        Long rid = pointService.redeemGiftCard(me.getUserId(), amount, channel, note);
+        long rid = pointService.redeemGiftCard(me.getUserId(), amount, channel, note);
         return ResponseEntity.ok(Map.of("redemptionId", rid, "amount", amount));
     }
 }

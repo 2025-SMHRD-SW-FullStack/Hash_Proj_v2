@@ -1,6 +1,7 @@
 package com.ressol.ressol.auth;
 
 import com.ressol.ressol.phone.PhoneAuthService;
+import com.ressol.ressol.point.PointService;
 import com.ressol.ressol.referral.ReferralService;
 import com.ressol.ressol.user.User;
 import com.ressol.ressol.user.UserService;
@@ -44,11 +45,8 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PhoneAuthService phoneAuthService;
-    private final ReferralService referralService; // ✅ 추가
-
-    // (선택) 포인트 서비스가 프로젝트에 있다면 주입해서 사용
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private com.ressol.ressol.point.PointService pointService;
+    private final ReferralService referralService;
+    private final PointService pointService;          // ✅ 생성자 주입(RequiredArgsConstructor)
 
     private boolean isWebClient(HttpServletRequest req) {
         String x = Optional.ofNullable(req.getHeader("X-Client")).orElse("web");
@@ -104,7 +102,7 @@ public class AuthController {
         // 3) 등록
         User user = userService.registerUser(req); // 내부에서 enabled=true & phoneVerified=true 처리
 
-        // 4) 추천코드 처리: 있으면 추천인 찾고, 자기 자신 아니면 500 포인트 지급 + 내 referrer 저장(1회)
+        // 4) 추천코드 처리: 추천인 찾기 → 자기 자신 아니면 추천인에게 포인트 지급 + referrer 저장(1회)
         if (StringUtils.hasText(req.getReferrer())) {
             referralService.findReferrerByCode(req.getReferrer()).ifPresent(referrer -> {
                 if (!referrer.getId().equals(user.getId())) {
@@ -112,10 +110,8 @@ public class AuthController {
                         user.setReferrer(req.getReferrer().trim().toUpperCase());
                         userService.save(user);
                     }
-                    // ✅ 포인트 패키지 최신 시그니처에 맞춤
-                    if (pointService != null) {
-                        pointService.awardReferralSignup(referrer.getId(), user.getId());
-                    }
+                    // ✅ 추천 가입 보상
+                    pointService.awardReferralSignup(referrer.getId(), user.getId());
                 }
             });
         }
@@ -152,7 +148,7 @@ public class AuthController {
         String accessToken = jwtTokenProvider.createAccessToken(user.getId());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
-        // ✅ 현재 RefreshToken 엔티티 시그니처에 맞게 저장 (PK=userId 방식)
+        // RefreshToken 저장 (PK=userId 방식)
         refreshTokenRepository.save(
                 new RefreshToken(user.getId(), refreshToken, LocalDateTime.now().plusSeconds(REFRESH_TTL.toSeconds()))
         );
