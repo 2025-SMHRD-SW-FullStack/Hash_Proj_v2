@@ -36,7 +36,7 @@ const MainMissions = ({ label }) => {
 
   return (
     <div className="w-full">
-      <p className="mx-10 text-lg font-bold">{label} 미션</p>
+      <p className="mx-36 text-lg font-bold">{label} 미션</p>
       {/* 👇 이 div가 화살표와 아이템 목록을 모두 포함하도록 수정합니다. */}
       <div className="flex items-center justify-center gap-x-2">
         {/* 1. 왼쪽 화살표를 안으로 이동 */}

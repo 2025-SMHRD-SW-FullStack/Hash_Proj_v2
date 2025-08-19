@@ -11,6 +11,7 @@ import useWindowWidth from '../../hooks/useWindowWidth'
 const MainPage = () => {
   const testNumber = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [enableTransition, setEnableTransition] = useState(true)
   const width = useWindowWidth()
   const intervalRef = useRef(null)
 
@@ -19,24 +20,53 @@ const MainPage = () => {
   // 👇 화면 크기에 따라 보여줄 아이템 개수
   const itemsPerPage = isMobile ? 1 : 3
 
+  // 무한 루프 구현을 위해 앞뒤에 아이템을 복제
+  const extendedItems = useMemo(() => {
+    const headClones = testNumber.slice(0, itemsPerPage)
+    const tailClones = testNumber.slice(-itemsPerPage)
+    return [...tailClones, ...testNumber, ...headClones]
+  }, [testNumber, itemsPerPage])
+
   useEffect(() => {
-    // 5초마다 currentIndex를 1씩 증가시키는 인터벌 설정
+    // 5초마다 1칸씩 이동
     intervalRef.current = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % testNumber.length)
+      setCurrentIndex((prevIndex) => prevIndex + 1)
     }, 5000)
 
-    // 컴포넌트가 언마운트될 때 인터벌 정리
     return () => clearInterval(intervalRef.current)
-  }, [testNumber.length])
+  }, [extendedItems.length])
+
+  // 레이아웃 변경 시 첫 실제 아이템 위치로 이동
+  useEffect(() => {
+    setEnableTransition(false)
+    setCurrentIndex(itemsPerPage)
+    // 다음 프레임에 트랜지션 복구
+    const id = requestAnimationFrame(() => setEnableTransition(true))
+    return () => cancelAnimationFrame(id)
+  }, [itemsPerPage])
 
   const handlePrev = () => {
-    setCurrentIndex(
-      (prevIndex) => (prevIndex - 1 + testNumber.length) % testNumber.length
-    )
+    setCurrentIndex((prevIndex) => prevIndex - 1)
   }
 
   const handleNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % testNumber.length)
+    setCurrentIndex((prevIndex) => prevIndex + 1)
+  }
+
+  const handleTransitionEnd = () => {
+    // 오른쪽 끝(앞에 복제된 구간)에 도달 → 첫 실제 아이템으로 점프
+    if (currentIndex >= itemsPerPage + testNumber.length) {
+      setEnableTransition(false)
+      setCurrentIndex(itemsPerPage)
+      requestAnimationFrame(() => setEnableTransition(true))
+      return
+    }
+    // 왼쪽 끝(뒤에 복제된 구간)에 도달 → 마지막 실제 아이템으로 점프
+    if (currentIndex < itemsPerPage) {
+      setEnableTransition(false)
+      setCurrentIndex(itemsPerPage + testNumber.length - 1)
+      requestAnimationFrame(() => setEnableTransition(true))
+    }
   }
 
   return (
@@ -57,14 +87,19 @@ const MainPage = () => {
             <div className="w-full flex-1 overflow-hidden">
               {/* 👇 실제로 움직이는 컨테이너, translateX로 슬라이드 효과 */}
               <div
-                className="flex transition-transform duration-500"
+                className={`flex ${enableTransition ? 'transition-transform duration-500' : ''}`}
                 style={{
-                  width: `${(100 / itemsPerPage) * testNumber.length}%`,
-                  transform: `translateX(-${(currentIndex * 100) / testNumber.length}%)`,
+                  width: `${(100 / itemsPerPage) * extendedItems.length}%`,
+                  transform: `translateX(-${(currentIndex * 100) / extendedItems.length}%)`,
                 }}
+                onTransitionEnd={handleTransitionEnd}
               >
-                {testNumber.map((v) => (
-                  <div key={v} className="w-full px-2">
+                {extendedItems.map((v, idx) => (
+                  <div
+                    key={`${v}-${idx}`}
+                    className="px-2"
+                    style={{ width: `${100 / extendedItems.length}%` }}
+                  >
                     <div className={styles.bannerItem}>배너 {v}</div>
                   </div>
                 ))}
