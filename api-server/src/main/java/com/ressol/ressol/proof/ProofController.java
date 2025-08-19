@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name="사용자 · 증빙", description="주문번호/영수증 등록")
+@Tag(name="사용자 · 증빙", description="주문번호 등록(상품형)")
 @RestController
 @RequestMapping("/api/applications")
 @SecurityRequirement(name="bearerAuth")
@@ -28,10 +28,10 @@ public class ProofController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary="(오프라인) 영수증 등록")
-    @PostMapping("/{id}/receipt")
-    public ResponseEntity<Void> receipt(@PathVariable Long id, @Valid @RequestBody ReceiptRequest req){
-        service.registerReceipt(auth.currentUserId(), id, req.imageUrl(), req.amount(), req.ocrText());
-        return ResponseEntity.ok().build();
-    }
+//    @Operation(summary="(오프라인) 영수증 등록")
+//    @PostMapping("/{id}/receipt")
+//    public ResponseEntity<Void> receipt(@PathVariable Long id, @Valid @RequestBody ReceiptRequest req){
+//        service.registerReceipt(auth.currentUserId(), id, req.imageUrl(), req.amount(), req.ocrText());
+//        return ResponseEntity.ok().build();
+//    }
 }

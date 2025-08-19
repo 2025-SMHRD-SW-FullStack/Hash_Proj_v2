@@ -2,55 +2,33 @@ package com.ressol.ressol.review;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "reviews", indexes = {
-        @Index(name = "idx_review_mission_user_status", columnList = "missionId,userId,status")
-})
-@Getter @Setter @Builder
-@NoArgsConstructor @AllArgsConstructor
+@Table(name="reviews",
+        uniqueConstraints=@UniqueConstraint(name="uk_review_app", columnNames={"application_id"}),
+        indexes={@Index(name="ix_review_status", columnList="status")})
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Review {
+    public enum Status { SUBMITTED, APPROVED, REJECTED }
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable=false)
-    private Long missionId;
+    @Column(name="application_id", nullable=false) private Long applicationId;
+    @Column(name="user_id",        nullable=false) private Long userId;
+    @Column(name="company_id",     nullable=false) private Long companyId;
 
-    @Column(nullable=false)
-    private Long userId;
+    @Lob private String content;
+    @Lob @Column(name="photos_json") private String photosJson;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable=false)
-    private ReviewStatus status;
+    @Column(name="review_url", length = 500)  // ✅ 네이버 리뷰 URL 보존
+    private String reviewUrl;
 
-    @Lob
-    private String content;
+    @Enumerated(EnumType.STRING) @Column(nullable=false)
+    private Status status;
 
-    @Column(nullable=false)
-    private Integer regenCount;
-
-    private Integer charLimit;
-
-    private LocalDateTime lastAutosaveAt;
-    private LocalDateTime lastSnapshotAt;
-
-    @Version
-    private Long version;
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    void prePersist(){
-        if (status == null) status = ReviewStatus.DRAFT;
-        if (regenCount == null) regenCount = 0;
-        createdAt = LocalDateTime.now();
-        updatedAt = createdAt;
-    }
-
-    @PreUpdate
-    void preUpdate(){ updatedAt = LocalDateTime.now(); }
+    @CreationTimestamp private LocalDateTime createdAt;
 }

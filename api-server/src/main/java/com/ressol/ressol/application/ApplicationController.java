@@ -25,11 +25,11 @@ public class ApplicationController {
         return ResponseEntity.ok(service.apply(me, id));
     }
 
-    @Operation(summary="신청 취소")
-    @PostMapping("/applications/{id}/cancel")
-    public ResponseEntity<Void> cancel(@PathVariable Long id){
-        Long me = auth.currentUserId();
-        service.cancel(me, id);
-        return ResponseEntity.ok().build();
-    }
+//    @Operation(summary="신청 취소")
+//    @PostMapping("/applications/{id}/cancel")
+//    public ResponseEntity<Void> cancel(@PathVariable Long id){
+//        Long me = auth.currentUserId();
+//        service.cancel(me, id);
+//        return ResponseEntity.ok().build();
+//    }
 }

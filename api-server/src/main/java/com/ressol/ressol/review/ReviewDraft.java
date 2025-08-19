@@ -1,3 +1,4 @@
+// src/main/java/com/ressol/ressol/review/ReviewDraft.java
 package com.ressol.ressol.review;
 
 import jakarta.persistence.*;
@@ -14,10 +15,24 @@ public class ReviewDraft {
     @Id @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name="application_id", nullable=false) private Long applicationId;
+    @Column(name="application_id", nullable=false)
+    private Long applicationId;
 
-    @Lob private String content;
-    @Lob @Column(name="photos_json") private String photosJson; // ["url1","url2"]
+    // ✅ 신규: 키워드 배열(JSON 문자열로 저장)
+    @Lob
+    @Column(name="keywords_json")
+    private String keywordsJson; // ["분위기좋음","친절","주차쉬움"]
 
-    @UpdateTimestamp private LocalDateTime updatedAt;
+    @Lob
+    private String content;
+
+    @Lob
+    @Column(name="photos_json")
+    private String photosJson; // ["url1","url2"]
+
+    @Column(name="review_url", length = 500)   // ✅ 네이버 리뷰 URL
+    private String reviewUrl;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }
