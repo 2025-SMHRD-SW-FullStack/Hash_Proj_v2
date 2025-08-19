@@ -3,9 +3,13 @@ package com.ressol.ressol.mission;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "missions",
@@ -56,4 +60,47 @@ public class Mission {
 
     @CreationTimestamp private LocalDateTime createdAt;
     @UpdateTimestamp  private LocalDateTime updatedAt;
+
+    // --- [AI 생성/검수용 확장 필드] ---
+    @Column(name = "product_name")
+    private String productName; // 메뉴/상품명 (예: "남성용 스테인리스 오토매틱 시계")
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "required_keywords", columnDefinition = "json")
+    private List<String> requiredKeywords; // ["가성비","빠른배송",...]
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "forbid_words", columnDefinition = "json")
+    private List<String> forbidWords; // ["최고","개쩐다",...]
+
+    @Column(name = "min_text_chars")
+    private Integer minTextChars; // 최소 글자수(검수 기준)
+
+    @Column(name = "allow_emoji", nullable = false)
+    @Builder.Default
+    private boolean allowEmoji = true;
+
+    @Column(name = "allow_hashtags", nullable = false)
+    @Builder.Default
+    private boolean allowHashtags = true;
+
+    @Lob
+    @Column(name = "instructions")
+    private String instructions; // "가격 대비 장점을 먼저, 단점은 과장 없이" 등
+
+    @Column(name = "desired_length")
+    private Integer desiredLength; // 생성 힌트(플랫폼 기본 덮어쓰기)
+
+    @Column(name = "tone_label", length = 50)
+    private String toneLabel; // 예: "친근한 정보형"
+
+    @Lob
+    @Column(name = "system_prompt")
+    private String systemPrompt; // 미션별 LLM 시스템프롬프트(선택)
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "meta", columnDefinition = "json")
+    private Map<String, Object> meta; // { "price":{list:...,paid:...,coupon:...}, "specs":[...], "pros":[...], "cons":[...] }
+
+
 }

@@ -1,0 +1,5 @@
+# 비밀/로컬 설정
+.env
+.env.*
+!*.example        # 템플릿만 허용 (ex: .env.example)
+secrets/

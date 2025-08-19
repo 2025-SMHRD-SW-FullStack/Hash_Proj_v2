@@ -1,4 +1,3 @@
-// src/main/java/com/ressol/ressol/review/ReviewController.java
 package com.ressol.ressol.review;
 
 import com.ressol.ressol.review.dto.ReviewDraftRequest;
