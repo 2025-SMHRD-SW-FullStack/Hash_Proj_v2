@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -39,6 +40,18 @@ public class CompanyChannel {
     private String address;
     private String contact;
     private String openingHours;
+
+    // ✅ OFFLINE: 좌표/행정구역 (서버 지오코딩으로 채움)
+    @Column(precision = 10, scale = 7)
+    private BigDecimal latitude;
+    @Column(precision = 10, scale = 7)
+    private BigDecimal longitude;
+    @Column(length = 20)
+    private String sido;     // 예: 광주광역시
+    @Column(length = 30)
+    private String sigungu;  // 예: 남구
+    @Column(length = 50)
+    private String dong;     // 예: 봉선동
 
     // ONLINE 전용
     @Enumerated(EnumType.STRING) @Column(nullable=false)

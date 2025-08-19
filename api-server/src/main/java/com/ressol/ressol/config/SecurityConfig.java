@@ -59,6 +59,9 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/sms/**",
 
+                                // ✅ 공개 채널 조회(지도/리스트)
+                                "/api/channels/**",
+
                                 // OAuth2 엔드포인트
                                 "/oauth2/**",
                                 "/login/oauth2/**"

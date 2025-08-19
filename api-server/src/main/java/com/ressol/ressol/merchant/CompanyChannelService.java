@@ -2,6 +2,7 @@ package com.ressol.ressol.merchant;
 
 import com.ressol.ressol.exception.BadRequestException;
 import com.ressol.ressol.exception.NotFoundException;
+import com.ressol.ressol.geo.NaverGeocodingService;
 import com.ressol.ressol.merchant.dto.ChannelDto;
 import com.ressol.ressol.merchant.dto.ChannelUpsertRequest;
 import com.ressol.ressol.security.MerchantAccessGuard;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 
@@ -19,6 +21,7 @@ public class CompanyChannelService {
     private final CompanyChannelRepository channelRepo;
     private final ChannelMapper mapper;
     private final MerchantAccessGuard guard;
+    private final NaverGeocodingService geocoding; // ✅ 지오코딩 주입
 
     private void validateBusinessRules(Long companyId, ChannelUpsertRequest req, Long editingChannelId){
         // 타입/플랫폼 호환성
@@ -68,6 +71,22 @@ public class CompanyChannelService {
                 .active(req.active() == null ? true : req.active())
                 .build();
 
+        // ✅ OFFLINE이면 주소 지오코딩 후 좌표/행정구역 저장
+        if (ch.getType() == CompanyChannel.Type.OFFLINE && ch.getAddress() != null && !ch.getAddress().isBlank()) {
+            var geo = geocoding.geocode(ch.getAddress());
+            if (geo != null) {
+                ch.setLatitude(toBD(geo.latitude()));
+                ch.setLongitude(toBD(geo.longitude()));
+                ch.setSido(geo.sido());
+                ch.setSigungu(geo.sigungu());
+                ch.setDong(geo.dong());
+            }
+        } else {
+            // ONLINE이면 좌표/행정구역 비움
+            ch.setLatitude(null); ch.setLongitude(null);
+            ch.setSido(null); ch.setSigungu(null); ch.setDong(null);
+        }
+
         return mapper.toDto(channelRepo.save(ch));
     }
 
@@ -78,6 +97,9 @@ public class CompanyChannelService {
                 .orElseThrow(() -> new NotFoundException("channel not found"));
         validateBusinessRules(companyId, req, channelId);
 
+        boolean typeChanged = ch.getType() != req.type();
+        boolean addressChanged = !Objects.equals(ch.getAddress(), req.address());
+
         ch.setType(req.type());
         ch.setDisplayName(req.displayName());
         ch.setAddress(req.address());
@@ -87,6 +109,26 @@ public class CompanyChannelService {
         ch.setExternalId(req.externalId());
         ch.setUrl(req.url());
         ch.setActive(req.active() == null ? ch.isActive() : req.active());
+
+        // ✅ OFFLINE으로 유지/변경되었고 주소가 바뀌었으면 지오코딩
+        if (ch.getType() == CompanyChannel.Type.OFFLINE && (typeChanged || addressChanged)) {
+            if (ch.getAddress() != null && !ch.getAddress().isBlank()) {
+                var geo = geocoding.geocode(ch.getAddress());
+                if (geo != null) {
+                    ch.setLatitude(toBD(geo.latitude()));
+                    ch.setLongitude(toBD(geo.longitude()));
+                    ch.setSido(geo.sido());
+                    ch.setSigungu(geo.sigungu());
+                    ch.setDong(geo.dong());
+                }
+            }
+        }
+
+        // ✅ ONLINE으로 전환되면 좌표/행정구역 비우기
+        if (ch.getType() == CompanyChannel.Type.ONLINE) {
+            ch.setLatitude(null); ch.setLongitude(null);
+            ch.setSido(null); ch.setSigungu(null); ch.setDong(null);
+        }
 
         return mapper.toDto(channelRepo.save(ch));
     }
@@ -105,4 +147,6 @@ public class CompanyChannelService {
         ch.setActive(false);
         channelRepo.save(ch);
     }
+
+    private BigDecimal toBD(Double v){ return v == null ? null : BigDecimal.valueOf(v); }
 }
