@@ -5,63 +5,62 @@ import { useMemo, useState } from "react";
  * - 비밀번호 = 비밀번호 확인 / 생년월일 6자리
  */
 export function useSignUpForm() {
-    const [nickname, setNickname] = useState('');
-    const [email, setEmail] = useState('');
-    const [emailVerified, setEmailVerified] = useState(false);
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [name, setName] = useState('');
-    const [birth, setBirth] = useState('');
-    const [gender, setGender] = useState('남자');
-    const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
 
-    // 회사 정보 관련 상태
-    const [companyName, setCompanyName] = useState('');
-    const [businessNumber, setBusinessNumber] = useState('');
-    const [address, setAddress] = useState('');
-    const [ceoName, setCeoName] = useState('');
-    const [industry, setIndustry] = useState('');
-    const [product, setProduct] = useState('');
+  const [naverNickname, setNaverNickname] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');      // ⬅️ 폼과 동일
+  const [phoneVerifyToken, setPhoneVerifyToken] = useState('');
+  const [address, setAddress] = useState('');
+  const [birthDate, setBirthDate] = useState('');          // 'YYYY-MM-DD'
+  const [gender, setGender] = useState('남자');
+  const [referrer, setReferrer] = useState('');
+  const [naverReviewUrl, setNaverReviewUrl] = useState('');
 
-    // 에러 메시지 상태 추가
-    const [nicknameError, setNicknameError] = useState('');
-    const [emailError, setEmailError] = useState('');
-    const [passwordError, setPasswordError] = useState('');
-    const [passwordConfirmError, setPasswordConfirmError] = useState('');
 
-    // 유효성 조건 통합
-    const isValid = useMemo(()=>
-            email && password && confirmPassword && 
-            password === confirmPassword &&
-            name && nickname && birth.length === 6 && 
-            gender && phone && emailVerified &&
-            !nicknameError && !emailError && !passwordError && !passwordConfirmError,
-        [
-            email, password, confirmPassword, name, nickname, birth, gender, phone,
-            nicknameError, emailError, passwordError, passwordConfirmError
-        ]);
+    // 에러 메시지
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordConfirmError, setPasswordConfirmError] = useState('');
 
-    return {
-        nickname, setNickname,
-        email, setEmail,
-        emailVerified, setEmailVerified,
-        password, setPassword,
-        confirmPassword, setConfirmPassword,
-        name, setName,
-        birth, setBirth,
-        gender, setGender,
-        phone, setPhone,
-         // ✅ 회사 정보 추가
-        companyName, setCompanyName,
-        businessNumber, setBusinessNumber,
-        address, setAddress,
-        ceoName, setCeoName,
-        industry, setIndustry,
-        product, setProduct,
-        nicknameError, setNicknameError,
-        emailError, setEmailError,
-        passwordError, setPasswordError,
-        passwordConfirmError, setPasswordConfirmError,
-        isValid,
-    };
+  // 유효성 (필요에 맞게 조정 가능)
+  const isValid = useMemo(() => (
+    !!email &&
+    !!password &&
+    !!confirmPassword &&
+    password === confirmPassword &&
+    !!name &&
+    !!naverNickname &&
+    !!phoneNumber &&
+    !!birthDate &&
+    !!gender &&
+    !emailError && !passwordError && !passwordConfirmError
+  ), [
+    email, password, confirmPassword, name,
+    naverNickname, phoneNumber, birthDate, gender,
+    emailError, passwordError, passwordConfirmError
+  ]);
+
+  return {
+    email, setEmail,
+    password, setPassword,
+    confirmPassword, setConfirmPassword,
+    name, setName,
+
+    naverNickname, setNaverNickname,
+    phoneNumber, setPhoneNumber,
+    phoneVerifyToken, setPhoneVerifyToken,
+    address, setAddress,
+    birthDate, setBirthDate,
+    gender, setGender,
+    referrer, setReferrer,
+    naverReviewUrl, setNaverReviewUrl,
+
+    emailError, setEmailError,
+    passwordError, setPasswordError,
+    passwordConfirmError, setPasswordConfirmError,
+    isValid,
+  };
 }

@@ -1,15 +1,26 @@
-/* 전역 변수 설정 */
-:root {
+/* 필요한 경우 폰트 선언 (레이어 밖 - 문제 없음) */
+@font-face {
+  font-family: 'Pretendard-Regular';
+  src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff')
+       format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  /* 전역 변수 설정 */
+  :root {
     /* 헤더 크기 */
     --header-height: 80px;
     --nav-height: 40px;
 
     /* 폰트 크기 */
-    --font-size-h1: 2rem; /* 32px */
-    --font-size-h2: 1.75rem; /* 28px */
-    --font-size-h3: 1.5rem; /* 24px */
-    --font-size-h4: 1.25rem; /* 20px */
-    --font-size-body: 1rem; /* 16px */
+    --font-size-h1: 2rem;      /* 32px */
+    --font-size-h2: 1.75rem;   /* 28px */
+    --font-size-h3: 1.5rem;    /* 24px */
+    --font-size-h4: 1.25rem;   /* 20px */
+    --font-size-body: 1rem;    /* 16px */
     --font-size-small: 0.875rem; /* 14px */
     --font-size-xsmall: 0.75rem; /* 12px */
 
@@ -36,80 +47,109 @@
     --spacing-xl: 32px;
 
     /* 폰트 */
-    --font-family-base: 'Noto Sans KR', sans-serif;
+    --font-family-base: 'Pretendard-Regular','Noto Sans KR',sans-serif;
 
     /* 로고 */
     --logo-size: 120px;
-}
+  }
 
-/* 기본 설정 */
-
-/* 전체 요소 초기화 */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-/* 기본 폰트 설정 */
-html {
+  /* 기본 설정 */
+  *, *::before, *::after { box-sizing: border-box; }
+  html {
     font-size: 16px;
     font-family: var(--font-family-base);
-    scroll-behavior: smooth; /* 내부 링크 이동 시 부드럽게 스크롤 */
-}
-
-/* body 기본 설정 */
-body {
+    scroll-behavior: smooth;
+  }
+  body {
     font-size: var(--font-size-body);
     line-height: 1.6;
     color: var(--color-text);
     background-color: var(--color-background);
-    word-break: keep-all; /* 한국어 줄바꿈 시 단어 잘리는 현상 방지 */
-    -webkit-font-smoothing: antialiased; /* 맥/크롬 등에서 폰트 렌더링 부드럽게 */
-}
+    word-break: keep-all;
+    -webkit-font-smoothing: antialiased;
+    margin: 0;
+  }
 
-/* 링크 태그 스타일 제거 */
-a {
-    text-decoration: none;
-    color: inherit; 
-}
+  /* 링크/리스트 */
+  a { text-decoration: none; color: inherit; }
+  ul, ol { list-style: none; margin: 0; padding: 0; }
 
-/* 리스트 스타일 제거 */
-ul, ol {
-    list-style: none;
-}
-
-/* 버튼 초기화 */
-button {
-    all: unset;
+  /* 파괴적 리셋 금지: all:unset / 전역 border:none 제거 */
+  button {
+    font: inherit;
     cursor: pointer;
-    color: var(--color-white);
-    font-family: var(--font-family-base);
-    font-size: var(--font-size-body);
-}
+    color: inherit;       /* 버튼 색상은 Tailwind로 지정 */
+    background: transparent;
+    border: 0;
+  }
+  input, textarea {
+    font: inherit;
+    color: inherit;
+    background: transparent; /* Tailwind의 bg-*가 utilities에서 덮어씀 */
+  }
 
-input, textarea {
-    font-family: inherit;
-    font-size: inherit;
-    border: none;
-    outline: none;
-    background-color: transparent;
-}
+  /* 타이포그래피 */
+  h1 { font-size: var(--font-size-h1); font-weight: 700; }
+  h2 { font-size: var(--font-size-h2); font-weight: 700; }
+  h3 { font-size: var(--font-size-h3); font-weight: 600; }
+  h4 { font-size: var(--font-size-h4); font-weight: 600; }
+  p  { font-size: var(--font-size-body); margin: 0; }
 
-/* 타이포그래피 */
-h1 { font-size: var(--font-size-h1); font-weight: bold; }
-h2 { font-size: var(--font-size-h2); font-weight: bold; }
-h3 { font-size: var(--font-size-h3); font-weight: 600; }
-h4 { font-size: var(--font-size-h4); font-weight: 600; }
-p  { font-size: var(--font-size-body); }
+  .small   { font-size: var(--font-size-small); }
+  .x-small { font-size: var(--font-size-xsmall); }
 
-.small   { font-size: var(--font-size-small); }
-.x-small { font-size: var(--font-size-xsmall); }
-
-/* 화면 전체 영역 사이즈 */
-.global-container {
+  /* 화면 전체 영역 사이즈 */
+  .global-container {
     max-width: 1200px;
-    margin: 0 auto; /* 가운데 정렬 */
+    margin: 0 auto;
     padding: 40px 60px 0 60px;
+  }
 }
+
+/* ========================= */
+/* 추가: 컴포넌트 레이어      */
+/* 2번 시안 톤 맞추는 공통 클래스 */
+/* ========================= */
+@layer components {
+  /* 섹션 타이틀 + 구분선 조합 */
+  .section-title { @apply text-lg font-semibold; }
+  .divider-line { @apply h-px w-full bg-gray-300; }
+
+  /* 라벨/헬퍼/상태 텍스트 */
+  .form-label   { @apply block text-sm font-semibold text-gray-800; }
+  .form-helper  { @apply mt-1 text-xs text-gray-500; }
+  .form-error   { @apply mt-1 inline-flex items-center text-sm text-red-600; }
+  .form-success { @apply mt-1 text-sm text-emerald-600; }
+
+  /* 셀렉트/버튼 프리셋 */
+  .select-basic { @apply h-11 w-full rounded-md border border-gray-300 bg-white px-3 focus:border-gray-900 focus:ring-0; }
+  .btn-dark     { @apply h-11 rounded-md bg-gray-900 px-4 text-white hover:bg-black disabled:opacity-50; }
+  .btn-ghost    { @apply h-11 rounded-md bg-gray-100 text-gray-900 hover:bg-gray-200; }
+}
+
+/* ========================= */
+/* 추가: 유틸 레이어          */
+/* 폼 인풋/버튼 프리셋        */
+/* ========================= */
+@layer utilities {
+  /* 언더라인 인풋/셀렉트 */
+  .input-underline {
+    @apply h-9 bg-transparent rounded-none px-2
+           border-0 border-b border-gray-300
+           focus:border-gray-900 focus:ring-0;
+  }
+  .select-underline {
+    @apply h-9 bg-transparent rounded-none pr-6
+           border-0 border-b border-gray-300
+           focus:border-gray-900 focus:ring-0;
+    appearance: none;
+    background-image: none;
+  }
+}
+
+  /* 에러 상태만 유지 */
+  .form-error {
+    @apply mt-1 inline-flex items-center text-sm text-red-600;
+  }
+
 

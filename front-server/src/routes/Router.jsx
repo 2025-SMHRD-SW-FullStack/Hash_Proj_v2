@@ -4,11 +4,11 @@ import EmailSignUp from '/src/pages/auth/EmailSignUpPage';
 import Main from '/src/pages/Main';
 import Login from '/src/pages/auth/LoginPage';
 import SignUp from '/src/pages/auth/SignUpPage';
-import EmailVerifiedHandler from '/src/pages/auth/EmailVerifiedHandler';
 import OAuthSuccess from '/src/pages/auth/OAuthSuccess';
 import MyPage from "../pages/mypage/MyPage";
 import ComInfo from "../components/mypage/ComInfo";
 import UserInfo from "../components/mypage/UserInfo";
+import PhoneVerifiedHandler from "../pages/auth/PhoneVerifiedHandler";
 
 
 const Router = () => {
@@ -23,8 +23,8 @@ const Router = () => {
                 <Route path='/signup' element={<SignUp/>}/>
                 <Route path='/email_signup' element={<EmailSignUp/>}/>
 
-                {/* 이메일 인증 관련 */}
-                <Route path='/email-verified' element={<EmailVerifiedHandler/>}/>
+                {/* 휴대폰 인증 관련 */}
+                <Route path='/phone-verified' element={<PhoneVerifiedHandler/>}/>
                 <Route path='/oauth-success' element={<OAuthSuccess/>}/>
 
                 {/* 마이페이지 관련 */}
