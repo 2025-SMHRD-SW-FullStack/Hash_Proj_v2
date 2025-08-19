@@ -1,12 +1,6 @@
-body {
-  min-width: 1080px;
-  overflow-x: auto;
-  /* height: auto; */
-}
-
 /* 전체 너비를 고정하고 중앙 정렬 */
 .wrapper {
-  width: 1080px;  /* ✅ 고정 너비 */
+  width: 1080px; /* ✅ 고정 너비 */
   padding: 20px 32px;
   margin: 0 auto;
   background-color: white;

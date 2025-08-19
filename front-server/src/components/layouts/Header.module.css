@@ -1,41 +1,6 @@
-.wrapper {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-}
-
-.logo {
-    width: var(--logo-size);
-}
-
-.logo:hover {
-    cursor: pointer;
-}
-
-.authButtons a:last-child {
-    margin-left: 20px;
-}
-
-.nav {
-    margin-top: 20px;
-    font-size: var(--font-size-body);
-}
-
-.nav a:nth-child(2n) {
-    margin: 0 30px;
-}
-
-.nav a:hover {
-    color: var(--color-primary);
-    font-weight: bold;
-}
-
-.logoutBtn {
-    color: var(--color-black);
-    margin-left: 20px;
-}
-
-.active {
-    font-weight: bold;
-    color: var(--color-primary);
+.nav{
+    @apply
+    font-medium 
+    cursor-pointer
+    hover:bg-[#35A6CF];
 }
