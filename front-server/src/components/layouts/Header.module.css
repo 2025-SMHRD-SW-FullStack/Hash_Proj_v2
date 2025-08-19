@@ -1,6 +1,3 @@
-.nav{
-    @apply
-    font-medium 
-    cursor-pointer
-    hover:bg-[#35A6CF];
+.nav {
+  @apply cursor-pointer font-medium hover:text-[#35A6CF];
 }
