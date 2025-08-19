@@ -1,0 +1,5 @@
+@tailwind base;
+@tailwind components;
+@import "./assets/styles/global.css";
+@tailwind utilities;
+/* 여기엔 아무 커스텀도 넣지 않기 */

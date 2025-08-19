@@ -29,13 +29,11 @@ const OAuthSuccess = () => {
 
     },[])
 
-    
-
     return (
         <div>
             <p>로그인 처리 중입니다...</p>
         </div>
-    )
+    )       
 }
 
 export default OAuthSuccess
