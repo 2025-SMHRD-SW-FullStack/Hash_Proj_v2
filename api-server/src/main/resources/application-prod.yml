@@ -28,3 +28,9 @@ spring:
   jackson:
     serialization:
       fail-on-empty-beans: false
+
+ai:
+  base-url: http://localhost:8001
+  timeout:
+    connect-ms: 1500
+    read-ms: 3000

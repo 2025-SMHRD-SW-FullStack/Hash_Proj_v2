@@ -1,98 +1,117 @@
-from typing import List, Optional, Dict
+from typing import List, Dict, Optional
+from app.prompts.review_templates import BASE_TEMPLATE, PLATFORM_HINTS
+from app.utils.text_utils import to_bullets, clip_text, extract_points_from_text, apply_forbid_words, apply_instructions
+from app.services.image_analysis_service import ImageAnalysisService  # ★ 추가
 import os
-from openai import OpenAI
-
-from app.prompts.review_templates import build_platform_template
-from app.utils.text_utils import clip
-
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 class ReviewGenerationService:
+    def __init__(self):
+        self.image_analyzer = ImageAnalysisService()
 
-    def _compose_system_prompt(self, platform: Optional[str], user_system_prompt: Optional[str]) -> str:
-        plat = build_platform_template(platform)
-        usp = (user_system_prompt or "").strip()
-        return (usp + "\n\n" + plat).strip() if usp else plat
+    # OCR 기반 힌트(사진 없거나 실패 시 개수 힌트만)
+    def _image_hints(self, image_list: List[str] | None) -> List[str]:
+        if not image_list:
+            return []
+        try:
+            analysis = self.image_analyzer.analyze(image_list, payload=None)
+            hints = analysis.get("hints") or []
+            return hints[:10]
+        except Exception:
+            # 실패 시에도 최소 개수 힌트는 남김
+            return [f"첨부 사진 {len(image_list)}장 기반 디테일 강조"]
 
-    def _compose_user_prompt(self,
-                             keywords: List[str],
-                             image_urls: List[str],
-                             previous_prompt: Optional[str]) -> str:
-        parts = []
-        if keywords:
-            parts.append(f"- 고려 키워드: {', '.join(keywords)}")
-        if image_urls:
-            parts.append(f"- 참고 이미지 URL: {', '.join(image_urls)}")
-        if previous_prompt:
-            parts.append(f"- 직전 생성 시 참고 프롬프트(요약/원문): {previous_prompt}")
-        parts.append("위 항목을 바탕으로 플랫폼 가이드와 충돌하지 않게 자연스러운 구매/방문 리뷰를 작성해주세요.")
-        return "\n".join(parts)
+    def resolve_limit(self, platform: Optional[str], desired: Optional[int]) -> int:
+        p = (platform or "default").lower()
+        base = PLATFORM_HINTS.get(p, PLATFORM_HINTS["default"])["length"]
+        if desired is None:
+            return base
+        return max(200, min(desired, base))
 
-    def _call_llm(self, system_prompt: str, user_prompt: str, char_limit: Optional[int]) -> str:
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user",    "content": user_prompt},
-        ]
-        resp = client.chat.completions.create(
-            model=OPENAI_MODEL,
-            messages=messages,
-            temperature=0.7,
+    def _collect_image_sources(self, payload: Dict) -> List[str]:
+        sources: List[str] = []
+        for k in ("imagePaths", "imageUrls"):
+            v = payload.get(k) or []
+            if isinstance(v, list):
+                sources.extend(v)
+            elif v:
+                sources.append(v)
+        # 순서 보존 중복 제거
+        seen = set()
+        return [x for x in sources if x and (x not in seen and not seen.add(x))]
+
+    def generate(self, payload: Dict, style_override: Optional[Dict] = None) -> Dict:
+        # 1) 이미지 소스
+        image_sources: List[str] = self._collect_image_sources(payload)
+
+        # 2) 이미지 기반 힌트(OCR)
+        image_hints = self._image_hints(image_sources)
+
+        # 3) 기본 필드
+        platform = (payload.get("platform") or "default").lower()
+        brand = payload.get("brand") or payload.get("storeName") or "매장"
+        menu = payload.get("menu") or payload.get("productName") or ""
+        keywords: List[str] = payload.get("keywords") or []
+
+        # 4) 포인트 합성: (사진 힌트 + 요청 포인트 or 키워드) → 10개 컷
+        base_points: List[str] = payload.get("points") or keywords
+        seen = set()
+        merged_points: List[str] = []
+        for x in (image_hints + base_points):
+            if x and (x not in seen):
+                merged_points.append(x)
+                seen.add(x)
+            if len(merged_points) >= 10:
+                break
+        payload["points"] = merged_points
+
+        # 5) 길이 제한
+        desired_len = payload.get("desiredLength")
+        limit = self.resolve_limit(platform, desired_len)
+
+        # 6) 스타일
+        style = payload.get("style") or {}
+        if style_override:
+            style = {**style, **style_override}
+        tone = style.get("toneLabel") or "담백"
+        sys_prompt = style.get("systemPrompt") or ""
+
+        # 7) 템플릿 조립
+        hint = PLATFORM_HINTS.get(platform, PLATFORM_HINTS["default"])
+        bullets = to_bullets(merged_points or ["맛/서비스/가격/분위기 순으로 간단 평가"])
+        keywords_text = ", ".join(keywords[:8])
+        length_hint = str(limit)
+
+        text = BASE_TEMPLATE.format(
+            platform=platform,
+            tone=tone,
+            length_hint=length_hint,
+            keywords_text=keywords_text or "—",
+            intro=hint["intro"].format(brand=brand, menu=menu),
+            body=hint["body"].format(bullets=bullets),
+            outro=hint["outro"].format(hashtags=" ".join(f"#{k}" for k in keywords[:5]))
         )
-        txt = resp.choices[0].message.content.strip()
-        return clip(txt, char_limit)
 
-    # -------- Public --------
+        # 8) 지시문/금칙어/재작성 반영
+        instructions = (payload.get("instructions") or "").strip()
+        forbid = payload.get("forbidWords") or []
+        rewrite_from = payload.get("rewriteFrom")
 
-    def generate(self, user_id: int, mission_id: int,
-                 platform: Optional[str], keywords: List[str], image_urls: List[str],
-                 user_system_prompt: Optional[str], char_limit: Optional[int],
-                 previous_prompt: Optional[str]) -> Dict:
-        system_prompt = self._compose_system_prompt(platform, user_system_prompt)
-        user_prompt = self._compose_user_prompt(keywords, image_urls, previous_prompt)
-        content = self._call_llm(system_prompt, user_prompt, char_limit)
+        if rewrite_from and not merged_points:
+            extra = extract_points_from_text(rewrite_from)
+            if extra:
+                extra = extra[:10]
+                payload["points"] = extra
+                text = text + "\n" + to_bullets(extra)
+
+        text = clip_text(text, limit)
+        text = apply_instructions(text, instructions)
+        text = apply_forbid_words(text, forbid)
+
         return {
-            "content": content,
-            "usedSystemPrompt": system_prompt,
-            "usedUserPrompt": user_prompt,
-            "model": OPENAI_MODEL,
-            "meta": {
-                "platform": platform,
-                "keywords": keywords,
-                "imageUrls": image_urls,
-            }
-        }
-
-    def regenerate(self, user_id: int, mission_id: int,
-                   platform: Optional[str], keywords: List[str], image_urls: List[str],
-                   base_edited_text: Optional[str], custom_prompt: Optional[str],
-                   user_system_prompt: Optional[str], char_limit: Optional[int],
-                   previous_prompt: Optional[str]) -> Dict:
-        system_prompt = self._compose_system_prompt(platform, user_system_prompt)
-
-        # 우선순위: custom_prompt > base_edited_text > 일반 조합
-        if custom_prompt:
-            user_prompt = f"[재생성 요청 - 사용자 프롬프트 우선]\n{custom_prompt}\n\n참고 키워드: {', '.join(keywords)}"
-        elif base_edited_text:
-            user_prompt = (
-                "[재생성 요청 - 사용자 편집본을 기반으로 품질 개선]\n"
-                "아래 편집본의 톤/사실/문맥을 존중하되, 플랫폼 가이드에 맞춰 더 매끄럽게 다듬어주세요.\n\n"
-                f"{base_edited_text}\n\n"
-                f"(참고 키워드: {', '.join(keywords)})"
-            )
-        else:
-            user_prompt = self._compose_user_prompt(keywords, image_urls, previous_prompt)
-
-        content = self._call_llm(system_prompt, user_prompt, char_limit)
-        return {
-            "content": content,
-            "usedSystemPrompt": system_prompt,
-            "usedUserPrompt": user_prompt,
-            "model": OPENAI_MODEL,
-            "meta": {
-                "platform": platform,
-                "keywords": keywords,
-                "imageUrls": image_urls,
-                "mode": "CUSTOM_PROMPT" if custom_prompt else ("FROM_EDITED" if base_edited_text else "NORMAL")
-            }
+            "platform": platform,
+            "limit": limit,
+            "tone": tone,
+            "systemPromptUsed": sys_prompt,
+            "content": text,
+            "keywordsUsed": keywords[:10]
         }

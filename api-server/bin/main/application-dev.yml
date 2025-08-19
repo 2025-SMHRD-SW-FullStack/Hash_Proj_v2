@@ -33,6 +33,12 @@ phone:
     ttl-seconds: 180             # 인증코드 유효시간(3분)
     max-attempts: 5
 
+ai:
+  base-url: http://localhost:8001
+  timeout:
+    connect-ms: 1500
+    read-ms: 3000
+
 COOLSMS_API_KEY: ${COOLSMS_API_KEY}
 COOLSMS_API_SECRET: ${COOLSMS_API_SECRET}
 COOLSMS_FROM_NUMBER: ${COOLSMS_FROM_NUMBER}

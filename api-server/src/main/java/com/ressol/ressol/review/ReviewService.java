@@ -6,16 +6,19 @@ import com.ressol.ressol.exception.*;
 import com.ressol.ressol.mission.MissionRepository;
 import com.ressol.ressol.point.PointService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service @RequiredArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class ReviewService {
     private final MissionApplicationRepository appRepo;
     private final ReviewDraftRepository draftRepo;
     private final ReviewRepository reviewRepo;
     private final MissionRepository missionRepo;
     private final PointService pointService;
+    private final ApplicationEventPublisher events;
 
     /**
      * ✅ 기존 시그니처 유지(역호환). 내부에서 신규 오버로드 호출
@@ -61,6 +64,7 @@ public class ReviewService {
         return draftRepo.findByApplicationId(applicationId).orElse(null);
     }
 
+    // ========== 재생성 ==========
     @Transactional
     public Review submit(Long userId, Long applicationId){
         MissionApplication app = appRepo.findById(applicationId).orElseThrow(() -> new NotFoundException("application not found"));
@@ -75,7 +79,12 @@ public class ReviewService {
                 .content(draft.getContent()).photosJson(draft.getPhotosJson())
                 .reviewUrl(draft.getReviewUrl())
                 .status(Review.Status.SUBMITTED).build();
-        return reviewRepo.save(r);
+        Review saved = reviewRepo.save(r);
+
+        // ★ 커밋 후 AI에 학습을 알린다
+        events.publishEvent(new ReviewSubmittedEvent(saved.getId(), saved.getUserId(), saved.getContent()));
+
+        return saved;
     }
 
     @Transactional

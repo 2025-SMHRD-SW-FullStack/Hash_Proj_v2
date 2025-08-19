@@ -6,15 +6,3 @@ spring:
         - secret-dev
       prod:
         - secret-prod
-review:
-  ai-base-url: http://localhost:8000
-  max-regens: 3
-  free-regens: 1
-  max-chars: 1200
-  regen-point-cost: 50
-  snapshot-interval-sec: 30
-  snapshot-keep-max: 20
-  platform-char-limit:
-    NAVER_STORE: 700
-    COUPANG: 400
-    ELEVEN_ST: 500

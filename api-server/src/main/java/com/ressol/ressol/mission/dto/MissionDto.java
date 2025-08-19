@@ -3,6 +3,8 @@ package com.ressol.ressol.mission.dto;
 import com.ressol.ressol.mission.Mission;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 public record MissionDto(
         Long id,
@@ -19,5 +21,17 @@ public record MissionDto(
         LocalDateTime endAt,
         Integer requiredKeywordsCnt,
         Integer requiredPhotosCnt,
-        Mission.Status status
+        Mission.Status status,
+
+        String productName,
+        List<String> requiredKeywords,
+        List<String> forbidWords,
+        Integer minTextChars,
+        Boolean allowEmoji,
+        Boolean allowHashtags,
+        String instructions,
+        Integer desiredLength,
+        String toneLabel,
+        String systemPrompt,
+        Map<String, Object> meta
 ) {}

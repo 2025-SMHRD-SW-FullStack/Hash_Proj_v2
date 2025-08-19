@@ -3,14 +3,14 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://project-db-campus.smhrd.com:3307/campus_25SW_FS_p2_1?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: campus_25SW_FS_p2_1
+    url: jdbc:mysql://project-db-campus.smhrd.com:3307/campus_25SW_FS_p3_1?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: campus_25SW_FS_p3_1
     password: ${PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update   # 운영 시엔 validate 또는 none 권장
+      ddl-auto: migration
     properties:
       hibernate:
         format_sql: true
@@ -21,6 +21,16 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
+  redis:
+    host: localhost
+    port: 6379
+
   jackson:
     serialization:
       fail-on-empty-beans: false
+
+ai:
+  base-url: http://localhost:8001
+  timeout:
+    connect-ms: 1500
+    read-ms: 3000

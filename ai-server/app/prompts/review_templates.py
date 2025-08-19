@@ -1,25 +1,61 @@
-PLATFORM_RULES = {
-    "NAVER_STORE": """[플랫폼: 네이버 스토어]
-- 구매경험 중심, 과장/광고성 표현 금지
-- 핵심 사실 먼저, 해시태그 1~2개 허용
-- 링크/외부유도 금지""",
-    "COUPANG": """[플랫폼: 쿠팡]
-- 간결/불릿 위주(두 문단 이내)
-- 장점 1, 아쉬운 점 1 제시
-- 과도한 이모지/과장 금지""",
-    "BAEMIN": """[플랫폼: 배민]
-- 배달/포장/온도/양 등 실사용 관점
-- 주문 맥락 요약 + 재방문의사""",
-    "ELEVEN_ST": """[플랫폼: 11번가]
-- 구매/배송/포장/사용후기 순으로 간단명료
-- 별점 암시 표현은 자제""",
+BASE_TEMPLATE = """    [플랫폼: {platform}]
+[톤: {tone} | 길이: {length_hint}자 내외]
+[핵심키워드: {keywords_text}]
+
+{intro}
+
+{body}
+
+{outro}
+"""
+
+PLATFORM_HINTS = {
+    "instagram": {
+        "intro": "오늘 다녀온 {brand} {menu} 솔직 리뷰!",
+        "body": "포인트:\n{bullets}",
+        "outro": "#내돈내산 #솔직후기 {hashtags}",
+        "length": 900,
+    },
+    "naver_blog": {
+        "intro": "{brand} {menu} 방문기 정리했습니다.",
+        "body": "{bullets}",
+        "outro": "방문에 도움이 되셨다면 공감 부탁드려요.",
+        "length": 1500,
+    },
+    "kakao": {
+        "intro": "{brand} {menu} 빠르게 요약!",
+        "body": "{bullets}",
+        "outro": "",
+        "length": 800,
+    },
+    "coupang": {
+        "intro": "{brand} 리뷰 요약",
+        "body": "{bullets}",
+        "outro": "",
+        "length": 600,
+    },
+    "google_maps": {
+        "intro": "{brand} 방문 요약",
+        "body": "{bullets}",
+        "outro": "방문 시 참고하세요.",
+        "length": 600,
+    },
+    "baemin": {
+        "intro": "{brand} 배달 주문 요약",
+        "body": "{bullets}",
+        "outro": "배달 시간/포장 상태는 매장 사정에 따라 달라질 수 있습니다.",
+        "length": 500,
+    },
+    "smartstore": {
+        "intro": "{brand} {menu} 사용 후기",
+        "body": "{bullets}",
+        "outro": "구매 시 참고 바랍니다.",
+        "length": 700,
+    },
+    "default": {
+        "intro": "{brand} {menu} 리뷰입니다.",
+        "body": "{bullets}",
+        "outro": "",
+        "length": 1000,
+    },
 }
-
-DEFAULT_RULE = """[플랫폼: 일반]
-- 경험 기반의 자연스러운 리뷰
-- 과장/광고성 금지, 사실 위주
-- 요약 → 디테일 → 한줄 총평"""
-
-def build_platform_template(platform: str | None) -> str:
-    plat = (platform or "").upper()
-    return PLATFORM_RULES.get(plat, DEFAULT_RULE)

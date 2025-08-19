@@ -1,4 +1,3 @@
-// src/main/java/com/ressol/ressol/review/ReviewDraft.java
 package com.ressol.ressol.review;
 
 import jakarta.persistence.*;
