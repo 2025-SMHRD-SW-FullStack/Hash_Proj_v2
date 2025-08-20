@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import Icon from '../Icon'
+import Icon from '../common/Icon'
 import arrowLeft from '../../assets/icons/ic_arrow_left.svg'
 import arrowRight from '../../assets/icons/ic_arrow_right.svg'
 import useWindowWidth from '../../hooks/useWindowWidth'

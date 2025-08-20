@@ -1,12 +1,12 @@
 import React from 'react'
-import SignUpForm from '/src/components/auth/SignUpForm'
+import SignUpForm from '../../components/auth/SignUpForm'
 
 const SignUpPage = () => {
-    return (
-        <div>
-            <SignUpForm/>
-        </div>
-    )
+  return (
+    <div>
+      <SignUpForm />
+    </div>
+  )
 }
 
 export default SignUpPage

@@ -5,14 +5,20 @@ import User from '../../assets/icons/ic_user.svg'
 import Notification from '../../assets/icons/ic_notification.svg'
 import Message from '../../assets/icons/ic_message.svg'
 import QRcode from '../../assets/icons/ic_qrcode.svg'
-import Button from '../Button'
-import Icon from '../Icon'
+import Button from '../common/Button'
+import Icon from '../common/Icon'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import useAuthStore from '../../stores/authStore'
 
 const Header = () => {
-  const { isLoggedIn, login, logout, userRole } = useAuth()
   const navigate = useNavigate()
+  // 스토어에서 필요한 상태와 액션을 직접 가져옵니다.
+  const { isLoggedIn, logout: storeLogout } = useAuthStore()
+
+  const logout = () => {
+    storeLogout() // 스토어의 logout 액션 호출
+    navigate('/')
+  }
 
   const clickMessage = () => {}
 
@@ -32,7 +38,8 @@ const Header = () => {
 
       {/* 오른쪽 영역 */}
       <div className="mr-8 flex items-center space-x-4">
-        {isLoggedIn && (userRole === 'OWNER' || userRole === 'ADMIN') && (
+        {/* TODO: 유저 구분해서 나타나도록 */}
+        {isLoggedIn && (
           <Button variant="admin" size="md">
             관리자 페이지
           </Button>
@@ -51,7 +58,8 @@ const Header = () => {
             <Icon src={QRcode} alt="QR 코드" />
           </div>
         ) : (
-          <Button onClick={() => login('OWNER')}>로그인</Button>
+          // TODO: 유저 구분해서 나타나도록
+          <Button onClick={() => navigate('/login')}>로그인</Button>
         )}
       </div>
     </header>

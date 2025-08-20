@@ -1,13 +1,9 @@
-import { useNavigate } from "react-router-dom";
-
-
+import { useNavigate } from 'react-router-dom'
 
 const useGoHome = () => {
+  const navigate = useNavigate()
 
-    const navigate = useNavigate();
-
-    return () => navigate('/');
-
+  return () => navigate('/')
 }
 
-export default useGoHome;
+export default useGoHome

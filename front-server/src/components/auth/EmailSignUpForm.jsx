@@ -1,24 +1,26 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
 import TextField from '../common/TextField'
-import logoImg from '/src/assets/images/logo.png'
-import lockIcon from '/src/assets/images/lockIcon.png'
-import checkIcon from '/src/assets/images/checkIcon.png'
-import errorIcon from '/src/assets/images/error.png'
-import successIcon from '/src/assets/images/success.png'
+import logoImg from '../../assets/images/logo.png'
+import lockIcon from '../../assets/images/lockIcon.png'
+import checkIcon from '../../assets/images/checkIcon.png'
+import errorIcon from '../../assets/images/error.png'
+import successIcon from '../../assets/images/success.png'
 import {
   loginRequest,
   signupRequest,
   phoneSend,
   phoneVerify,
-} from '/src/service/authService'
-import { useSignUpForm } from '/src/hooks/useSignupForm'
+} from '../../service/authService'
+import { useSignUpForm } from '../../hooks/useSignupForm'
 import { useNavigate } from 'react-router-dom'
-import useGoHome from '/src/hooks/useGoHome'
-import Button from '../Button'
+import useGoHome from '../../hooks/useGoHome'
+import Button from '../common/Button'
+import useAuthStore from '../../stores/authStore'
 
 const EmailSignUpForm = () => {
   const navigate = useNavigate()
   const goHome = useGoHome()
+  const { login } = useAuthStore() // login 액션 가져오기
 
   const {
     email,
@@ -271,11 +273,11 @@ const EmailSignUpForm = () => {
         naverReviewUrl,
       })
 
-      // 바로 로그인 요청
-      const { token } = await loginRequest({ email, password })
+      // 바로 로그인 요청 -> LoginResponse 객체를 반환받음
+      const loginData = await loginRequest({ email, password })
 
       // AccessToken 저장
-      localStorage.setItem('accessToken', token)
+      login(loginData) // 스토어의 login 액션 호출
 
       // 메인 페이지 이동
       navigate('/')

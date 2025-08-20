@@ -1,39 +1,34 @@
 import React from 'react'
-import logoImg from '/src/assets/images/logo.png'
+import logoImg from '../../assets/images/logo.png'
 import { Link, useNavigate } from 'react-router-dom'
 import styles from './LoginForm.module.css'
 import SocialLoginButtons from './SocialLoginButtons'
 import TextField from '../common/TextField'
-import { useLoginForm } from '/src/hooks/useLoginForm'
-import { loginRequest } from '/src/service/authService'
-import useGoHome from '/src/hooks/useGoHome'
-import Button from '../Button'
+import { useLoginForm } from '../../hooks/useLoginForm'
+import { loginRequest } from '../../service/authService'
+import useGoHome from '../../hooks/useGoHome'
+import Button from '../common/Button'
+import useAuthStore from '../../stores/authStore'
 
 const LoginForm = () => {
   const navigate = useNavigate()
   const goHome = useGoHome()
 
   const { email, setEmail, password, setPassword, isValid } = useLoginForm()
+  const login = useAuthStore((state) => state.login)
 
   /** [ 로그인 처리 함수 ] */
   const handleSubmit = async (e) => {
     e.preventDefault()
 
     try {
-      const res = await loginRequest({ email, password })
-      console.log('응답 결과: ', res)
+      // loginRequest는 백엔드의 LoginResponse 객체를 반환합니다.
+      const loginData = await loginRequest({ email, password })
 
-      if (res.token) {
-        // 로그인 성공 시 accessToken 저장
-        localStorage.setItem('accessToken', res.token)
-        // localStorage.setItem('userId', res.user.id.toString());
-      } else {
-        console.warn('accessToken 없음: ', res)
-      }
+      // 스토어의 login 액션에 응답 데이터 전체를 전달합니다.
+      login(loginData)
 
       alert('로그인에 성공했습니다.')
-      console.log('토큰 확인:', res.token)
-      console.log('로컬스토리지 토큰:', localStorage.getItem('accessToken'))
       navigate('/')
     } catch (error) {
       if (error.response && error.response.status === 401) {

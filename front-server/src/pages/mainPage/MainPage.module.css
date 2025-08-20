@@ -1,7 +1,0 @@
-.bannerItem {
-  @apply hidden h-[250px] w-[100%] rounded-lg bg-gray-200 sm:block;
-}
-
-.label {
-  @apply text-[20px];
-}
