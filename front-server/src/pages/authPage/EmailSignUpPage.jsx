@@ -1,12 +1,12 @@
 import React from 'react'
-import EmailSignUpForm from '/src/components/auth/EmailSignUpForm'
+import EmailSignUpForm from '../../components/auth/EmailSignUpForm'
 
 const EmailSignUp = () => {
-    return (
-        <div>
-            <EmailSignUpForm/>
-        </div>  
-    )
+  return (
+    <>
+      <EmailSignUpForm />
+    </>
+  )
 }
 
 export default EmailSignUp

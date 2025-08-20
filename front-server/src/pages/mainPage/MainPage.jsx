@@ -7,6 +7,7 @@ import arrowRight from '../../assets/icons/ic_arrow_right.svg'
 import Icon from '../../components/Icon'
 import MainLayout from '../../components/layouts/MainLayout' // 1. MainLayout을 사용해야 합니다.
 import useWindowWidth from '../../hooks/useWindowWidth'
+import { useNavigate } from 'react-router-dom'
 
 const MainPage = () => {
   const testNumber = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -14,6 +15,7 @@ const MainPage = () => {
   const [enableTransition, setEnableTransition] = useState(true)
   const width = useWindowWidth()
   const intervalRef = useRef(null)
+  const navigate = useNavigate()
 
   const isMobile = width < 640
 
@@ -125,7 +127,13 @@ const MainPage = () => {
         <aside className="top-8 w-1/5 flex-shrink-0">
           <div className="mb-12 flex h-[250px] flex-col items-center justify-center rounded-lg border border-solid border-black px-4 text-center">
             <p>로그인 문구</p>
-            <Button className="w-[100%] bg-[#60BCD8]">로그인하기</Button>
+            <Button
+              size="lg"
+              className="w-[100%]"
+              onClick={() => navigate('/login')}
+            >
+              로그인하기
+            </Button>
           </div>
           {testNumber.slice(0, 3).map((v, i) => (
             <div key={i} className="mt-4 h-28 w-[100%] rounded-lg bg-gray-300">

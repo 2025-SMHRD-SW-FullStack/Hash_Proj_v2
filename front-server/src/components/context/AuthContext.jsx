@@ -4,21 +4,27 @@ const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [userRole, setUserRole] = useState(null)  // 사용자 역할 추가
+  const [userRole, setUserRole] = useState(null) // 사용자 역할 추가
+  const [token, setToken] = useState(null) // 토큰 추가
 
-  const login = (role = 'USER') => {  // 기본값은 USER
+  const login = (role = 'USER', userToken = 'test-token-123') => {
+    // 기본값은 USER, 임시 토큰
     setIsLoggedIn(true)
     setUserRole(role)
+    setToken(userToken)
   }
-  
+
   const logout = () => {
     setIsLoggedIn(false)
     setUserRole(null)
+    setToken(null)
   }
 
   return (
     // Provider에 상태와 함수 전달 => useAuth()로 접근 가능
-    <AuthContext.Provider value={{ isLoggedIn, userRole, login, logout }}>
+    <AuthContext.Provider
+      value={{ isLoggedIn, userRole, token, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   )
