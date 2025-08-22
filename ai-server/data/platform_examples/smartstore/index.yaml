@@ -1,0 +1,5 @@
+platform: smartstore
+language: ko
+defaults:
+  toneLabel: 담백
+files: []

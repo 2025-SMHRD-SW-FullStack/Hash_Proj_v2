@@ -1,63 +1,69 @@
 import React from 'react'
-import logoImg from '/src/assets/images/logo.png'
+import Logo from '../../assets/images/ReSsol_Logo1.png'
 import styles from './Header.module.css'
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import useGoHome from '/src/hooks/useGoHome'
-import { logoutHandler } from '../../util/logoutHandler'
+import User from '../../assets/icons/ic_user.svg'
+import Notification from '../../assets/icons/ic_notification.svg'
+import Message from '../../assets/icons/ic_message.svg'
+import QRcode from '../../assets/icons/ic_qrcode.svg'
+import Button from '../common/Button'
+import Icon from '../common/Icon'
+import { useNavigate } from 'react-router-dom'
+import useAuthStore from '../../stores/authStore'
 
 const Header = () => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const goHome = useGoHome();
+  const navigate = useNavigate()
+  // 스토어에서 필요한 상태와 액션을 직접 가져옵니다.
+  const { isLoggedIn, logout: storeLogout } = useAuthStore()
 
-    // 메인, 로그인, 회원가입 페이지에서는 네비바 숨김 처리
-    const hideNav = location.pathname === '/' ||
-                location.pathname.startsWith('/login') ||
-                location.pathname.startsWith('/signup');
+  const logout = () => {
+    storeLogout() // 스토어의 logout 액션 호출
+    navigate('/')
+  }
 
-    // 로그인 상태 확인
-    const isLoggedIn = !!localStorage.getItem('accessToken');
-     
-    
+  const clickMessage = () => {}
 
-    /** 로그아웃 처리 함수 */
-    const handleLogout = () => {
-        logoutHandler();
-        alert('로그아웃 되었습니다.');
-        navigate('/');
-    }  
+  return (
+    <header className="sticky top-0 z-50 flex flex-row items-center justify-between bg-white text-[#222222] shadow-md">
+      {/* 왼쪽 영역 */}
+      <div className="flex items-center space-x-6">
+        <img
+          src={Logo}
+          alt="리쏠 로고"
+          className="m-4 h-[30px] cursor-pointer sm:h-[65px]"
+          onClick={() => navigate('/')}
+        />
+        <div className={styles.nav}>가게</div>
+        <div className={styles.nav}>상품</div>
+      </div>
 
-    return (
-        <div>
-            <header className={styles.wrapper}>
-                <img className={styles.logo} src={logoImg} alt="로고이미지" onClick={goHome} />
-                <div className={styles.authButtons}>
-                    {/* 로그인 상태에 따라 버튼 조건부 렌더링 */}
-                    {isLoggedIn ? (
-                        <>
-                            <Link to="/mypage">마이페이지</Link>
-                            <button onClick={handleLogout} className={styles.logoutBtn}>로그아웃</button>
-                        </>
-                    ) : (
-                        <>
-                            <Link to="/login">로그인</Link>
-                            <Link to="/signup">회원가입</Link>
-                        </>
-                    )}
-                    
-                </div>
-            </header>
+      {/* 오른쪽 영역 */}
+      <div className="mr-8 flex items-center space-x-4">
+        {/* TODO: 유저 구분해서 나타나도록 */}
+        {isLoggedIn && (
+          <Button variant="admin" size="md">
+            관리자 페이지
+          </Button>
+        )}
 
-            {/* 메인,로그인,회원가입 페이지 아니면 네비바 보여주기 */}
-            {!hideNav &&(   
-                <nav className={styles.nav}>
-                    <NavLink to='/item' className={({isActive}) => isActive ? styles.active : ''}>품목</NavLink>
-                    <NavLink to='/exhibition' className={({isActive}) => isActive ? styles.active : ''}>상품</NavLink>
-                    <NavLink to='/platform' className={({isActive}) => isActive ? styles.active : ''}>중개 플랫폼</NavLink>
-                    <NavLink to='/chatbot' className={({isActive}) => isActive ? styles.active : ''}>챗봇</NavLink>
-                </nav>
-            )}
-        </div>
-    )
+        {isLoggedIn ? (
+          <div className="flex items-center space-x-2">
+            <Button onClick={logout}>로그아웃</Button>
+            <Icon src={User} alt="마이 페이지" />
+            <Icon src={Notification} alt="알림" />
+            <Icon
+              src={Message}
+              alt="채팅"
+              onClick={() => navigate('/user/chat')}
+            />
+            <Icon src={QRcode} alt="QR 코드" />
+          </div>
+        ) : (
+          // TODO: 유저 구분해서 나타나도록
+          <Button onClick={() => navigate('/login')}>로그인</Button>
+        )}
+      </div>
+    </header>
+  )
 }
+
 export default Header

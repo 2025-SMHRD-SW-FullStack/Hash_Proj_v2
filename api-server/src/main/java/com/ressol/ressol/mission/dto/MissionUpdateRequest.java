@@ -1,4 +1,3 @@
-// src/main/java/com/ressol/ressol/mission/dto/MissionUpdateRequest.java
 package com.ressol.ressol.mission.dto;
 
 import com.ressol.ressol.mission.Mission;

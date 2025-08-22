@@ -1,0 +1,48 @@
+import React from 'react'
+import { Routes, Route } from 'react-router-dom'
+import PublicRouter from './PublicRouter'
+import UserRouter from './UserRouter'
+import AdminRouter from './AdminRouter'
+import MainPage from '../pages/mainPage/MainPage'
+import LoginPage from '../pages/authPage/LoginPage'
+import PhoneVerifiedHandler from '../pages/authPage/PhoneVerifiedHandler'
+import OAuthSuccess from '../pages/authPage/OAuthSuccess'
+import SignUpPage from '../pages/authPage/SignUpPage'
+import EmailSignUp from '../pages/authPage/EmailSignUpPage'
+import useAuthStore from '../stores/authStore'
+import MainLayout from '../components/layouts/MainLayout'
+
+const AppRouter = () => {
+  const { isLoggedIn } = useAuthStore() // 스토어에서 isLoggedIn 상태 가져오기
+
+  return (
+    <Routes>
+      <Route element={<MainLayout />}>
+        <Route path="/" element={<MainPage />} />
+
+        {/* 로그인 / 회원가입 관련 */}
+        <Route path="/login" element={<LoginPage />} />
+        {/* <Route path="/signup" element={<SignUpPage />} /> */}
+        <Route path="/email_signup" element={<EmailSignUp />} />
+
+        {/* 휴대폰 인증 관련 */}
+        <Route path="/phone-verified" element={<PhoneVerifiedHandler />} />
+        <Route path="/oauth-success" element={<OAuthSuccess />} />
+
+        {/* 비회원 전용 페이지들 */}
+        {!isLoggedIn && <Route path="/public/*" element={<PublicRouter />} />}
+
+        {/* 로그인한 사용자 전용 페이지들 */}
+        {/* TODO: 유저 구분 */}
+        {isLoggedIn && <Route path="/user/*" element={<UserRouter />} />}
+      </Route>
+      {/* 공통 페이지 - 모든 사용자가 접근 가능 */}
+
+      {/* 관리자 전용 페이지들 */}
+      {/* TODO: 유저 구분 */}
+      {isLoggedIn && <Route path="/admin/*" element={<AdminRouter />} />}
+    </Routes>
+  )
+}
+
+export default AppRouter

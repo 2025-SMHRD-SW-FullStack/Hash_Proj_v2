@@ -1,5 +1,23 @@
 @tailwind base;
 @tailwind components;
-@import "./assets/styles/global.css";
 @tailwind utilities;
-/* 여기엔 아무 커스텀도 넣지 않기 */
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+@font-face {
+  font-family: 'Pretendard-Regular';
+  src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff')
+    format('woff');
+  font-weight: 400;
+  font-style: normal;
+}
+
+body {
+  font-family: 'Pretendard-Regular', sans-serif;
+}

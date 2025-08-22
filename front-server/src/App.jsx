@@ -1,10 +1,13 @@
-import Router from './routes/Router';
+import React, { useState, useEffect } from 'react'
+import './App.css'
+import AppRouter from './routes/AppRouter'
+import { BrowserRouter } from 'react-router-dom'
 
-const App = () => {
+function App() {
   return (
-    <div className='global-container'>
-      <Router/>
-    </div>
+    <BrowserRouter>
+      <AppRouter />
+    </BrowserRouter>
   )
 }
 
