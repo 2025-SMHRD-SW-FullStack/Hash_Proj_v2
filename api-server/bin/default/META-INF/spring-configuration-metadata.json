@@ -2,31 +2,31 @@
   "groups": [
     {
       "name": "ai",
-      "type": "com.ressol.ressol.config.AiProperties",
-      "sourceType": "com.ressol.ressol.config.AiProperties"
+      "type": "com.meonjeo.meonjeo.config.AiProperties",
+      "sourceType": "com.meonjeo.meonjeo.config.AiProperties"
     },
     {
       "name": "ai.timeout",
-      "type": "com.ressol.ressol.config.AiProperties$Timeout",
-      "sourceType": "com.ressol.ressol.config.AiProperties",
-      "sourceMethod": "public com.ressol.ressol.config.AiProperties.Timeout getTimeout() "
+      "type": "com.meonjeo.meonjeo.config.AiProperties$Timeout",
+      "sourceType": "com.meonjeo.meonjeo.config.AiProperties",
+      "sourceMethod": "public com.meonjeo.meonjeo.config.AiProperties.Timeout getTimeout() "
     }
   ],
   "properties": [
     {
       "name": "ai.base-url",
       "type": "java.lang.String",
-      "sourceType": "com.ressol.ressol.config.AiProperties"
+      "sourceType": "com.meonjeo.meonjeo.config.AiProperties"
     },
     {
       "name": "ai.timeout.connect-ms",
       "type": "java.lang.Integer",
-      "sourceType": "com.ressol.ressol.config.AiProperties$Timeout"
+      "sourceType": "com.meonjeo.meonjeo.config.AiProperties$Timeout"
     },
     {
       "name": "ai.timeout.read-ms",
       "type": "java.lang.Integer",
-      "sourceType": "com.ressol.ressol.config.AiProperties$Timeout"
+      "sourceType": "com.meonjeo.meonjeo.config.AiProperties$Timeout"
     }
   ],
   "hints": []
