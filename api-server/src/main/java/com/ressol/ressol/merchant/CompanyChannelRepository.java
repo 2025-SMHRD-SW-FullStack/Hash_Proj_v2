@@ -1,8 +1,10 @@
 package com.ressol.ressol.merchant;
 
+import com.ressol.ressol.merchant.projection.NearbyChannelRow;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.*;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,16 +45,17 @@ public interface CompanyChannelRepository extends JpaRepository<CompanyChannel, 
             @Param("offset") int offset
     );
 
-    // ✅ 지역(시/구) → 동 가나다순
+    // ✅ 지역(시/구) → 동 가나다순 (enum 상수는 파라미터로 전달)
     @Query("""
         SELECT cc FROM CompanyChannel cc
-        WHERE cc.type = com.ressol.ressol.merchant.CompanyChannel.Type.OFFLINE
+        WHERE cc.type = :type
           AND cc.active = true
           AND (:sido IS NULL OR cc.sido = :sido)
           AND (:sigungu IS NULL OR cc.sigungu = :sigungu)
         ORDER BY cc.dong ASC, cc.displayName ASC
         """)
     List<CompanyChannel> findByRegionOrderByDongAsc(
+            @Param("type") CompanyChannel.Type type,
             @Param("sido") String sido,
             @Param("sigungu") String sigungu,
             Pageable pageable

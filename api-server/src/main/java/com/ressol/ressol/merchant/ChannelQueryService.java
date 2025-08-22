@@ -4,7 +4,7 @@ import com.ressol.ressol.merchant.dto.NearbyChannelResponse;
 import com.ressol.ressol.merchant.dto.RegionChannelResponse;
 import com.ressol.ressol.merchant.projection.NearbyChannelRow;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,12 +27,16 @@ public class ChannelQueryService {
 
     public List<RegionChannelResponse> findByRegion(String sido, String sigungu, int page, int size) {
         var pageable = PageRequest.of(Math.max(0, page), Math.max(1, size));
-        return repo.findByRegionOrderByDongAsc(sido, sigungu, pageable).stream()
+        return repo.findByRegionOrderByDongAsc(
+                        CompanyChannel.Type.OFFLINE, // ✅ enum을 파라미터로 전달
+                        sido, sigungu, pageable
+                ).stream()
                 .map(cc -> new RegionChannelResponse(
                         cc.getId(), cc.getCompanyId(), cc.getDisplayName(), cc.getAddress(),
                         cc.getLatitude() == null ? null : cc.getLatitude().doubleValue(),
                         cc.getLongitude() == null ? null : cc.getLongitude().doubleValue(),
                         cc.getSido(), cc.getSigungu(), cc.getDong()
-                )).toList();
+                ))
+                .toList();
     }
 }
