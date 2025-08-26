@@ -43,7 +43,11 @@ COOLSMS_API_KEY: ${COOLSMS_API_KEY}
 COOLSMS_API_SECRET: ${COOLSMS_API_SECRET}
 COOLSMS_FROM_NUMBER: ${COOLSMS_FROM_NUMBER}
 
-naver:
-  map:
-    client-id: ${NCP_MAPS_ID}
-    client-secret: ${NCP_MAPS_SECRET}
+toss:
+  successUrl: http://localhost:5173/pay/success
+  failUrl: http://localhost:5173/pay/fail
+
+sweettracker:
+  api-key: ${SWEETTRACKER_API_KEY}
+  base-url: https://info.sweettracker.co.kr
+  timeout-ms: 3000

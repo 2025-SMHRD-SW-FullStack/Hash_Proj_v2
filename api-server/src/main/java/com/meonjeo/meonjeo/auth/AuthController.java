@@ -1,8 +1,6 @@
 package com.meonjeo.meonjeo.auth;
 
 import com.meonjeo.meonjeo.phone.PhoneAuthService;
-import com.meonjeo.meonjeo.point.PointService;
-import com.meonjeo.meonjeo.referral.ReferralService;
 import com.meonjeo.meonjeo.user.User;
 import com.meonjeo.meonjeo.user.UserService;
 import com.meonjeo.meonjeo.user.dto.LoginRequest;
@@ -45,8 +43,6 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PhoneAuthService phoneAuthService;
-    private final ReferralService referralService;
-    private final PointService pointService;          // ✅ 생성자 주입(RequiredArgsConstructor)
 
     private boolean isWebClient(HttpServletRequest req) {
         String x = Optional.ofNullable(req.getHeader("X-Client")).orElse("web");
@@ -99,22 +95,8 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("DUPLICATE_EMAIL_OR_PHONE");
         }
 
-        // 3) 등록
-        User user = userService.registerUser(req); // 내부에서 enabled=true & phoneVerified=true 처리
-
-        // 4) 추천코드 처리: 추천인 찾기 → 자기 자신 아니면 추천인에게 포인트 지급 + referrer 저장(1회)
-        if (StringUtils.hasText(req.getReferrer())) {
-            referralService.findReferrerByCode(req.getReferrer()).ifPresent(referrer -> {
-                if (!referrer.getId().equals(user.getId())) {
-                    if (user.getReferrer() == null) {
-                        user.setReferrer(req.getReferrer().trim().toUpperCase());
-                        userService.save(user);
-                    }
-                    // ✅ 추천 가입 보상
-                    pointService.awardReferralSignup(referrer.getId(), user.getId());
-                }
-            });
-        }
+        // 3) 등록 (내부에서 enabled=true & phoneVerified=true 처리)
+        User user = userService.registerUser(req);
 
         return ResponseEntity.ok(new UserResponse(user));
     }

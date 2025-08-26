@@ -1,30 +1,24 @@
 package com.meonjeo.meonjeo.point;
 
+import com.meonjeo.meonjeo.point.dto.RedemptionStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name="point_redemptions", indexes={@Index(name="ix_redemption_user_time", columnList="user_id,created_at")})
+@Entity @Table(name="point_redemption")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class PointRedemption {
-
-    public enum Status { REQUESTED, APPROVED, REJECTED, CANCELED }
-
-    @Id @GeneratedValue(strategy=GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name="user_id", nullable=false) private Long userId;
-    @Column(name="amount",  nullable=false) private Long amount;
+    @Column(nullable=false) private Long userId;
+    @Column(nullable=false) private int amount;
 
-    @Column(name="channel") private String channel; // 예: "gifticon"
-    @Column(name="note")    private String note;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false) private RedemptionStatus status;
 
-    @Enumerated(EnumType.STRING) @Column(nullable=false)
-    private Status status;
-
-    @CreationTimestamp @Column(name="created_at")
     private LocalDateTime createdAt;
+    private LocalDateTime processedAt;
+
+    @PrePersist void pre(){ if(createdAt == null) createdAt = LocalDateTime.now(); }
 }
