@@ -25,23 +25,19 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 flex flex-row items-center justify-between bg-white text-[#222222] shadow-md">
       {/* 왼쪽 영역 */}
-      <div className="flex items-center space-x-6">
         <img
           src={Logo}
           alt="리쏠 로고"
           className="m-4 h-[30px] cursor-pointer sm:h-[65px]"
           onClick={() => navigate('/')}
         />
-        <div className={styles.nav}>가게</div>
-        <div className={styles.nav}>상품</div>
-      </div>
 
       {/* 오른쪽 영역 */}
       <div className="mr-8 flex items-center space-x-4">
         {/* TODO: 유저 구분해서 나타나도록 */}
         {isLoggedIn && (
           <Button variant="admin" size="md">
-            관리자 페이지
+            셀러 페이지
           </Button>
         )}
 

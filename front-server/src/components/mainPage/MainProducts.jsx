@@ -4,10 +4,15 @@ import arrowLeft from '../../assets/icons/ic_arrow_left.svg'
 import arrowRight from '../../assets/icons/ic_arrow_right.svg'
 import useWindowWidth from '../../hooks/useWindowWidth'
 import TestImg from '../../assets/images/ReSsol_TestImg.png'
+import { Navigate, useNavigate } from 'react-router-dom'
+import Product from '../common/Product'
+import { products } from '../../data/TestProducts.js'
+import { useProductDetail } from '../../hooks/useProductDetail.js'
 
-const MainMissions = ({ label }) => {
-  const missions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+const MainProducts = ({ label }) => {
   const width = useWindowWidth() // 1. 훅을 호출하여 현재 너비를 가져옵니다.
+  const navigate = useNavigate()
+  const goProductDetail = useProductDetail()
 
   // 👇 웹에서 5개, 모바일(sm)에서 3개, 그보다 작을 때 2개 보이도록 수정
   const itemsPerPage = useMemo(() => {
@@ -20,7 +25,7 @@ const MainMissions = ({ label }) => {
 
   const handleNext = () => {
     // 다음 페이지가 전체 아이템 수를 넘지 않도록 조건을 수정합니다.
-    if (startIndex + itemsPerPage < missions.length) {
+    if (startIndex + itemsPerPage < products.length) {
       setStartIndex(startIndex + itemsPerPage)
     }
   }
@@ -32,11 +37,21 @@ const MainMissions = ({ label }) => {
   }
 
   const isFirstPage = startIndex === 0
-  const isLastPage = startIndex + itemsPerPage >= missions.length
+  const isLastPage = startIndex + itemsPerPage >= products.length
 
   return (
     <div className="w-full">
-      <p className="mx-36 text-lg font-bold">{label} 미션</p>
+      <div className='flex w-full justify-between'>
+        <p className="mx-36 text-lg font-bold">{label}</p>
+        <div onClick={()=> navigate('/product')} className='flex items-center justify-between pr-20'>
+          <p className='text-xl'>더보기</p>
+          <Icon
+          src={arrowRight}
+          alt="오른쪽 이동"
+          className='cursor-pointer w-6 h-6'
+          />
+        </div>
+      </div>
       {/* 👇 이 div가 화살표와 아이템 목록을 모두 포함하도록 수정합니다. */}
       <div className="flex items-center justify-center gap-x-2">
         {/* 1. 왼쪽 화살표를 안으로 이동 */}
@@ -49,15 +64,13 @@ const MainMissions = ({ label }) => {
 
         {/* 2. 아이템 목록을 담는 컨테이너 */}
         <div className="flex justify-center gap-8">
-          {missions.slice(startIndex, startIndex + itemsPerPage).map((v, i) => (
-            <div key={i} className="flex-shrink-0">
-              <img
-                src={TestImg}
-                alt={`이미지${v}`}
-                className="h-48 w-48 rounded-lg bg-gray-100"
-              />
-              <p className="mt-2 w-48 truncate text-center">[지역] 상호명</p>
-            </div>
+          {products.slice(startIndex, startIndex + itemsPerPage).map((v) => (
+            <Product
+            key={v.id}
+            product={v}
+            onClick={goProductDetail}
+            isSimple={true} 
+            />
           ))}
         </div>
 
@@ -73,4 +86,4 @@ const MainMissions = ({ label }) => {
   )
 }
 
-export default MainMissions
+export default MainProducts
