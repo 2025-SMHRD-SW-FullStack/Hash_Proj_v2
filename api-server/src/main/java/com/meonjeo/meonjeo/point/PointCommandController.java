@@ -1,0 +1,47 @@
+package com.meonjeo.meonjeo.point;
+
+import com.meonjeo.meonjeo.point.dto.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.*;
+import org.springframework.web.bind.annotation.*;
+
+@Tag(name="포인트 교환")
+@RestController
+@RequiredArgsConstructor
+public class PointCommandController {
+
+    private final PointRedemptionService redemptionService;
+    private final PointRedemptionRepository redemptionRepo;
+
+    @Operation(summary="포인트 교환 요청(5천/1만/3만, 잔액 락 처리)")
+    @PostMapping("/api/me/points/redemptions")
+    public RedemptionResponse request(@RequestBody @Valid RedemptionCreateRequest req){
+        return redemptionService.request(req.amount());
+    }
+
+    // ===== 관리자 =====
+
+    @Operation(summary="[관리자] 교환 요청 목록(대기중)")
+    @GetMapping("/api/admin/points/redemptions")
+    public Page<RedemptionResponse> listRequested(@RequestParam(defaultValue="0") int page,
+                                                  @RequestParam(defaultValue="20") int size){
+        var pageable = PageRequest.of(Math.max(0,page), Math.min(100,size));
+        return redemptionRepo.findByStatusOrderByIdAsc(RedemptionStatus.REQUESTED, pageable)
+                .map(PointRedemptionService::toDto);
+    }
+
+    @Operation(summary="[관리자] 교환 승인")
+    @PostMapping("/api/admin/points/redemptions/{id}/approve")
+    public RedemptionResponse approve(@PathVariable Long id){
+        return redemptionService.approve(id);
+    }
+
+    @Operation(summary="[관리자] 교환 반려(락 해제)")
+    @PostMapping("/api/admin/points/redemptions/{id}/reject")
+    public RedemptionResponse reject(@PathVariable Long id){
+        return redemptionService.reject(id);
+    }
+}

@@ -32,7 +32,7 @@ public class VerifyPhoneAuthService implements PhoneAuthService {
         redis.opsForValue().set(codeKey(to), code, Duration.ofSeconds(codeTtlSeconds));
 
         long min = Math.max(1, codeTtlSeconds / 60);
-        smsProvider.send(to, "[ReSsol] 본인인증번호: " + code + " (유효 " + min + "분)");
+        smsProvider.send(to, "[먼저써봄] 본인인증번호: " + code + " (유효 " + min + "분)");
     }
 
     @Override

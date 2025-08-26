@@ -13,33 +13,25 @@ public class UserResponse {
 
     private Long id;
     private String email;
-    private String name;
-    private String naverNickname;
+    private String nickname;
+    private String profileImageUrl;
     private String phoneNumber;
     private boolean phoneVerified;
-    private String address;
     private String gender;
     private String birthDate;
-    private String ageGroup;
-    private String referrer;
-    private String naverReviewUrl; // ✅ 유지
     private String provider;
     private boolean socialUser;
 
-    public UserResponse(User user) {
-        this.id = user.getId();
-        this.email = user.getEmail();
-        this.name = user.getName();
-        this.naverNickname = user.getNaverNickname();
-        this.phoneNumber = user.getPhoneNumber();
-        this.phoneVerified = user.isPhoneVerified();
-        this.address = user.getAddress();
-        this.gender = user.getGender() != null ? user.getGender().name() : null;
-        this.birthDate = user.getBirthDate() != null ? user.getBirthDate().format(DateTimeFormatter.ISO_LOCAL_DATE) : null;
-        this.ageGroup = user.getAgeGroup() != null ? user.getAgeGroup().name() : null;
-        this.referrer = user.getReferrer();
-        this.naverReviewUrl = user.getNaverReviewUrl();
-        this.provider = user.getProvider() != null ? user.getProvider().name() : null;
-        this.socialUser = user.getProvider() != null && user.getProvider() != AuthProvider.LOCAL;
+    public UserResponse(User u) {
+        this.id = u.getId();
+        this.email = u.getEmail();
+        this.nickname = u.getNickname();
+        this.profileImageUrl = u.getProfileImageUrl();
+        this.phoneNumber = u.getPhoneNumber();
+        this.phoneVerified = u.isPhoneVerified();
+        this.gender = u.getGender() != null ? u.getGender().name() : null;
+        this.birthDate = u.getBirthDate() != null ? u.getBirthDate().format(DateTimeFormatter.ISO_LOCAL_DATE) : null;
+        this.provider = u.getProvider() != null ? u.getProvider().name() : null;
+        this.socialUser = u.getProvider() != null && u.getProvider() != AuthProvider.LOCAL;
     }
 }
