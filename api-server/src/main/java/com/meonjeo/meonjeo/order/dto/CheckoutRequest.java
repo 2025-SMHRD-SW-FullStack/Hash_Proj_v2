@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
@@ -31,6 +32,7 @@ public record CheckoutRequest(
 
         // 배송 요청사항(선택)
         @Schema(description = "배송 요청사항(선택)", example = "문 앞에 놓아주세요")
+        @Size(max = 200)                     // ✅ 최대 200자
         String requestMemo,
 
         // true면 보유 포인트 전액 사용

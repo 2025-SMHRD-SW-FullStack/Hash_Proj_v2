@@ -1,4 +1,3 @@
-// src/main/java/com/meonjeo/meonjeo/order/OrderService.java
 package com.meonjeo.meonjeo.order;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -73,6 +72,9 @@ public class OrderService {
         UserAddress addr = addressRepo.findByIdAndUserId(req.addressId(), userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "ADDRESS_NOT_FOUND_OR_FORBIDDEN"));
 
+        // 배송 요청사항 서버측 방어(trim, 빈문자→null, 200자 컷)
+        String safeMemo = sanitizeMemo(req.requestMemo());
+
         Order order = Order.builder()
                 .userId(userId)
                 .status(OrderStatus.PENDING)
@@ -81,9 +83,9 @@ public class OrderService {
                 .addr1(addr.getAddr1())
                 .addr2(addr.getAddr2())
                 .zipcode(addr.getZipcode())
-                .requestMemo(req.requestMemo())
-                .createdAt(java.time.LocalDateTime.now())
-                .shippingFee(FLAT_SHIPPING_FEE)              // ⬅️ 고정 배송비 세팅
+                .requestMemo(safeMemo)                    // ✅ 요청사항 저장
+                .createdAt(LocalDateTime.now())
+                .shippingFee(FLAT_SHIPPING_FEE)
                 .build();
         if (order.getItems() == null) order.setItems(new ArrayList<>());
 
@@ -93,7 +95,8 @@ public class OrderService {
         Long masterSellerId = null;
 
         for (CheckoutItem ci : req.items()) {
-            if (ci.qty() < 1) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "QTY_MIN_1");
+            if (ci.qty() < 1)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "QTY_MIN_1");
 
             Product p = productRepo.findById(ci.productId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND: " + ci.productId()));
@@ -292,9 +295,17 @@ public class OrderService {
         }
         return sb.toString();
     }
+
     private static String newOrderUid(Long id) {
         String date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
         String rand = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
         return "ORD-" + date + "-" + String.format("%08d", id) + "-" + rand;
+    }
+
+    private static String sanitizeMemo(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        if (t.isEmpty()) return null;
+        return (t.length() > 200) ? t.substring(0, 200) : t;
     }
 }

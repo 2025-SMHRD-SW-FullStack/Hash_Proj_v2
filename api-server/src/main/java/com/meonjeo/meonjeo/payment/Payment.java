@@ -33,5 +33,7 @@ public class Payment {
     private int amount;                   // 승인 금액
     private OffsetDateTime approvedAt;
 
-    @Lob private String rawResponseJson;  // 원본 저장
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String rawResponseJson;  // 원본 저장
 }

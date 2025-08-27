@@ -7,8 +7,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import com.meonjeo.meonjeo.security.AuthSupport;
 
 import java.util.List;
@@ -60,11 +62,10 @@ public class AddressController {
         req.setId(null);
         req.setUserId(uid);
 
-        // 기본 주소 단일성 보장
-        if (Boolean.TRUE.equals(req.isPrimaryAddress())) {
+        // 기본 주소 단일성 보장 + 최소 1개 보장
+        if (req.isPrimaryAddress()) {
             repo.clearPrimaryForUser(uid);
         } else if (!repo.existsByUserIdAndPrimaryAddressTrue(uid)) {
-            // 아직 기본주소가 하나도 없으면 자동으로 기본 지정
             req.setPrimaryAddress(true);
         }
         return repo.save(req).getId();
@@ -75,19 +76,31 @@ public class AddressController {
     @Transactional
     public void update(@PathVariable Long id, @Valid @RequestBody UserAddress req) {
         Long uid = currentUserId();
-        UserAddress a = repo.findByIdAndUserId(id, uid).orElseThrow(() -> new IllegalArgumentException("ADDRESS_NOT_FOUND"));
+        UserAddress a = repo.findByIdAndUserId(id, uid)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ADDRESS_NOT_FOUND"));
 
+        boolean wasPrimary = a.isPrimaryAddress();
+        boolean willPrimary = req.isPrimaryAddress();
+
+        // 필드 반영
         a.setReceiver(req.getReceiver());
         a.setPhone(req.getPhone());
         a.setAddr1(req.getAddr1());
         a.setAddr2(req.getAddr2());
         a.setZipcode(req.getZipcode());
 
-        boolean becomingPrimary = req.isPrimaryAddress();
-        if (becomingPrimary) {
+        if (willPrimary) {
+            // 나를 기본으로 설정 → 나 외 모두 false
             repo.clearPrimaryExcept(uid, a.getId());
+            a.setPrimaryAddress(true);
+        } else {
+            // 기본 해제하려는 대상이 "유일한 기본"이면 차단 (프론트에서 경고 모달 띄우면 됨)
+            if (wasPrimary && repo.countByUserIdAndPrimaryAddressTrue(uid) == 1) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "PRIMARY_REQUIRED");
+            }
+            a.setPrimaryAddress(false);
         }
-        a.setPrimaryAddress(becomingPrimary);
+
         repo.save(a);
     }
 
@@ -96,12 +109,15 @@ public class AddressController {
     @Transactional
     public void delete(@PathVariable Long id) {
         Long uid = currentUserId();
-        UserAddress a = repo.findByIdAndUserId(id, uid).orElseThrow(() -> new IllegalArgumentException("ADDRESS_NOT_FOUND"));
+        UserAddress a = repo.findByIdAndUserId(id, uid)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ADDRESS_NOT_FOUND"));
+
         boolean wasPrimary = a.isPrimaryAddress();
         repo.delete(a);
 
-        // 기본 주소가 사라졌다면 가장 최근 주소를 기본으로 승격
-        if (wasPrimary) {
+        // 기본 주소가 사라졌다면 자동 승격(방법 A)
+        if (wasPrimary && repo.existsByUserId(uid) && !repo.existsByUserIdAndPrimaryAddressTrue(uid)) {
+            // 최근 추가분을 기본으로 승격(원하면 Asc로 바꿔 가장 오래된걸 승격해도 됨)
             repo.findTopByUserIdOrderByIdDesc(uid).ifPresent(next -> {
                 next.setPrimaryAddress(true);
                 repo.save(next);

@@ -1,0 +1,108 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../config/axiosInstance";
+
+export default function PaySuccess() {
+  const navi = useNavigate();
+  const [phase, setPhase] = useState("processing"); // 'processing' | 'success' | 'error'
+  const [msg, setMsg] = useState("처리중…");
+  const [result, setResult] = useState(null); // { orderId, paymentKey, method, totalAmount, approvedAt }
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const paymentKey = url.searchParams.get("paymentKey");
+    const orderId = url.searchParams.get("orderId");
+    const amount = url.searchParams.get("amount");
+
+    // 필수 파라미터 확인
+    if (!paymentKey || !orderId || !amount) {
+      setPhase("error");
+      setMsg("필수 파라미터가 누락되었습니다. (paymentKey / orderId / amount)");
+      return;
+    }
+
+    (async () => {
+      try {
+        setPhase("processing");
+        setMsg("결제를 확정하고 있습니다…");
+
+        // 서버 GET 어댑터 호출
+        const { data } = await api.get("/api/payments/toss/confirm", {
+          params: { paymentKey, orderId, amount },
+        });
+
+        // data: { orderId, paymentKey, method, totalAmount, approvedAt }
+        setResult(data);
+        setPhase("success");
+        setMsg("결제가 완료되었습니다.");
+      } catch (err) {
+        // 에러 메시지 정리
+        const m =
+          err?.response?.data?.message ||
+          err?.message ||
+          "결제 확정 중 오류가 발생했습니다.";
+        setPhase("error");
+        setMsg(m);
+      }
+    })();
+  }, []);
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-10">
+      <h1 className="text-2xl font-semibold mb-4">결제 결과</h1>
+
+      {phase === "processing" && (
+        <div className="rounded-lg bg-gray-50 text-gray-700 p-4">{msg}</div>
+      )}
+
+      {phase === "success" && (
+        <div className="rounded-lg bg-green-50 text-green-700 p-4">
+          <div className="font-medium mb-1">{msg}</div>
+          {result && (
+            <div className="text-sm space-y-1">
+              <div>
+                <span className="font-medium">주문번호</span>: {result.orderId}
+              </div>
+              <div>
+                <span className="font-medium">결제키</span>: {result.paymentKey}
+              </div>
+              <div>
+                <span className="font-medium">결제수단</span>: {result.method}
+              </div>
+              <div>
+                <span className="font-medium">결제금액</span>:{" "}
+                {Number(result.totalAmount).toLocaleString()}원
+              </div>
+              <div>
+                <span className="font-medium">승인시각</span>:{" "}
+                {result.approvedAt}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {phase === "error" && (
+        <div className="rounded-lg bg-red-50 text-red-700 p-4">
+          <div className="font-medium mb-1">결제 처리 실패</div>
+          <div className="text-sm whitespace-pre-line">{msg}</div>
+        </div>
+      )}
+
+      <div className="mt-6 flex gap-3">
+        <button
+          onClick={() => navi("/")}
+          className="h-10 px-4 rounded-lg border hover:bg-gray-50"
+        >
+          홈으로
+        </button>
+        <button
+          onClick={() => navi(-1)}
+          className="h-10 px-4 rounded-lg border hover:bg-gray-50"
+        >
+          이전으로
+        </button>
+      </div>
+    </div>
+  );
+}

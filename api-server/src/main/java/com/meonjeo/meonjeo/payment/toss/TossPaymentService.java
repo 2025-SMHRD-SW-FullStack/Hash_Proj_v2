@@ -11,6 +11,8 @@ import com.meonjeo.meonjeo.payment.toss.dto.TossConfirmRequest;
 import com.meonjeo.meonjeo.payment.toss.dto.TossConfirmResponse;
 import com.meonjeo.meonjeo.payment.toss.dto.TossFailRequest;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;                                   // ★ 추가
+import org.slf4j.LoggerFactory;                           // ★ 추가
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -28,6 +30,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class TossPaymentService {
 
+    private static final Logger log = LoggerFactory.getLogger(TossPaymentService.class); // ★
+
     private final WebClient tossWebClient;
     private final OrderRepository orderRepo;
     private final OrderService orderService;
@@ -42,7 +46,7 @@ public class TossPaymentService {
 
         // 2) 0원 결제(포인트 전액) 멱등 처리
         if (o.getPayAmount() == 0) {
-            String zeroKey = "ZERO_PAY:" + o.getOrderUid(); // ★ 유니크 키(주문별)
+            String zeroKey = "ZERO_PAY:" + o.getOrderUid();
             try {
                 payRepo.save(Payment.builder()
                         .orderId(o.getId()).provider("TOSS")
@@ -73,43 +77,46 @@ public class TossPaymentService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "DUPLICATE_PAYMENT_KEY_FOR_DIFFERENT_ORDER");
         }
 
-        // 5) 멱등2: 이미 주문이 PAID면 중복 호출로 간주하여 응답
-        if (o.getStatus() == OrderStatus.PAID) {
-            return new TossConfirmResponse(o.getOrderUid(), req.paymentKey(), "UNKNOWN", o.getPayAmount(), OffsetDateTime.now().toString());
+        // 5) 멱등2: 이미 주문이 PAID면 기존 결제 정보 반환(UX 개선)
+        if (o.getStatus() == OrderStatus.PAID) {                                  // ★ 개선
+            Payment p = payRepo.findFirstByOrderIdOrderByIdDesc(o.getId()).orElse(null);
+            String method = (p != null && p.getMethod() != null) ? p.getMethod() : "UNKNOWN";
+            OffsetDateTime approvedAt = (p != null && p.getApprovedAt() != null) ? p.getApprovedAt() : OffsetDateTime.now();
+            return new TossConfirmResponse(o.getOrderUid(), req.paymentKey(), method, o.getPayAmount(), String.valueOf(approvedAt));
         }
 
-        // 6) Toss 승인 호출(서버-서버, Basic Auth는 WebClient에 주입됨)
+        // 6) Toss 승인 호출
         Map<String,Object> res;
         try {
             res = tossWebClient.post()
                     .uri("/v1/payments/confirm")
                     .bodyValue(Map.of(
                             "paymentKey", req.paymentKey(),
-                            "orderId", req.orderId(),   // 우리 서버의 orderUid
+                            "orderId", req.orderId(),
                             "amount", req.amount()
                     ))
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, clientResponse ->
                             clientResponse.bodyToMono(Map.class).defaultIfEmpty(Map.of())
                                     .map(body -> {
-                                        // 외부 상세는 마스킹, 상태코드만 반영
                                         HttpStatus status = HttpStatus.valueOf(clientResponse.statusCode().value());
+                                        log.warn("TOSS_CONFIRM_FAILED status={} orderId={} body={}", status, req.orderId(), body); // ★
                                         return new ResponseStatusException(status, "TOSS_CONFIRM_FAILED");
                                     })
                     )
                     .bodyToMono(Map.class)
                     .block();
         } catch (ResponseStatusException e) {
-            // onStatus에서 올린 예외 그대로
             throw e;
         } catch (WebClientResponseException e) {
-            // 네트워크/프로토콜 오류 → 502로 마스킹
+            log.error("TOSS_UPSTREAM_ERROR orderId={} status={} body={}", req.orderId(), e.getStatusCode(), e.getResponseBodyAsString()); // ★
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "TOSS_UPSTREAM_ERROR");
         } catch (Exception e) {
+            log.error("TOSS_COMMUNICATION_ERROR orderId={} err={}", req.orderId(), e.toString()); // ★
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "TOSS_COMMUNICATION_ERROR");
         }
 
-        // 7) 응답 상호 대조(추가 방어)
+        // 7) 응답 상호 대조
         String resOrderId = asString(res.get("orderId"), null);
         if (resOrderId != null && !Objects.equals(resOrderId, req.orderId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ORDER_ID_MISMATCH");
@@ -123,7 +130,7 @@ public class TossPaymentService {
         String approvedAtStr = asString(res.get("approvedAt"), OffsetDateTime.now().toString());
         OffsetDateTime approvedAt = safeParseOffsetDateTime(approvedAtStr);
 
-        // 8) 저장(유니크 충돌 시 멱등 전환)
+        // 8) 저장(유니크 충돌 시 멱등)
         try {
             payRepo.save(Payment.builder()
                     .orderId(o.getId()).provider("TOSS")
@@ -146,9 +153,9 @@ public class TossPaymentService {
 
     @Transactional
     public void fail(TossFailRequest req){
-        // 위젯 실패/취소: 포인트 선차감 복구(멱등)
         Order o = orderRepo.findByOrderUid(req.orderId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND"));
+        // 포인트 롤백(멱등)
         orderService.rollbackPointLock(o.getId());
     }
 

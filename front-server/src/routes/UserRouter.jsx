@@ -5,6 +5,8 @@ import MyPage from '../pages/mypage/MyPage'
 import UserInfo from '../components/mypage/UserInfo'
 import ComInfo from '../components/mypage/ComInfo'
 import OrderPage from '../pages/OrderPage'
+import PaySuccess from '../pages/PaySuccess'
+import PayFail from '../pages/PayFail'
 
 const UserRouter = () => {
   return (
@@ -21,6 +23,7 @@ const UserRouter = () => {
         <Route path="user_info" element={<UserInfo />} />
         <Route path="com_info" element={<ComInfo />} />
       </Route>
+      
     </Routes>
   )
 }
