@@ -1,3 +1,4 @@
+// src/main/java/com/meonjeo/meonjeo/order/OrderService.java
 package com.meonjeo.meonjeo.order;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -30,20 +32,44 @@ public class OrderService {
     private final OrderRepository orderRepo;
     private final ProductRepository productRepo;
     private final ProductVariantRepository variantRepo;
-    private final UserAddressRepository addressRepo;   // ⬅️ 추가
+    private final UserAddressRepository addressRepo;
     private final PointLedgerPort pointLedger;
     private final ObjectMapper objectMapper;
-    private final AuthSupport auth;                   // ⬅️ 추가
+    private final AuthSupport auth;
+
+    private static final int FLAT_SHIPPING_FEE = 3000;
 
     private Long currentUserId() { return auth.currentUserId(); }
 
-    /** 체크아웃: 주소록 기반 + 옵션 Map 매칭 */
+    @Transactional
+    public void manualConfirm(Long orderId) {
+        Long uid = currentUserId();
+        Order o = orderRepo.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND"));
+
+        if (!Objects.equals(o.getUserId(), uid))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
+
+        if (o.getDeliveredAt() == null)
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "NOT_DELIVERED");
+
+        LocalDateTime deadline = o.getDeliveredAt().plusDays(7);
+        if (LocalDateTime.now().isAfter(deadline))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CONFIRM_WINDOW_CLOSED");
+
+        if (o.getConfirmedAt() != null) return; // 멱등
+
+        o.setStatus(OrderStatus.CONFIRMED);
+        o.setConfirmedAt(LocalDateTime.now());
+        o.setConfirmationType(Order.ConfirmationType.MANUAL);
+        orderRepo.save(o);
+    }
+
     @Transactional
     public CheckoutResponse checkout(CheckoutRequest req) {
-
         Long userId = currentUserId();
 
-        // 0) 주소 소유권 검증 + 스냅샷
+        // 0) 주소 소유 및 스냅샷
         UserAddress addr = addressRepo.findByIdAndUserId(req.addressId(), userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "ADDRESS_NOT_FOUND_OR_FORBIDDEN"));
 
@@ -57,20 +83,27 @@ public class OrderService {
                 .zipcode(addr.getZipcode())
                 .requestMemo(req.requestMemo())
                 .createdAt(java.time.LocalDateTime.now())
+                .shippingFee(FLAT_SHIPPING_FEE)              // ⬅️ 고정 배송비 세팅
                 .build();
+        if (order.getItems() == null) order.setItems(new ArrayList<>());
 
-        // ✅ 빌더가 null로 만드는 걸 대비해 안전 초기화
-        if (order.getItems() == null) {
-            order.setItems(new ArrayList<>());
-        }
+        int total = 0; // 상품 총액
 
-        int total = 0;
+        // ✅ 단일 셀러 강제
+        Long masterSellerId = null;
 
         for (CheckoutItem ci : req.items()) {
             if (ci.qty() < 1) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "QTY_MIN_1");
 
             Product p = productRepo.findById(ci.productId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND: " + ci.productId()));
+
+            // 셀러 일치성 검사
+            if (masterSellerId == null) {
+                masterSellerId = p.getSellerId();
+            } else if (!Objects.equals(masterSellerId, p.getSellerId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "MULTI_SELLER_NOT_SUPPORTED");
+            }
 
             String[] labels = { p.getOption1Name(), p.getOption2Name(), p.getOption3Name(), p.getOption4Name(), p.getOption5Name() };
             boolean hasAnyLabel = Arrays.stream(labels).anyMatch(Objects::nonNull);
@@ -103,48 +136,68 @@ public class OrderService {
             if (v.getStock() < ci.qty())
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "OUT_OF_STOCK: " + snapshotKey(labels, vals));
 
-            int base = p.getSalePrice() > 0 ? p.getSalePrice() : p.getBasePrice();
-            int unit = base + v.getAddPrice();
+            // 옵션가 ±50% 2차 방어
+            int baseForCheck = (p.getSalePrice() > 0 ? p.getSalePrice() : p.getBasePrice());
+            int limit = (int)Math.ceil(baseForCheck * 0.5);
+            if (Math.abs(v.getAddPrice()) > limit) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OPTION_ADD_PRICE_EXCEEDS_50PCT");
+            }
 
+            int unit = baseForCheck + v.getAddPrice();
             String optionSnapshotJson = snapshotJson(labels, vals);
 
             order.getItems().add(OrderItem.builder()
                     .order(order)
                     .productId(p.getId())
+                    .sellerId(p.getSellerId())
                     .productNameSnapshot(p.getName())
                     .unitPrice(unit)
                     .qty(ci.qty())
+                    .feedbackPointSnapshot(p.getFeedbackPoint())
                     .optionSnapshotJson(optionSnapshotJson)
                     .build());
 
-            total += unit * ci.qty();
+            total += unit * ci.qty(); // 상품 총액 누적
         }
+
+        // ===== 결제 대상: 상품합계 + 배송비 =====
+        int shippingFee = FLAT_SHIPPING_FEE;
+        int payableBase = total + shippingFee;
 
         int balance = pointLedger.getBalance(userId);
-        int want = req.useAllPoint() ? total : req.usePoint();
-        int usePoint = Math.max(0, Math.min(want, Math.min(balance, total)));
-        int pay = Math.max(0, total - usePoint);
+        int want = req.useAllPoint() ? payableBase : req.usePoint();
+        int usePoint = Math.max(0, Math.min(want, Math.min(balance, payableBase)));
+        int pay = Math.max(0, payableBase - usePoint);
 
-        if (usePoint > 0) {
-            pointLedger.spend(userId, usePoint, "ORDER_PAY", "order:pre");
-        }
-
-        order.setTotalPrice(total);
+        order.setTotalPrice(total);     // 상품 총액
         order.setUsedPoint(usePoint);
-        order.setPayAmount(pay);
+        order.setPayAmount(pay);        // 실제 결제금액(상품+배송-포인트)
 
+        // 저장 → orderUid 생성
         Order saved = orderRepo.save(order);
         saved.setOrderUid(newOrderUid(saved.getId()));
         orderRepo.save(saved);
 
-        return new CheckoutResponse(saved.getId(), saved.getOrderUid(), total, usePoint, pay);
+        // 포인트 선차감(멱등)
+        if (usePoint > 0) {
+            pointLedger.spend(userId, usePoint, "ORDER_PAY_PRE", "order:pre:" + saved.getId());
+        }
+
+        // 응답
+        return new CheckoutResponse(
+                saved.getId(),
+                saved.getOrderUid(),
+                total,
+                shippingFee,
+                usePoint,
+                pay
+        );
     }
 
     @Transactional
     public void finalizePaid(Long orderId) {
         Order o = orderRepo.findById(orderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND"));
-
         if (o.getStatus() == OrderStatus.PAID) return;
 
         for (OrderItem it : o.getItems()) {
@@ -158,11 +211,11 @@ public class OrderService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
                             "PAID_FINALIZE_VARIANT_MISSING: " + snapshotKey(labels, vals)));
 
-            if (v.getStock() < it.getQty())
+            int updated = variantRepo.decreaseStockIfEnough(v.getId(), it.getQty());
+            if (updated != 1) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "PAID_FINALIZE_OUT_OF_STOCK: " + snapshotKey(labels, vals));
-
-            v.setStock(v.getStock() - it.getQty());
+                        "PAID_FINALIZE_OUT_OF_STOCK_OR_RACE: " + snapshotKey(labels, vals));
+            }
         }
 
         o.setStatus(OrderStatus.PAID);
@@ -174,7 +227,7 @@ public class OrderService {
         Order o = orderRepo.findById(orderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND"));
         if (o.getUsedPoint() > 0) {
-            pointLedger.accrue(o.getUserId(), o.getUsedPoint(), "ORDER_CANCEL", "order:cancel:"+o.getId());
+            pointLedger.accrue(o.getUserId(), o.getUsedPoint(), "ORDER_PAY_PRE_ROLLBACK", "order:pre:"+o.getId());
         }
     }
 

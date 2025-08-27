@@ -1,3 +1,4 @@
+// src/main/java/com/meonjeo/meonjeo/order/Order.java
 package com.meonjeo.meonjeo.order;
 
 import com.meonjeo.meonjeo.common.OrderStatus;
@@ -6,28 +7,24 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/**
- * 주문 마스터
- * - 금액/상품명/옵션 등은 하위 OrderItem의 스냅샷을 기준으로 계산됨.
- * - orderUid는 결제사(Toss)에 전달할 고유 문자열. 예: ORD-YYYYMMDD-랜덤
- */
 @Entity @Table(name="orders")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Order {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 결제사에 전달하는 주문 식별자(고유) */
     private String orderUid;
-
-    /** 주문자(User) 식별자 */
     private Long userId;
 
-    /** 주문 상태(예: CREATED, PAID, CONFIRMED, CANCELED 등) */
-    @Enumerated(EnumType.STRING) private OrderStatus status;
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status;
 
-    /** 상품 총액(옵션/수량 반영) */
+    /** 상품 총액(옵션/수량 반영, 배송비 제외) */
     private int totalPrice;
+
+    /** 배송비(고정 3,000원) */
+    @Column(name = "shipping_fee")
+    private int shippingFee;
 
     /** 사용 포인트(원) */
     private int usedPoint;
@@ -42,10 +39,22 @@ public class Order {
     private String requestMemo;
 
     private LocalDateTime createdAt;
-    /** 구매 확정 시각(예: D+7 자동 확정 등) */
+
+    /** 모든 배송이 완료된 시각(최초 1회 확정) */
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
+
+    /** 구매 확정 시각 */
     private LocalDateTime confirmedAt;
+
+    /** 구매확정 방식: MANUAL(사용자) / AUTO(배치) */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "confirmation_type", length = 16)
+    private ConfirmationType confirmationType;
 
     @OneToMany(mappedBy="order", cascade=CascadeType.ALL, orphanRemoval=true)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
+
+    public enum ConfirmationType { MANUAL, AUTO }
 }

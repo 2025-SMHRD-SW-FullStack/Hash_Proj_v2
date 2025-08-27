@@ -4,4 +4,5 @@ import java.util.Optional;
 
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     Optional<Feedback> findByOrderItemIdAndUserId(Long orderItemId, Long userId);
+    boolean existsByOrderItemIdAndUserId(Long orderItemId, Long userId);
 }

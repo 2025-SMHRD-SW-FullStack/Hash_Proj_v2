@@ -1,6 +1,7 @@
 package com.meonjeo.meonjeo.point;
 
 import com.meonjeo.meonjeo.point.dto.*;
+import com.meonjeo.meonjeo.security.AuthSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +18,9 @@ public class PointQueryController {
 
     private final PointLedgerRepository ledgerRepo;
     private final PointRedemptionRepository redemptionRepo;
+    private final AuthSupport auth;
 
-    private Long currentUserId(){ return 1L; } // TODO: Security에서 주입
+    private Long currentUserId(){ return auth.currentUserId(); }
 
     @Operation(summary="내 포인트 잔액 조회")
     @GetMapping("/balance")
@@ -47,8 +49,8 @@ public class PointQueryController {
 
     @Operation(summary="내 포인트 교환 내역(페이지네이션)")
     @GetMapping("/redemptions")
-    public org.springframework.data.domain.Page<RedemptionResponse> myRedemptions(@RequestParam(defaultValue="0") int page,
-                                                                                  @RequestParam(defaultValue="10") int size){
+    public Page<RedemptionResponse> myRedemptions(@RequestParam(defaultValue="0") int page,
+                                                  @RequestParam(defaultValue="10") int size){
         Pageable pageable = PageRequest.of(Math.max(0,page), Math.min(100,size));
         return redemptionRepo.findByUserIdOrderByIdDesc(currentUserId(), pageable)
                 .map(PointRedemptionService::toDto);

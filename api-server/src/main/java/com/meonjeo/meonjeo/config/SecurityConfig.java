@@ -22,8 +22,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.core.env.Environment;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -35,6 +37,24 @@ public class SecurityConfig {
     private final CustomUserDetailsService customUserDetailsService;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
+    private final Environment env;
+
+    // ✅ 정확한 Origin만 허용 (크리덴셜 허용 시 * 사용 불가)
+    private static final List<String> DEV_ORIGINS = List.of(
+            "http://localhost:5173",
+            "http://localhost:3000"
+    );
+    private static final List<String> PROD_ORIGINS = List.of(
+            // TODO: 실제 도메인으로 필요시 수정
+            "https://meonjeo.com",
+            "https://www.meonjeo.com",
+            "https://dev.meonjeo.com"
+    );
+
+    private List<String> resolveAllowedOrigins() {
+        var profiles = Arrays.asList(env.getActiveProfiles());
+        return profiles.contains("prod") ? PROD_ORIGINS : DEV_ORIGINS;
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -59,15 +79,27 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/sms/**",
 
+                                // ✅ 공개: 상품 목록/상세
+                                "/api/products/**",
+
                                 // ✅ 공개 채널 조회(지도/리스트)
                                 "/api/channels/**",
 
                                 // OAuth2 엔드포인트
-                                "/oauth2/**",
-                                "/login/oauth2/**"
+                                "/oauth2/**", "/login/oauth2/**"
                         ).permitAll()
+
+                        // ✅ 관리자 잠금
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/seller/**").hasAnyRole("SELLER","ADMIN")
+
+                        // ✅ 광고 관리자/셀러 잠금 (Step2에서 추가한 부분 유지)
+                        .requestMatchers("/api/ads/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/ads/seller/**").hasAnyRole("SELLER","ADMIN")
+                        .requestMatchers("/api/ads/bookings/**").hasAnyRole("SELLER","ADMIN")
+
+                        // 결제 콜백 공개
+                        .requestMatchers("/api/pay/**", "/api/payments/**").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -83,13 +115,13 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        // ⚠️ 운영 배포 시 Origin 화이트리스트 필수
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*")); // dev
+        config.setAllowCredentials(true);
+        config.setAllowedOrigins(resolveAllowedOrigins()); // ★ 핵심 변경
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
         config.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;

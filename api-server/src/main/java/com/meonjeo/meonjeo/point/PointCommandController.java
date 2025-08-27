@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name="포인트 교환")
@@ -17,6 +18,7 @@ public class PointCommandController {
     private final PointRedemptionRepository redemptionRepo;
 
     @Operation(summary="포인트 교환 요청(5천/1만/3만, 잔액 락 처리)")
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/api/me/points/redemptions")
     public RedemptionResponse request(@RequestBody @Valid RedemptionCreateRequest req){
         return redemptionService.request(req.amount());
@@ -25,6 +27,7 @@ public class PointCommandController {
     // ===== 관리자 =====
 
     @Operation(summary="[관리자] 교환 요청 목록(대기중)")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/api/admin/points/redemptions")
     public Page<RedemptionResponse> listRequested(@RequestParam(defaultValue="0") int page,
                                                   @RequestParam(defaultValue="20") int size){
@@ -34,12 +37,14 @@ public class PointCommandController {
     }
 
     @Operation(summary="[관리자] 교환 승인")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/api/admin/points/redemptions/{id}/approve")
     public RedemptionResponse approve(@PathVariable Long id){
         return redemptionService.approve(id);
     }
 
     @Operation(summary="[관리자] 교환 반려(락 해제)")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/api/admin/points/redemptions/{id}/reject")
     public RedemptionResponse reject(@PathVariable Long id){
         return redemptionService.reject(id);

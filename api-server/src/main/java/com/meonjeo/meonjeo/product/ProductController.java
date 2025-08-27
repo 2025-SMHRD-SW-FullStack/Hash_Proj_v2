@@ -5,37 +5,57 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * [프론트 가이드]
- * - 상품 등록시 JSON body 하나만 보내면 됩니다.
- * - 옵션이 없으면 variants 생략/빈배열 → 서버가 단일 SKU 자동 생성
- * - 옵션이 있으면 option1Name~option5Name 라벨 지정 + variants에 조합 나열
- */
 @Tag(name="상품")
-@RestController @RequestMapping("/api")
+@RestController
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class ProductController {
     private final ProductService productService;
 
-    @Operation(summary="상품 등록(셀러)", description="옵션 없는 단일상품 또는 최대 5단 옵션 조합까지 등록 가능")
+    // ====== 공개(비로그인 가능) ======
+    @Operation(summary="상품 목록(공개)")
+    @GetMapping("/products")
+    public List<ProductResponse> listPublic() {
+        return productService.listPublic();
+    }
+
+    @Operation(summary="상품 상세(+옵션 조합, 공개)")
+    @GetMapping("/products/{id}")
+    public ProductWithVariantsResponse getPublic(@PathVariable Long id) {
+        return productService.getPublic(id);
+    }
+
+    // ====== 셀러/관리자 전용 ======
+    @Operation(summary="상품 등록(셀러/관리자)")
     @PostMapping("/seller/products")
+    @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
     public Long create(@RequestBody @Valid ProductCreateRequest req) {
         return productService.create(req);
     }
 
-    @Operation(summary="상품 목록")
-    @GetMapping("/products")
-    public List<ProductResponse> list() {
-        return productService.list();
+    @Operation(summary="내 상품 목록(셀러 전용)")
+    @GetMapping("/seller/products")
+    @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
+    public List<ProductResponse> listMine() {
+        return productService.listForCurrentPrincipal();
     }
 
-    @Operation(summary="상품 상세(+옵션 조합)")
-    @GetMapping("/products/{id}")
-    public ProductWithVariantsResponse get(@PathVariable Long id) {
-        return productService.get(id);
+    @Operation(summary="상품 수정(셀러/관리자) — 옵션 배열 전달 시 옵션 전면 교체")
+    @PutMapping("/seller/products/{id}")
+    @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
+    public void update(@PathVariable Long id, @RequestBody @Valid ProductCreateRequest req) {
+        productService.update(id, req);
+    }
+
+    @Operation(summary="상품 삭제(셀러/관리자)")
+    @DeleteMapping("/seller/products/{id}")
+    @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
+    public void delete(@PathVariable Long id) {
+        productService.delete(id);
     }
 }

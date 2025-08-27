@@ -1,7 +1,6 @@
 package com.meonjeo.meonjeo.product;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
@@ -9,11 +8,9 @@ import java.util.Optional;
 
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, Long> {
 
-    // ✅ ProductService.get()에서 사용하는 메서드 (목록 조회)
     @Query("select v from ProductVariant v where v.product.id = :productId")
     List<ProductVariant> findByProductId(@Param("productId") Long productId);
 
-    // ✅ 체크아웃/결제 시 SKU 매칭용 (옵션 조합으로 1건 찾기)
     @Query("""
       select v from ProductVariant v
       where v.product.id = :productId
@@ -28,4 +25,14 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
             @Param("o1") String o1, @Param("o2") String o2, @Param("o3") String o3,
             @Param("o4") String o4, @Param("o5") String o5
     );
+
+    /** 재고가 충분할 때만 감소(원자 연산). finalizePaid에서 사용 */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update ProductVariant v set v.stock = v.stock - :qty where v.id = :id and v.stock >= :qty")
+    int decreaseStockIfEnough(@Param("id") Long variantId, @Param("qty") int qty);
+
+    /** 해당 상품의 모든 옵션 조합 삭제 */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from ProductVariant v where v.product.id = :productId")
+    void deleteByProductId(@Param("productId") Long productId);
 }

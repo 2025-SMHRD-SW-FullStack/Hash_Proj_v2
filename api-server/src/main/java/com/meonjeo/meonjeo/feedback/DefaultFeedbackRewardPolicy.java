@@ -22,6 +22,7 @@ public class DefaultFeedbackRewardPolicy implements FeedbackRewardPolicy {
     public int feedbackPointOf(Long orderItemId) {
         OrderItem oi = orderItemRepo.findById(orderItemId).orElseThrow();
         Product p = productRepo.findById(oi.getProductId()).orElseThrow();
-        return Math.max(0, p.getFeedbackPoint());
+        int perProduct = Math.max(0, p.getFeedbackPoint());
+        return perProduct; // ✅ 수량과 무관, 상품이 정한 고정 포인트 1회 지급
     }
 }

@@ -1,6 +1,7 @@
 package com.meonjeo.meonjeo.point;
 
 import com.meonjeo.meonjeo.point.dto.*;
+import com.meonjeo.meonjeo.security.AuthSupport;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,11 +16,12 @@ public class PointRedemptionService {
     private final PointRedemptionRepository redemptionRepo;
     private final PointLedgerRepository ledgerRepo;
     private final PointLedgerService ledgerService; // PointLedgerPort 구현체
+    private final AuthSupport auth;
 
     // 포인트 교환 가능 단위(시연용): 5천/1만/3만
     private static final Set<Integer> ALLOWED = Set.of(5_000, 10_000, 30_000);
 
-    private Long currentUserId(){ return 1L; } // TODO: Security에서 주입
+    private Long currentUserId(){ return auth.currentUserId(); }
 
     @Transactional
     public RedemptionResponse request(int amount) {
@@ -29,11 +31,10 @@ public class PointRedemptionService {
         int balance = ledgerRepo.sumBalance(uid);
         if (balance < amount) throw new IllegalStateException("포인트 잔액 부족");
 
-        // 요청 생성
         var r = redemptionRepo.save(PointRedemption.builder()
                 .userId(uid).amount(amount).status(RedemptionStatus.REQUESTED).build());
 
-        // 잔액 락(차감) — 승인 되면 이 항목 유지, 반려되면 되돌림(+)
+        // 잔액 락(차감) — 승인 되면 유지, 반려되면 되돌림(+)
         ledgerService.spend(uid, amount, "REDEEM_LOCK", "redeem:"+r.getId());
 
         return new RedemptionResponse(r.getId(), r.getAmount(), r.getStatus(), r.getCreatedAt(), r.getProcessedAt());
@@ -45,7 +46,6 @@ public class PointRedemptionService {
         if (r.getStatus() != RedemptionStatus.REQUESTED) return toDto(r);
         r.setStatus(RedemptionStatus.APPROVED);
         r.setProcessedAt(LocalDateTime.now());
-        // 별도 ledger 추가 없음(잠금 차감이 최종 차감으로 남음)
         return toDto(r);
     }
 
@@ -55,7 +55,6 @@ public class PointRedemptionService {
         if (r.getStatus() != RedemptionStatus.REQUESTED) return toDto(r);
         r.setStatus(RedemptionStatus.REJECTED);
         r.setProcessedAt(LocalDateTime.now());
-        // 락 되돌리기(+)
         ledgerService.accrue(r.getUserId(), r.getAmount(), "REDEEM_CANCEL", "redeem:"+r.getId());
         return toDto(r);
     }

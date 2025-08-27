@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import com.meonjeo.meonjeo.security.AuthSupport;
 
@@ -19,7 +20,7 @@ import java.util.List;
 public class AddressController {
 
     private final UserAddressRepository repo;
-    private final AuthSupport auth; // ⬅️ 추가
+    private final AuthSupport auth;
 
     private Long currentUserId() { return auth.currentUserId(); }
 
@@ -31,6 +32,7 @@ public class AddressController {
 
     @Operation(summary = "주소 추가", description = "로그인 사용자 주소록에 새 배송지를 추가합니다.")
     @PostMapping
+    @Transactional
     public Long create(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "추가할 주소 정보",
@@ -54,30 +56,56 @@ public class AddressController {
             )
             @Valid @RequestBody UserAddress req
     ) {
+        Long uid = currentUserId();
         req.setId(null);
-        req.setUserId(currentUserId());
+        req.setUserId(uid);
+
+        // 기본 주소 단일성 보장
+        if (Boolean.TRUE.equals(req.isPrimaryAddress())) {
+            repo.clearPrimaryForUser(uid);
+        } else if (!repo.existsByUserIdAndPrimaryAddressTrue(uid)) {
+            // 아직 기본주소가 하나도 없으면 자동으로 기본 지정
+            req.setPrimaryAddress(true);
+        }
         return repo.save(req).getId();
     }
 
     @Operation(summary = "주소 수정", description = "주소 ID로 기존 배송지 정보를 수정합니다. 본인 소유 주소만 수정 가능.")
     @PutMapping("/{id}")
+    @Transactional
     public void update(@PathVariable Long id, @Valid @RequestBody UserAddress req) {
-        UserAddress a = repo.findById(id).orElseThrow();
-        if (!a.getUserId().equals(currentUserId())) throw new RuntimeException("forbidden");
+        Long uid = currentUserId();
+        UserAddress a = repo.findByIdAndUserId(id, uid).orElseThrow(() -> new IllegalArgumentException("ADDRESS_NOT_FOUND"));
+
         a.setReceiver(req.getReceiver());
         a.setPhone(req.getPhone());
         a.setAddr1(req.getAddr1());
         a.setAddr2(req.getAddr2());
         a.setZipcode(req.getZipcode());
-        a.setPrimaryAddress(req.isPrimaryAddress());
+
+        boolean becomingPrimary = req.isPrimaryAddress();
+        if (becomingPrimary) {
+            repo.clearPrimaryExcept(uid, a.getId());
+        }
+        a.setPrimaryAddress(becomingPrimary);
         repo.save(a);
     }
 
     @Operation(summary = "주소 삭제", description = "주소 ID로 배송지를 삭제합니다. 본인 소유 주소만 삭제 가능.")
     @DeleteMapping("/{id}")
+    @Transactional
     public void delete(@PathVariable Long id) {
-        UserAddress a = repo.findById(id).orElseThrow();
-        if (!a.getUserId().equals(currentUserId())) throw new RuntimeException("forbidden");
+        Long uid = currentUserId();
+        UserAddress a = repo.findByIdAndUserId(id, uid).orElseThrow(() -> new IllegalArgumentException("ADDRESS_NOT_FOUND"));
+        boolean wasPrimary = a.isPrimaryAddress();
         repo.delete(a);
+
+        // 기본 주소가 사라졌다면 가장 최근 주소를 기본으로 승격
+        if (wasPrimary) {
+            repo.findTopByUserIdOrderByIdDesc(uid).ifPresent(next -> {
+                next.setPrimaryAddress(true);
+                repo.save(next);
+            });
+        }
     }
 }

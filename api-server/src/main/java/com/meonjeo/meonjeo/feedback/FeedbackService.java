@@ -1,69 +1,75 @@
+// src/main/java/com/meonjeo/meonjeo/feedback/FeedbackService.java
 package com.meonjeo.meonjeo.feedback;
 
-import com.meonjeo.meonjeo.feedback.dto.*;
+import com.meonjeo.meonjeo.feedback.dto.FeedbackCreateRequest;
+import com.meonjeo.meonjeo.feedback.dto.FeedbackResponse;
+import com.meonjeo.meonjeo.order.Order;
+import com.meonjeo.meonjeo.order.OrderItem;
 import com.meonjeo.meonjeo.order.OrderItemRepository;
+import com.meonjeo.meonjeo.order.OrderRepository;
 import com.meonjeo.meonjeo.order.PointLedgerPort;
-import com.meonjeo.meonjeo.shipment.ShipmentRepository;
+import com.meonjeo.meonjeo.security.AuthSupport;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
-@Service @RequiredArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class FeedbackService {
-    private final FeedbackRepository repo;
-    private final FeedbackRewardPolicy rewardPolicy; // 상품/주문아이템에서 포인트 조회
-    private final PointLedgerPort pointLedger;
-    private final OrderItemRepository orderItemRepo;
-    private final ShipmentRepository shipmentRepo;
 
-    private Long currentUserId(){ return 1L; }
+    private final FeedbackRepository feedbackRepo;
+    private final OrderRepository orderRepo;
+    private final OrderItemRepository orderItemRepo;
+    private final PointLedgerPort pointLedger;
+    private final AuthSupport auth;
 
     @Transactional
     public FeedbackResponse create(FeedbackCreateRequest req) {
-        Long userId = currentUserId();
+        Long uid = auth.currentUserId();
+        Long orderItemId = req.orderItemId();
 
-        // ⬇️ 이미지 5장 제한 (imagesJson = ["...","..."])
-        int imageCount = 0;
-        try {
-            var arr = new com.fasterxml.jackson.databind.ObjectMapper().readTree(req.imagesJson());
-            imageCount = arr.isArray() ? arr.size() : 0;
-        } catch (Exception ignore) {}
-        if (imageCount > 5) throw new IllegalArgumentException("이미지는 최대 5장까지 업로드 가능합니다.");
+        OrderItem item = orderItemRepo.findById(orderItemId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_ITEM_NOT_FOUND"));
 
-        // ⬇️ 배송완료 + D+7 윈도우 체크
-        var oi = orderItemRepo.findById(req.orderItemId()).orElseThrow();
-        var sh = shipmentRepo.findByOrderId(oi.getOrder().getId()).orElse(null);
-        if (sh == null || sh.getDeliveredAt() == null) {
-            throw new IllegalStateException("배송 완료 후에만 피드백을 작성할 수 있습니다.");
-        }
-        var now = java.time.LocalDateTime.now();
-        if (now.isAfter(sh.getDeliveredAt().plusDays(7))) {
-            throw new IllegalStateException("배송완료 후 7일 이내에만 작성/수정 가능합니다.");
+        Order o = item.getOrder();
+        if (o == null) throw new ResponseStatusException(HttpStatus.CONFLICT, "ORDER_MISSING");
+
+        if (!Objects.equals(o.getUserId(), uid))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
+
+        if (o.getDeliveredAt() == null)
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "NOT_DELIVERED");
+
+        if (LocalDateTime.now().isAfter(o.getDeliveredAt().plusDays(7)))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "FEEDBACK_WINDOW_CLOSED");
+
+        if (o.getConfirmedAt() == null || o.getConfirmationType() != Order.ConfirmationType.MANUAL)
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "NEED_MANUAL_CONFIRM_FIRST");
+
+        if (feedbackRepo.existsByOrderItemIdAndUserId(orderItemId, uid))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "ALREADY_WRITTEN");
+
+        Feedback fb = feedbackRepo.save(Feedback.builder()
+                .orderItemId(orderItemId)
+                .userId(uid)
+                .content(req.content())
+                .build());
+
+        int reward = Math.max(0, item.getFeedbackPointSnapshot());
+        if (reward > 0) {
+            pointLedger.accrue(uid, reward, "FEEDBACK_REWARD", "feedback:" + orderItemId);
         }
 
-        // ⬇️ 이하 기존 로직(중복시 수정, 포인트 1회 지급) 유지
-        var existing = repo.findByOrderItemIdAndUserId(req.orderItemId(), userId).orElse(null);
-        Feedback f = (existing != null) ? existing : new Feedback();
-        if (f.getId() == null) {
-            f.setOrderItemId(req.orderItemId()); f.setUserId(userId);
-            f.setCreatedAt(now);
-            f.setDeadlineAt(sh.getDeliveredAt().plusDays(7));
-        }
-        f.setType(req.type()); f.setOverallScore(req.overallScore());
-        f.setScoresJson(req.scoresJson()); f.setContent(req.content());
-        f.setImagesJson(req.imagesJson()); f.setUpdatedAt(now);
-        repo.save(f);
-
-        if (f.getAwardedAt() == null) {
-            int amount = rewardPolicy.feedbackPointOf(req.orderItemId());
-            if (amount > 0) {
-                pointLedger.accrue(userId, amount, "FEEDBACK_REWARD", "orderItem:"+req.orderItemId());
-                f.setAwardedPoint(amount); f.setAwardedAt(now);
-            }
-        }
-        return new FeedbackResponse(f.getId(), f.getOrderItemId(), f.getOverallScore(), f.getContent(),
-                f.getImagesJson(), f.getAwardedPoint(), f.getAwardedAt());
+        int newBalance = pointLedger.getBalance(uid); // 현재 포인트 잔액 조회 (Integer)
+        LocalDateTime createdAt = (fb.getCreatedAt() != null) ? fb.getCreatedAt() : LocalDateTime.now();
+        return new FeedbackResponse(
+                fb.getId(), fb.getOrderItemId(), reward, fb.getContent(),
+                "REWARDED", Integer.valueOf(newBalance), createdAt
+        );
     }
 }
