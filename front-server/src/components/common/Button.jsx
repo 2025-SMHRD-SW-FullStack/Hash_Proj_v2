@@ -13,6 +13,7 @@ const buttonVariants = cva(
         signUp:
           'border-solid border-[1px] border-[#C3C3C3] bg-white text-[#4CBDE6]',
         admin: 'bg-[#ADD973] text-white',
+        unselected: 'bg-white border-[#C3C3C3] border-solid border-[1px] text-[#C3C3C3]'
       },
       size: {
         sm: 'px-3 py-1.5 text-xs',

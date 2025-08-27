@@ -1,16 +1,15 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
-import MainMissions from '../../components/mainPage/MainMissions'
-import Button from '../../components/common/Button'
-import arrowLeft from '../../assets/icons/ic_arrow_left.svg'
-import arrowRight from '../../assets/icons/ic_arrow_right.svg'
-import Icon from '../../components/common/Icon'
-import MainLayout from '../../components/layouts/MainLayout' // 1. MainLayout을 사용해야 합니다.
-import useWindowWidth from '../../hooks/useWindowWidth'
+import MainProducts from '../components/mainPage/MainProducts'
+import Button from '../components/common/Button'
+import arrowLeft from '../assets/icons/ic_arrow_left.svg'
+import arrowRight from '../assets/icons/ic_arrow_right.svg'
+import Icon from '../components/common/Icon'
+import useWindowWidth from '../hooks/useWindowWidth'
 import { useNavigate } from 'react-router-dom'
-import useAuthStore from '../../stores/authStore'
+import useAuthStore from '../stores/authStore'
 
 const MainPage = () => {
-  const testNumber = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  const testNumber = [1, 2, 3, 4, 5, 6, 7, 8, 9]
   const [currentIndex, setCurrentIndex] = useState(0)
   const [enableTransition, setEnableTransition] = useState(true)
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -138,9 +137,10 @@ const MainPage = () => {
         </div>
 
         <div className="space-y-10">
-          <MainMissions label="✨ 신규" />
-          <MainMissions label="💖 지금 인기 있는" />
-          <MainMissions label="⏰ 마감 임박" />
+          <MainProducts label="⚙ 전자 제품" />
+          <MainProducts label="💄 화장품" />
+          <MainProducts label="🍱 밀키트" /> 
+          <MainProducts label="🖥 플랫폼" /> 
         </div>
       </section>
 
@@ -149,7 +149,7 @@ const MainPage = () => {
           {isLoggedIn ? (
             <>
               {/* 스토어의 user 객체에서 닉네임 등을 표시할 수 있습니다. */}
-              <p className="mb-4 font-bold">{user?.name}님 환영합니다!</p>
+              <p className="mb-4 font-bold">{user?.nickname}님 환영합니다!</p>
               <Button size="lg" className="w-[100%]" onClick={logout}>
                 로그아웃
               </Button>

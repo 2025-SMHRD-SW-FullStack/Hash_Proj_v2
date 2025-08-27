@@ -3,14 +3,15 @@ import { Routes, Route } from 'react-router-dom'
 import PublicRouter from './PublicRouter'
 import UserRouter from './UserRouter'
 import AdminRouter from './AdminRouter'
-import MainPage from '../pages/mainPage/MainPage'
+import MainPage from '../pages/MainPage'
 import LoginPage from '../pages/authPage/LoginPage'
 import PhoneVerifiedHandler from '../pages/authPage/PhoneVerifiedHandler'
 import OAuthSuccess from '../pages/authPage/OAuthSuccess'
-import SignUpPage from '../pages/authPage/SignUpPage'
 import EmailSignUp from '../pages/authPage/EmailSignUpPage'
 import useAuthStore from '../stores/authStore'
 import MainLayout from '../components/layouts/MainLayout'
+import ProductPage from '../pages/ProductPage'
+import ProductDetailPage from '../pages/ProductDetailPage'
 
 const AppRouter = () => {
   const { isLoggedIn } = useAuthStore() // 스토어에서 isLoggedIn 상태 가져오기
@@ -19,10 +20,12 @@ const AppRouter = () => {
     <Routes>
       <Route element={<MainLayout />}>
         <Route path="/" element={<MainPage />} />
+        <Route path='/product' element={<ProductPage/>}/>
+        {/* ✅ :productId를 사용해 동적 경로로 변경 */}
+        <Route path="/product/:productId" element={<ProductDetailPage />} />
 
         {/* 로그인 / 회원가입 관련 */}
         <Route path="/login" element={<LoginPage />} />
-        {/* <Route path="/signup" element={<SignUpPage />} /> */}
         <Route path="/email_signup" element={<EmailSignUp />} />
 
         {/* 휴대폰 인증 관련 */}
