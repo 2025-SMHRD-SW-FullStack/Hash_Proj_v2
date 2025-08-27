@@ -2,7 +2,7 @@ import React from 'react'
 import { Route, Routes } from 'react-router-dom'
 import MainPage from '../pages/MainPage'
 
-const OwnerRouter = () => {
+const MerChantRouter = () => {
   return (
     <Routes>
       
@@ -10,4 +10,4 @@ const OwnerRouter = () => {
   )
 }
 
-export default OwnerRouter
+export default MerChantRouter

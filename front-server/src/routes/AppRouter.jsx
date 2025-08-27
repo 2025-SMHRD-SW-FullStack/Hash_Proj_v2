@@ -7,7 +7,6 @@ import MainPage from '../pages/MainPage'
 import LoginPage from '../pages/authPage/LoginPage'
 import PhoneVerifiedHandler from '../pages/authPage/PhoneVerifiedHandler'
 import OAuthSuccess from '../pages/authPage/OAuthSuccess'
-import SignUpPage from '../pages/authPage/SignUpPage'
 import EmailSignUp from '../pages/authPage/EmailSignUpPage'
 import useAuthStore from '../stores/authStore'
 import MainLayout from '../components/layouts/MainLayout'
@@ -27,7 +26,6 @@ const AppRouter = () => {
 
         {/* 로그인 / 회원가입 관련 */}
         <Route path="/login" element={<LoginPage />} />
-        {/* <Route path="/signup" element={<SignUpPage />} /> */}
         <Route path="/email_signup" element={<EmailSignUp />} />
 
         {/* 휴대폰 인증 관련 */}

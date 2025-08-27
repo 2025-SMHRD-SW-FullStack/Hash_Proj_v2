@@ -149,7 +149,7 @@ const MainPage = () => {
           {isLoggedIn ? (
             <>
               {/* 스토어의 user 객체에서 닉네임 등을 표시할 수 있습니다. */}
-              <p className="mb-4 font-bold">{user?.name}님 환영합니다!</p>
+              <p className="mb-4 font-bold">{user?.nickname}님 환영합니다!</p>
               <Button size="lg" className="w-[100%]" onClick={logout}>
                 로그아웃
               </Button>

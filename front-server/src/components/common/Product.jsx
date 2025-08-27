@@ -12,24 +12,30 @@ const Product = ({product, onClick, isSimple = false }) => {
     }
   }
 
+  // product 객체가 없을 경우 렌더링하지 않음 (안정성)
+  if (!product) {
+    return null;
+  }
+
   return (
     <div className='w-48 cursor-pointer' onClick={handleClick}>
         <img src={testImg} alt="" className='w-48 h-48 border border-solid rounded-xl'/>
+        {/* <img src={product.thumbnailUrl} alt="" className='w-48 h-48 border border-solid rounded-xl'/> */}
         <div className='w-full'>
             {/* 상품명 최대 19글자 */}
             <strong className='text-lg break-all'>[{product.brand}] {product.name}</strong>
             <div>
-                <span className='text-lg text-[#23a4d3]'>{product.price.toLocaleString()}원 </span>
-                <span className='text-sm line-through text-gray-600'>{product.originalPrice.toLocaleString()}원</span>
+                <span className='text-lg text-[#23a4d3]'>{product.salePrice.toLocaleString()}원 </span>
+                <span className='text-sm line-through text-gray-600'>{product.basePrice.toLocaleString()}원</span>
             </div>
             {!isSimple && (
                 <>
-                    <span>재고수 {product.stock.toLocaleString()}개</span>
+                    <span>재고수 {product.stockTotal?.toLocaleString() || 0}개</span>
                     <div>
-                        <span>지급 포인트 {product.points.toLocaleString()}</span>
+                        <span>지급 포인트 {product.feedbackPoint.toLocaleString()}</span>
                         <span className='text-[#35A6CF]'>P</span>
                     </div>
-                    <span>모집 기간 ~{product.period}</span>
+                    <span>모집 기간 ~{product.saleEndAt.slice(0, 10)}</span>
                 </>
                 )}
         </div>
