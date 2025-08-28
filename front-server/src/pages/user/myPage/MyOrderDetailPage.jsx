@@ -38,11 +38,10 @@ const MyOrderDetailPage = () => {
     }
   };
   
-  // 👇 [추가] 피드백 작성 페이지로 이동하는 함수
-  const handleWriteFeedback = (orderItemId) => {
-    navigate(`/user/feedback/${orderItemId}`);
+  // 👇 [수정] 피드백 작성 페이지로 이동 시 productId를 함께 전달합니다.
+  const handleWriteFeedback = (orderItemId, productId) => {
+    navigate(`/user/survey?orderItemId=${orderItemId}&productId=${productId}`);
   };
-
 
   if (loading) return <div>로딩 중...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
@@ -73,9 +72,9 @@ const MyOrderDetailPage = () => {
                         <p className="text-sm text-gray-600">{formatOptions(item.optionSnapshotJson)}</p>
                         <p className="text-sm">{item.unitPrice.toLocaleString()}원 / {item.qty}개</p>
                     </div>
-                    {/* 👇 [추가] 배송 완료 상태일 때만 피드백 버튼을 보여줍니다. */}
-                    {order.status === 'DELIVERED' && (
-                      <Button size="sm" onClick={() => handleWriteFeedback(item.id)}>
+                    {/* 👇 [수정] 버튼 클릭 시 item에서 productId도 함께 넘겨줍니다. */}
+                    {(order.status === 'DELIVERED' || order.status === 'CONFIRMED') && (
+                      <Button size="sm" onClick={() => handleWriteFeedback(item.id, item.productId)}>
                         피드백 작성
                       </Button>
                     )}

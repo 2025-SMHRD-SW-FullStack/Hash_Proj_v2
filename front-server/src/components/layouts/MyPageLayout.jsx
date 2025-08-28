@@ -1,14 +1,18 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
 import { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import { getMyPointBalance } from '../../service/pointService';
+import Icon from '../common/Icon';
+import arrowDown from '../../assets/icons/ic_arrow_down.svg';
 
 const MyPageLayout = () => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isSupportMenuOpen, setIsSupportMenuOpen] = useState(false);
 
   // 🔽 포인트 조회 로직
   useEffect(() => {
@@ -16,7 +20,7 @@ const MyPageLayout = () => {
       if (!user) return;
       try {
         setLoading(true);
-        const balance = await getMyPointBalance();
+        const balance = await getMyPointBalance(user.accessToken);
         setPoints(balance);
       } catch (err) {
         setError('포인트 조회 실패');
@@ -28,10 +32,12 @@ const MyPageLayout = () => {
     fetchPoints();
   }, [user]);
 
-  // 🔽 NavLink 스타일 정의
-  const navLinkStyle =
-    'block w-full p-4 text-left text-gray-600 rounded-lg hover:bg-gray-100 transition-colors';
-  const activeLinkStyle = 'bg-[#E4F5FA] text-[#35A6CF] font-bold';
+  // 🔽 NavLink 스타일 정의 (변수명 개선)
+  const baseLinkStyle =
+  'block w-full p-4 text-left text-base text-gray-600 rounded-lg hover:bg-gray-100 transition-colors';
+  const selectedLinkStyle = 'bg-[#E4F5FA] text-[#35A6CF] font-bold';
+  const subLinkStyle =
+    'block w-full py-2 px-8 text-left text-sm text-gray-500 rounded-lg hover:bg-gray-100 transition-colors';
 
   return (
     <div className="flex p-8 gap-8">
@@ -43,7 +49,9 @@ const MyPageLayout = () => {
             alt="프로필 사진"
             className="w-24 h-24 rounded-full object-cover mb-4"
           />
-          <strong className="text-xl font-bold mb-4">{user?.nickname}님</strong>
+          <strong className="text-xl font-bold mb-4">
+            {user?.nickname}님
+          </strong>
 
           <div className="flex items-center justify-center w-full p-3 rounded-lg text-center">
             <h4 className="text-sm text-gray-600">내 포인트 &ensp;</h4>
@@ -72,7 +80,9 @@ const MyPageLayout = () => {
                 to="/user/mypage/orders"
                 end
                 className={({ isActive }) =>
-                  `${navLinkStyle} ${isActive ? activeLinkStyle : ''} no-underline`
+                  `${baseLinkStyle} ${
+                    isActive ? selectedLinkStyle : ''
+                  } no-underline`
                 }
               >
                 주문/배송 내역
@@ -83,7 +93,9 @@ const MyPageLayout = () => {
                 to="/user/mypage/feedback"
                 end
                 className={({ isActive }) =>
-                  `${navLinkStyle} ${isActive ? activeLinkStyle : ''} no-underline`
+                  `${baseLinkStyle} ${
+                    isActive ? selectedLinkStyle : ''
+                  } no-underline`
                 }
               >
                 작성한 피드백
@@ -94,7 +106,9 @@ const MyPageLayout = () => {
                 to="/user/mypage/edit"
                 end
                 className={({ isActive }) =>
-                  `${navLinkStyle} ${isActive ? activeLinkStyle : ''} no-underline`
+                  `${baseLinkStyle} ${
+                    isActive ? selectedLinkStyle : ''
+                  } no-underline`
                 }
               >
                 내 정보 수정
@@ -102,25 +116,76 @@ const MyPageLayout = () => {
             </li>
             <li>
               <NavLink
-                to="/user/mypage/cart"   // TODO: 실제 장바구니 경로로 수정
+                to="/user/mypage/cart"
                 end
                 className={({ isActive }) =>
-                  `${navLinkStyle} ${isActive ? activeLinkStyle : ''} no-underline`
+                  `${baseLinkStyle} ${
+                    isActive ? selectedLinkStyle : ''
+                  } no-underline`
                 }
               >
                 장바구니
               </NavLink>
             </li>
             <li>
-              <NavLink
-                to="/user/mypage/support"  // TODO: 실제 고객센터 경로로 수정
-                end
-                className={({ isActive }) =>
-                  `${navLinkStyle} ${isActive ? activeLinkStyle : ''} no-underline`
-                }
+              <button
+                onClick={() => setIsSupportMenuOpen(!isSupportMenuOpen)}
+                className={`
+                  ${baseLinkStyle} no-underline bg-white border-none 
+                  ${isSupportMenuOpen ? selectedLinkStyle : ''}
+                `}
               >
                 고객센터
-              </NavLink>
+              </button>
+
+              {/* ▼ 서브메뉴 */}
+              <div
+                className={`
+                overflow-hidden transition-all duration-300 ease-in-out
+                ${isSupportMenuOpen ? 'max-h-40 opacity-100 mt-1' : 'max-h-0 opacity-0'}
+              `}
+              >
+                <div className="pl-4 pt-1">
+                  <ul className="space-y-1 list-none p-0">
+                    <li>
+                      <NavLink
+                        to="/user/mypage/support/faq"
+                        className={({ isActive }) =>
+                          `${subLinkStyle} ${
+                            isActive ? selectedLinkStyle : ''
+                          } no-underline`
+                        }
+                      >
+                        FAQ
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink
+                        to="/user/mypage/support/qna"
+                        className={({ isActive }) =>
+                          `${subLinkStyle} ${
+                            isActive ? selectedLinkStyle : ''
+                          } no-underline`
+                        }
+                      >
+                        Q&A
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink
+                        to="/user/mypage/seller-apply"
+                        className={({ isActive }) =>
+                          `${subLinkStyle} ${
+                            isActive ? selectedLinkStyle : ''
+                          } no-underline`
+                        }
+                      >
+                        셀러 신청하기
+                      </NavLink>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </li>
           </ul>
         </nav>

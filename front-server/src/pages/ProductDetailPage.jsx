@@ -7,10 +7,12 @@ import Minus from '../assets/icons/ic_minus.svg';
 import Plus from '../assets/icons/ic_plus.svg';
 import Delete from '../assets/icons/ic_delete.svg';
 import { getProductDetail } from '../service/productService.js';
+import useCartStore from '../stores/cardStore.js';
 
 const ProductDetailPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const { addToCart } = useCartStore();
 
   // --- 상태 관리 ---
   const [productData, setProductData] = useState(null);
@@ -18,6 +20,7 @@ const ProductDetailPage = () => {
   const [error, setError] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
   const deliverFee = 3000;
+  
   
   // ✅ [신규] 상품 설명 더보기 상태
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -79,6 +82,36 @@ const ProductDetailPage = () => {
       alert('상품 옵션을 선택해주세요.');
       return;
     }
+
+    // [추가] 장바구니 담기 핸들러
+  const handleAddToCart = () => {
+    if (selectedItems.length === 0) {
+      alert('상품 옵션을 선택해주세요.');
+      return;
+    }
+
+    selectedItems.forEach(item => {
+      const variant = variants.find(v => v.id === parseInt(item.variantId));
+      if (!variant) return;
+
+      const itemToAdd = {
+        productId: product.id,
+        variantId: variant.id,
+        quantity: item.quantity,
+        name: product.name,
+        brand: product.brand,
+        thumbnailUrl: product.thumbnailUrl, // 썸네일 정보 추가
+        price: product.salePrice,
+        addPrice: variant.addPrice,
+        option1Value: variant.option1Value,
+        option2Value: variant.option2Value,
+      };
+      addToCart(itemToAdd);
+    });
+
+    alert('장바구니에 상품을 담았습니다.');
+  };
+
 
    // 선택된 상품 배열을 "variantId_수량,variantId_수량" 형태의 문자열로 변환합니다.
     const itemsQuery = selectedItems

@@ -15,8 +15,7 @@ const buttonVariants = cva(
         admin: 'bg-[#ADD973] text-white',
         unselected: 'bg-white border-[#C3C3C3] border-solid border-[1px] text-[#C3C3C3]',
         whiteBlack: 'bg-white text-[#222] border-[#CCCCCC] border-solid border-[1px] ',
-        blueLine: 'bg-white text-[#4CBDE6] border-[#4CBDE6] border-solid border-[1px]',
-        disable:'cursor-block'
+        // disable:'cursor-block'
       },
       size: {
         sm: 'px-3 py-1.5 text-xs',
