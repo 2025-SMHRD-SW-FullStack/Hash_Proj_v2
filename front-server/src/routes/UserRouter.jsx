@@ -23,7 +23,7 @@ const UserRouter = () => {
       <Route path='order' element={<OrderPage />} />
 
       {/* 피드백 관련 페이지 */}
-      <Route path="survey" element={<SurveyPage />} />
+      <Route path="survey/:orderItemId" element={<SurveyPage />} />
       <Route path='feedback' element={<FeedbackPage/>}/>
 
       {/* --- 마이페이지 관련 (중첩 라우팅 적용) --- */}
