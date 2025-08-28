@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import ChatList from '../components/chatPage/ChatList';
-import ChatRoom from '../components/chatPage/ChatRoom';
+import ChatList from '../../components/chatPage/ChatList';
+import ChatRoom from '../../components/chatPage/ChatRoom';
 
 const ChatPage = () => {
   const [selectedChatId, setSelectedChatId] = useState(null);

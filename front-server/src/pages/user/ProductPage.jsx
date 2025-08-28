@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import Product from '../components/common/Product';
-import { useProductDetail } from '../hooks/useProductDetail.js';
-import Button from '../components/common/Button.jsx';
-import Icon from '../components/common/Icon.jsx';
-import magnifier from '../assets/icons/ic_magnifier.svg';
-import { getProducts } from '../service/productService'; // ✅ API 서비스 import
+import Product from '../../components/common/Product.jsx';
+import { useProductDetail } from '../../hooks/useProductDetail.js';
+import Button from '../../components/common/Button.jsx';
+import Icon from '../../components/common/Icon.jsx';
+import magnifier from '../../assets/icons/ic_magnifier.svg';
+import { getProducts } from '../../service/productService.js'; // ✅ API 서비스 import
 
 const ProductPage = () => {
   const goProductDetail = useProductDetail();

@@ -10,8 +10,8 @@ import OAuthSuccess from '../pages/authPage/OAuthSuccess'
 import EmailSignUp from '../pages/authPage/EmailSignUpPage'
 import useAuthStore from '../stores/authStore'
 import MainLayout from '../components/layouts/MainLayout'
-import ProductPage from '../pages/ProductPage'
-import ProductDetailPage from '../pages/ProductDetailPage'
+import ProductPage from '../pages/user/ProductPage'
+import ProductDetailPage from '../pages/user/ProductDetailPage'
 
 const AppRouter = () => {
   const { isLoggedIn } = useAuthStore() // 스토어에서 isLoggedIn 상태 가져오기

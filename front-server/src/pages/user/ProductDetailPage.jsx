@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import TestImg from '../assets/images/ReSsol_TestImg.png';
-import Button from '../components/common/Button';
-import Icon from '../components/common/Icon.jsx';
-import Minus from '../assets/icons/ic_minus.svg';
-import Plus from '../assets/icons/ic_plus.svg';
-import Delete from '../assets/icons/ic_delete.svg';
-import { getProductDetail } from '../service/productService';
+import TestImg from '../../assets/images/ReSsol_TestImg.png';
+import Button from '../../components/common/Button.jsx';
+import Icon from '../../components/common/Icon.jsx';
+import Minus from '../../assets/icons/ic_minus.svg';
+import Plus from '../../assets/icons/ic_plus.svg';
+import Delete from '../../assets/icons/ic_delete.svg';
+import { getProductDetail } from '../../service/productService.js';
 
 const ProductDetailPage = () => {
   const { productId } = useParams();

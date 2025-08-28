@@ -10,15 +10,28 @@ export const axiosInstance = axios.create({
   withCredentials: true, // 세션 쿠키 자동 포함
 })
 
-// ✅ 요청 전 AccessToken 자동 첨부
-axiosInstance.interceptors.request.use((config) => {
-  // 스토어에서 최신 토큰을 가져와서 설정
-  const token = useAuthStore.getState().accessToken
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const { accessToken } = useAuthStore.getState(); 
+    
+    // 👇 --- 디버깅 코드 추가 ---
+    // console.log('📦 [Axios Interceptor] 현재 accessToken:', accessToken);
+    
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    //   console.log('✅ [Axios Interceptor] Authorization 헤더 추가 완료:', config.headers.Authorization);
+    // } else {
+    //   console.warn('⚠️ [Axios Interceptor] accessToken이 없어 헤더를 추가하지 못했습니다.');
+    }
+    // -------------------------
+    
+    return config;
+  }, 
+  (error) => {
+    return Promise.reject(error);
   }
-  return config
-})
+);
+
 
 // ✅ 자동 리프레시 처리
 let isRefreshing = false

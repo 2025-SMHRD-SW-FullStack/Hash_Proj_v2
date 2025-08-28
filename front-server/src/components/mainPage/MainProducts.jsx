@@ -1,18 +1,31 @@
-import React, { useState, useMemo } from 'react'
-import Icon from '../common/Icon'
+import React, { useState, useMemo, useEffect } from 'react'
 import arrowLeft from '../../assets/icons/ic_arrow_left.svg'
 import arrowRight from '../../assets/icons/ic_arrow_right.svg'
-import useWindowWidth from '../../hooks/useWindowWidth'
+import useWindowWidth from '../../hooks/useWindowWidth.js'
 import TestImg from '../../assets/images/ReSsol_TestImg.png'
 import { Navigate, useNavigate } from 'react-router-dom'
-import Product from '../common/Product'
-import { products } from '../../data/TestProducts.js'
+import Product from '../common/Product.jsx'
 import { useProductDetail } from '../../hooks/useProductDetail.js'
+import { getProducts } from '../../service/productService.js'
+import Icon from '../common/Icon.jsx'
 
 const MainProducts = ({ label }) => {
   const width = useWindowWidth() // 1. 훅을 호출하여 현재 너비를 가져옵니다.
   const navigate = useNavigate()
   const goProductDetail = useProductDetail()
+  const [products, setProducts] = useState([])
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const data = await getProducts();
+        setProducts(data);
+      } catch (error) {
+        console.error("상품 목록을 불러오는데 실패했습니다.", error);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   // 👇 웹에서 5개, 모바일(sm)에서 3개, 그보다 작을 때 2개 보이도록 수정
   const itemsPerPage = useMemo(() => {
@@ -47,7 +60,7 @@ const MainProducts = ({ label }) => {
           <p className='text-xl'>더보기</p>
           <Icon
           src={arrowRight}
-          alt="오른쪽 이동"
+          alt="이동"
           className='cursor-pointer w-6 h-6'
           />
         </div>
@@ -66,8 +79,8 @@ const MainProducts = ({ label }) => {
         <div className="flex justify-center gap-8">
           {products.slice(startIndex, startIndex + itemsPerPage).map((v) => (
             <Product
-            key={v.product.id}
-            product={v.product}
+            key={v}
+            product={v}
             onClick={goProductDetail}
             isSimple={true} 
             />

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getProductDetail } from '../service/productService'; 
-import Button from '../components/common/Button';
+import { getProductDetail } from '../../service/productService'; 
+import Button from '../../components/common/Button';
 
 const OrderPage = () => {
   const [searchParams] = useSearchParams();

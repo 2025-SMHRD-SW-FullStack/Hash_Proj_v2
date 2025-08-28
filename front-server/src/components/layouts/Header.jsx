@@ -44,7 +44,7 @@ const Header = () => {
         {isLoggedIn ? (
           <div className="flex items-center space-x-2">
             <Button onClick={logout}>로그아웃</Button>
-            <Icon src={User} alt="마이 페이지" />
+            <Icon src={User} alt="마이 페이지" onClick={() => navigate('/user/mypage')} />
             <Icon src={Notification} alt="알림" />
             <Icon
               src={Message}

@@ -5,7 +5,7 @@ import clsx from 'clsx'
 
 const buttonVariants = cva(
   // TODO: cursor-pointer랑 비활성화시 x 뜨게
-  'rounded-lg border-none font-medium transition-colors duration-200 disabled:opacity-60 hover:bg-gray-300', // 기본 스타일
+  'rounded-lg border-none font-medium transition-colors duration-200 disabled:opacity-60 hover:drop-shadow cursor-pointer', // 기본 스타일
   {
     variants: {
       variant: {
@@ -13,7 +13,10 @@ const buttonVariants = cva(
         signUp:
           'border-solid border-[1px] border-[#C3C3C3] bg-white text-[#4CBDE6]',
         admin: 'bg-[#ADD973] text-white',
-        unselected: 'bg-white border-[#C3C3C3] border-solid border-[1px] text-[#C3C3C3]'
+        unselected: 'bg-white border-[#C3C3C3] border-solid border-[1px] text-[#C3C3C3]',
+        whiteBlack: 'bg-white text-[#222] border-[#CCCCCC] border-solid border-[1px] ',
+        blueLine: 'bg-white text-[#4CBDE6] border-[#4CBDE6] border-solid border-[1px]',
+        disable:'cursor-block'
       },
       size: {
         sm: 'px-3 py-1.5 text-xs',
