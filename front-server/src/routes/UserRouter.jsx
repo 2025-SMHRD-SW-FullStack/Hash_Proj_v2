@@ -7,6 +7,8 @@ import SurveyPage from '../pages/feedbackPage/SurveyPage'
 import FeedbackPage from '../pages/feedbackPage/FeedbackPage'
 import MyOrderHistoryPage from '../pages/user/myPage/MyOrderHistoryPage'
 import MyOrderDetailPage from '../pages/user/myPage/MyOrderDetailPage'
+import MyOrders from '../pages/user/myPage/MyOrders'
+import FeedbackEditor from '../pages/feedbackPage/FeedbackEditor'
 
 const UserRouter = () => {
   return (
@@ -27,19 +29,19 @@ const UserRouter = () => {
       <Route path="survey/:orderItemId" element={<SurveyPage />} />
       <Route path='feedback' element={<FeedbackPage/>}/>
 
-      {/* --- 마이페이지 관련 (중첩 라우팅 적용) --- */}
+      {/* 기본 리다이렉트 */}
+      <Route path="/" element={<Navigate to="mypage/orders" replace />} />
+
+      {/* 마이페이지 */}
       <Route path="mypage" element={<MyPageLayout />}>
-        {/* '/user/mypage'로 접속 시 '/user/mypage/orders'로 자동 이동 */}
         <Route index element={<Navigate to="orders" replace />} />
-        
-        {/* '/user/mypage/orders' 경로 */}
-        <Route path="orders" element={<MyOrderHistoryPage />} />
+        <Route path="orders" element={<MyOrders />} />
         <Route path="orders/:orderId" element={<MyOrderDetailPage />} />
-        
-        {/* 다른 마이페이지 메뉴 추가 예시 */}
-        {/* <Route path="edit" element={<EditProfilePage />} /> */}
-        {/* <Route path="edit" element={<EditProfilePage />} /> */}
       </Route>
+
+      {/* 설문 & 피드백 */}
+      <Route path="survey" element={<SurveyPage />} />
+      <Route path="feedback/editor" element={<FeedbackEditor />} />
       
     </Routes>
   )
