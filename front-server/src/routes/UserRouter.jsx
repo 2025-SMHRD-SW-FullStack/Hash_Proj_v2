@@ -6,6 +6,7 @@ import MyPageLayout from '../components/layouts/MyPageLayout'
 import SurveyPage from '../pages/feedbackPage/SurveyPage'
 import FeedbackPage from '../pages/feedbackPage/FeedbackPage'
 import MyOrderHistoryPage from '../pages/user/myPage/MyOrderHistoryPage'
+import MyOrderDetailPage from '../pages/user/myPage/MyOrderDetailPage'
 
 const UserRouter = () => {
   return (
@@ -33,6 +34,7 @@ const UserRouter = () => {
         
         {/* '/user/mypage/orders' 경로 */}
         <Route path="orders" element={<MyOrderHistoryPage />} />
+        <Route path="orders/:orderId" element={<MyOrderDetailPage />} />
         
         {/* 다른 마이페이지 메뉴 추가 예시 */}
         {/* <Route path="edit" element={<EditProfilePage />} /> */}
