@@ -79,7 +79,7 @@ const MainProducts = ({ label }) => {
         <div className="flex justify-center gap-8">
           {products.slice(startIndex, startIndex + itemsPerPage).map((v) => (
             <Product
-            key={v}
+            key={v.id ?? v.productId ?? `${idx}-${v.name}`}
             product={v}
             onClick={goProductDetail}
             isSimple={true} 
