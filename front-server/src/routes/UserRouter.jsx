@@ -38,6 +38,7 @@ const UserRouter = () => {
         {/* <Route path="edit" element={<EditProfilePage />} /> */}
         {/* <Route path="edit" element={<EditProfilePage />} /> */}
       </Route>
+      
     </Routes>
   )
 }

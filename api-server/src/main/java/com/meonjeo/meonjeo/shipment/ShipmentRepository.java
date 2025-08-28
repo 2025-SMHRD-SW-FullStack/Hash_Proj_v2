@@ -20,7 +20,7 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
     @Query("select count(s) from Shipment s where s.orderId=:orderId and s.deliveredAt is null")
     long countByOrderIdAndDeliveredAtIsNull(@Param("orderId") Long orderId);
 
-    // [ADD] 해당 주문의 배송완료 시각 중 최댓값
+    // [ADD] 해당 주문의 배송완료 시각 중 최댓값 (교환 재배송 포함)
     @Query("select max(s.deliveredAt) from Shipment s where s.orderId=:orderId")
     LocalDateTime maxDeliveredAtByOrderId(@Param("orderId") Long orderId);
 

@@ -10,8 +10,10 @@ import OAuthSuccess from '../pages/authPage/OAuthSuccess'
 import EmailSignUp from '../pages/authPage/EmailSignUpPage'
 import useAuthStore from '../stores/authStore'
 import MainLayout from '../components/layouts/MainLayout'
-import ProductPage from '../pages/user/ProductPage'
-import ProductDetailPage from '../pages/user/ProductDetailPage'
+import ProductPage from '../pages/ProductPage'
+import ProductDetailPage from '../pages/ProductDetailPage'
+import PaySuccess from '../pages/PaySuccess'
+import PayFail from '../pages/PayFail'
 
 const AppRouter = () => {
   const { isLoggedIn } = useAuthStore() // 스토어에서 isLoggedIn 상태 가져오기
@@ -19,6 +21,7 @@ const AppRouter = () => {
   return (
     <Routes>
       <Route element={<MainLayout />}>
+
         <Route path="/" element={<MainPage />} />
         <Route path='/product' element={<ProductPage/>}/>
         {/* ✅ :productId를 사용해 동적 경로로 변경 */}
@@ -38,6 +41,10 @@ const AppRouter = () => {
         {/* 로그인한 사용자 전용 페이지들 */}
         {/* TODO: 유저 구분 */}
         {isLoggedIn && <Route path="/user/*" element={<UserRouter />} />}
+
+        {/* 주문결제 관련 */}
+        <Route path="/pay/success" element={<PaySuccess />} />
+        <Route path="/pay/fail" element={<PayFail />} />
       </Route>
       {/* 공통 페이지 - 모든 사용자가 접근 가능 */}
 

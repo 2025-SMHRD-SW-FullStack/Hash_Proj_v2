@@ -36,6 +36,8 @@ public class Order {
     private String receiver;
     private String phone;
     private String addr1; private String addr2; private String zipcode;
+
+    @Column(name = "request_memo", length = 200)
     private String requestMemo;
 
     private LocalDateTime createdAt;
