@@ -1,0 +1,7 @@
+// 백엔드의 광고 슬롯 enum과 일치하도록 정의
+export const AD_SLOT_TYPES = {
+  MAIN_ROLLING: 'MAIN_ROLLING',
+  MAIN_SIDE: 'MAIN_SIDE',
+  CATEGORY_TOP: 'CATEGORY_TOP',
+  ORDER_COMPLETE: 'ORDER_COMPLETE',
+}
