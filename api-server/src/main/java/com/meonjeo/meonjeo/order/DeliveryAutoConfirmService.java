@@ -127,10 +127,18 @@ public class DeliveryAutoConfirmService {
     /** 완료 이벤트 (배송 완료) */
     private boolean isDeliveredEvent(ShipmentEvent ev) {
         String code = nz(ev.getStatusCode()).toUpperCase(Locale.ROOT);
-        String text = nz(ev.getStatusText()).toLowerCase(Locale.ROOT);
+        String text = nz(ev.getStatusText()).toLowerCase(Locale.ROOT).replace(" ", ""); // ★ 공백 제거
 
-        if (code.equals("6") || code.equals("DELIVERED")) return true;
-        return text.contains("배송완료") || text.contains("delivered") || text.contains("delivery complete");
+        // 코드 기준
+        if (code.equals("6") || code.equals("DELIVERED") || code.equals("DONE")) return true;
+
+        // 텍스트 기준(공백 제거 후)
+        return text.contains("배송완료")
+                || text.contains("수취완료")
+                || text.contains("수령완료")
+                || text.contains("배달완료")
+                || text.contains("delivered")
+                || text.contains("deliverycomplete");
     }
 
     private String nz(String s) { return s == null ? "" : s; }

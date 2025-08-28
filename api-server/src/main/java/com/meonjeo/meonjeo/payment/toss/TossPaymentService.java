@@ -11,8 +11,8 @@ import com.meonjeo.meonjeo.payment.toss.dto.TossConfirmRequest;
 import com.meonjeo.meonjeo.payment.toss.dto.TossConfirmResponse;
 import com.meonjeo.meonjeo.payment.toss.dto.TossFailRequest;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;                                   // ★ 추가
-import org.slf4j.LoggerFactory;                           // ★ 추가
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -30,7 +30,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class TossPaymentService {
 
-    private static final Logger log = LoggerFactory.getLogger(TossPaymentService.class); // ★
+    private static final Logger log = LoggerFactory.getLogger(TossPaymentService.class);
 
     private final WebClient tossWebClient;
     private final OrderRepository orderRepo;
@@ -40,7 +40,7 @@ public class TossPaymentService {
 
     @Transactional
     public TossConfirmResponse confirm(TossConfirmRequest req){
-        // 1) 주문 조회
+        // 1) 주문 조회 (req.orderId == orderUid)
         Order o = orderRepo.findByOrderUid(req.orderId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND"));
 
@@ -55,11 +55,12 @@ public class TossPaymentService {
                         .rawResponseJson("{\"zeroPay\":true}")
                         .build());
             } catch (DataIntegrityViolationException ignore) {/* 멱등 */}
-            if (o.getStatus() != OrderStatus.PAID) orderService.finalizePaid(o.getId());
+            // ✅ READY 승격 (UID 기반)
+            orderService.finalizePaidByUid(o.getOrderUid(), 0);
             return new TossConfirmResponse(o.getOrderUid(), zeroKey, "POINT_ONLY", 0, OffsetDateTime.now().toString());
         }
 
-        // 3) 금액 검증(클라이언트 조작 방지)
+        // 3) 금액 검증
         if (o.getPayAmount() != req.amount()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "AMOUNT_MISMATCH");
         }
@@ -68,7 +69,8 @@ public class TossPaymentService {
         Payment existed = payRepo.findByPaymentKey(req.paymentKey()).orElse(null);
         if (existed != null) {
             if (Objects.equals(existed.getOrderId(), o.getId()) && existed.getAmount() == req.amount()) {
-                if (o.getStatus() != OrderStatus.PAID) orderService.finalizePaid(o.getId());
+                // ✅ READY 멱등
+                orderService.finalizePaidByUid(req.orderId(), req.amount());
                 return new TossConfirmResponse(
                         o.getOrderUid(), existed.getPaymentKey(), existed.getMethod(),
                         existed.getAmount(), String.valueOf(existed.getApprovedAt())
@@ -77,8 +79,11 @@ public class TossPaymentService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "DUPLICATE_PAYMENT_KEY_FOR_DIFFERENT_ORDER");
         }
 
-        // 5) 멱등2: 이미 주문이 PAID면 기존 결제 정보 반환(UX 개선)
-        if (o.getStatus() == OrderStatus.PAID) {                                  // ★ 개선
+        // 5) 이미 READY 이상이면 기존 결제 정보 반환(재요청 UX)
+        if (o.getStatus() == OrderStatus.READY ||
+                o.getStatus() == OrderStatus.IN_TRANSIT ||
+                o.getStatus() == OrderStatus.DELIVERED ||
+                o.getStatus() == OrderStatus.CONFIRMED) {
             Payment p = payRepo.findFirstByOrderIdOrderByIdDesc(o.getId()).orElse(null);
             String method = (p != null && p.getMethod() != null) ? p.getMethod() : "UNKNOWN";
             OffsetDateTime approvedAt = (p != null && p.getApprovedAt() != null) ? p.getApprovedAt() : OffsetDateTime.now();
@@ -100,7 +105,7 @@ public class TossPaymentService {
                             clientResponse.bodyToMono(Map.class).defaultIfEmpty(Map.of())
                                     .map(body -> {
                                         HttpStatus status = HttpStatus.valueOf(clientResponse.statusCode().value());
-                                        log.warn("TOSS_CONFIRM_FAILED status={} orderId={} body={}", status, req.orderId(), body); // ★
+                                        log.warn("TOSS_CONFIRM_FAILED status={} orderId={} body={}", status, req.orderId(), body);
                                         return new ResponseStatusException(status, "TOSS_CONFIRM_FAILED");
                                     })
                     )
@@ -109,10 +114,10 @@ public class TossPaymentService {
         } catch (ResponseStatusException e) {
             throw e;
         } catch (WebClientResponseException e) {
-            log.error("TOSS_UPSTREAM_ERROR orderId={} status={} body={}", req.orderId(), e.getStatusCode(), e.getResponseBodyAsString()); // ★
+            log.error("TOSS_UPSTREAM_ERROR orderId={} status={} body={}", req.orderId(), e.getStatusCode(), e.getResponseBodyAsString());
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "TOSS_UPSTREAM_ERROR");
         } catch (Exception e) {
-            log.error("TOSS_COMMUNICATION_ERROR orderId={} err={}", req.orderId(), e.toString()); // ★
+            log.error("TOSS_COMMUNICATION_ERROR orderId={} err={}", req.orderId(), e.toString());
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "TOSS_COMMUNICATION_ERROR");
         }
 
@@ -145,18 +150,16 @@ public class TossPaymentService {
             approvedAt = p.getApprovedAt();
         }
 
-        // 9) 주문 PAID 처리(멱등)
-        orderService.finalizePaid(o.getId());
+        // 9) ✅ 결제 승인 처리 — 재고 차감 + READY 승격 (UID 기반)
+        orderService.finalizePaidByUid(req.orderId(), req.amount());
 
         return new TossConfirmResponse(o.getOrderUid(), req.paymentKey(), methodRaw, req.amount(), String.valueOf(approvedAt));
     }
 
     @Transactional
     public void fail(TossFailRequest req){
-        Order o = orderRepo.findByOrderUid(req.orderId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND"));
-        // 포인트 롤백(멱등)
-        orderService.rollbackPointLock(o.getId());
+        // ✅ UID 기반 포인트 롤백(멱등)
+        orderService.rollbackPointLockByUid(req.orderId());
     }
 
     // ===== helpers =====

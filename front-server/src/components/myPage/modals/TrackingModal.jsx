@@ -3,16 +3,10 @@ import { getTracking } from "../../../service/orderService";
 
 export default function TrackingModal({ open, onClose, orderId }) {
   const [data, setData] = useState(null);
-
   useEffect(() => {
     if (!open) return;
     (async () => {
-      try {
-        const r = await getTracking(orderId);
-        setData(r);
-      } catch (e) {
-        console.error(e);
-      }
+      try { setData(await getTracking(orderId)); } catch (e) { console.error(e); }
     })();
   }, [open, orderId]);
 
@@ -34,11 +28,11 @@ export default function TrackingModal({ open, onClose, orderId }) {
               {data.carrierName ?? ""} · {data.invoiceNo ?? ""}
             </div>
             <ol className="mt-4 border-l pl-6 space-y-4 max-h-[60vh] overflow-auto">
-              {(data.events ?? []).map((e, idx) => (
-                <li key={idx} className="relative">
+              {(data.events ?? []).map((e, i) => (
+                <li key={i} className="relative">
                   <span className="absolute -left-3 top-1.5 w-2 h-2 bg-gray-400 rounded-full" />
                   <div className="text-sm">
-                    {(e.time && new Date(e.time).toLocaleString()) || e.time || "-"} · {e.status || e.message || ""}
+                    {(e.time && new Date(e.time).toLocaleString()) || "-"} · {e.status || e.message || ""}
                   </div>
                   <div className="text-xs text-gray-500">
                     {(e.branch || e.location || "")} {(e.description || "")}
