@@ -3,14 +3,14 @@ import { useSearchParams } from 'react-router-dom'
 
 import Modal from '/src/components/common/Modal'
 import Button from '/src/components/common/Button'
-import OrderDetailContent from '../../../components/seller/OrderDetailContent'
+import OrderDetailContent from '/src/components/product/OrderDetailContent'
 
 import FeedbackFilterChips from '/src/components/seller/feedbacks/FeedbackFilterChips'
 import FeedbackTable from '/src/components/seller/feedbacks/FeedbackTable'
 import useFeedbackFilters from '/src/components/seller/feedbacks/useFeedbackFilters'
 
 import { UI, TAB_KEYS } from '/src/constants/sellerfeedbacks'
-import FEEDBACKS_MOCK from '/src/data/sellerFeedbacks' // ✅ 더미 데이터
+import FEEDBACKS_MOCK from '/src/data/sellerFeedbacks' // 더미 데이터
 
 export default function SellerFeedbacksPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -28,11 +28,10 @@ export default function SellerFeedbacksPage() {
   const { counts, filtered } = useFeedbackFilters(rows, status)
 
   useEffect(() => {
-    // ✅ 더미 로드
     setLoading(true)
     try {
-      setRows(FEEDBACKS_MOCK)
-    } catch (e) {
+      setRows(FEEDBACKS_MOCK) // ✅ 더미 로드
+    } catch {
       setError('피드백 목록을 불러오지 못했습니다.')
     } finally {
       setLoading(false)
@@ -43,13 +42,13 @@ export default function SellerFeedbacksPage() {
     if (!reportTarget) return
     try {
       setReporting(true)
-      // 실제 연동 시: await reportFeedback({ feedbackId: reportTarget.feedbackId, reason: '부적절한 피드백 신고' })
+      // 낙관적 업데이트
       setRows((prev) =>
         prev.map((r) => (r.feedbackId === reportTarget.feedbackId ? { ...r, reportStatus: 'PENDING' } : r))
       )
       setReportTarget(null)
       alert('신고가 접수되었습니다. (취소 불가)')
-    } catch (e) {
+    } catch {
       alert('신고 접수 중 오류가 발생했습니다.')
     } finally {
       setReporting(false)
@@ -62,7 +61,7 @@ export default function SellerFeedbacksPage() {
 
       <section className={`${UI.box} mb-4`}>
         <div className="flex flex-wrap items-center gap-2">
-          <FeedbackFilterChips counts={counts} value={status} onChange={setStatus} />
+          <FeedbackFilterChips counts={counts} value={status} onChange={setStatus} variant="admin"/>
         </div>
       </section>
 

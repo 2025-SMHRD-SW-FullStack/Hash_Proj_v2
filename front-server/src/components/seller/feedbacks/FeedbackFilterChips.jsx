@@ -1,6 +1,5 @@
-// 셀러 피드백 관리
 import React from 'react'
-import StatusChips from '../../../components/seller/StatusChips'
+import StatusChips from '/src/components/product/StatusChips'
 import { TAB_KEYS } from '/src/constants/sellerfeedbacks'
 
 export default function FeedbackFilterChips({ counts, value, onChange }) {
@@ -19,6 +18,7 @@ export default function FeedbackFilterChips({ counts, value, onChange }) {
       value={value}
       onChange={onChange}
       size="sm"
+      variant="admin"
     />
   )
 }

@@ -1,44 +1,57 @@
-import React, { useMemo, useState } from 'react';
-import Button from '/src/components/common/Button';
-import { buildDailySalesSeries } from '/src/util/sales';
-import { KRW, shortNum } from '/src/util/datetime';
-import LineBase from "./charts/LineBase";
+// /src/components/seller/StatusChips.jsx
+import React from 'react'
+import Button from '/src/components/common/Button'
 
-const METRICS = [
-  { key: 'amount', label: '결제금액', yTick: (v) => shortNum(v), tip: (v) => `${KRW.format(v)}원` },
-  { key: 'orderCount', label: '결제건수', yTick: (v) => v, tip: (v) => `${v}건` },
-  { key: 'buyerCount', label: '결제자수', yTick: (v) => v, tip: (v) => `${v}명` },
-]
+/**
+ * items: [{ key, label, count? }]
+ * value: 선택된 key
+ * onChange: (key) => void
+ * size: 'sm' | 'md'
+ * variant: 'admin' | 'signUp' | 'default'
+ */
+export default function StatusChips({
+  items = [],
+  value,
+  onChange,
+  size = 'sm',
+  variant = 'default',
+  className = '',
+}) {
+  const isActive = (k) => k === value
 
-export default function SalesChartCard({ orders = [], days = 14, box = '' }) {
-  const [metric, setMetric] = useState('amount')
-  const data = useMemo(() => buildDailySalesSeries(orders, days), [orders, days])
-  const active = METRICS.find(m => m.key === metric)
+  const theme = {
+    // 관리자 톤: 선택=검정, 비활성=흰배경/회색테두리
+    admin:   { idle: 'outline', active: 'dark' },
+    // 회원가입·포인트 톤: 선택=초록(primary), 비활성=outine
+    signUp:  { idle: 'outline', active: 'primary' },
+    // 무난 톤
+    default: { idle: 'outline', active: 'dark' },
+  }
+
+  const map = theme[variant] ?? theme.default
+
+  // 둥근 알약 형태 유지
+  const pill = size === 'sm' ? 'rounded-full h-8 px-3 text-[13px]' : 'rounded-full h-9 px-3 text-sm'
 
   return (
-    <section className={`${box} md:col-span-2`}>
-      <h2 className="mb-2 text-base font-semibold">스토어 매출 통계</h2>
-
-      <div className="mb-2 flex flex-wrap gap-2">
-        {METRICS.map(m => (
-          <Button key={m.key}
-            onClick={() => setMetric(m.key)}
-            className={`rounded-md border px-3 py-1 text-sm
-              ${metric === m.key ? 'bg-[#9DD5E9] text-white border-[#9DD5E9]' : 'bg-white'}`}>
-            {m.label}
+    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+      {items.map((it) => {
+        const v = isActive(it.key) ? map.active : map.idle
+        return (
+          <Button
+            key={it.key}
+            variant={v}          // Button 변형 사용
+            size={size}
+            className={pill}     // 알약 모양
+            onClick={() => onChange?.(it.key)}
+          >
+            {it.label}
+            {typeof it.count === 'number' && (
+              <span className="ml-1 text-gray-500">({it.count})</span>
+            )}
           </Button>
-        ))}
-      </div>
-
-      <div className="h-[220px] rounded-md border border-dashed">
-        <LineBase
-          data={data}
-          dataKey={metric}
-          yTickFormatter={active.yTick}
-          // 툴팁 값 + 표시 이름(결제금액/결제건수/결제자수)
-          tooltipFormatter={(v) => [active.tip(v), active.label]}
-        />
-      </div>
-    </section>
+        )
+      })}
+    </div>
   )
 }

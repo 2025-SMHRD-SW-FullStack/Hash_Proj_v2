@@ -1,8 +1,14 @@
-import React, { useMemo, useState } from 'react'
+// /src/pages/seller/AdsPowerPage.jsx
+import React, { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../components/common/Button'
-import { productsMock as PRODUCTS_MOCK } from '../../data/products.mock'
 import { CATEGORIES } from '../../constants/products'
+import { getMyProducts } from '/src/service/productService' // 셀러 소유 상품 전용
+import { fetchAdUnavailableDates, fetchAdInventory, createAdBooking /*, confirmAdPayment*/ } from '/src/service/adsService'
+import { AD_SLOT_TYPES } from '/src/constants/ads'
+
+import { DayPicker } from 'react-day-picker'
+import 'react-day-picker/dist/style.css'
 
 const inputCls = 'w-full h-10 rounded-lg border px-3 text-sm box-border max-w-full'
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
@@ -14,51 +20,35 @@ const Field = ({ label, children, hint }) => (
   </label>
 )
 
+// UI 라벨 ↔ 백엔드 enum 매핑
 const POSITIONS = [
-  { key: 'mainBanner', label: '메인 롤링 배너', capacity: 10, price: { 7: 15000, 14: 25000, 30: 45000 } },
-  { key: 'mainRight', label: '메인 오른쪽 구좌', capacity: 3, price: { 7: 12000, 14: 20000, 30: 40000 } },
-  { key: 'productList', label: '상품목록 (파워광고)', capacity: 5, price: { 7: 8000, 14: 15000, 30: 30000 } },
-  { key: 'orderComplete', label: '주문완료', capacity: 5, price: { 7: 5000, 14: 10000, 30: 20000 } },
+  { key: 'mainBanner',    label: '메인 롤링 배너',     type: AD_SLOT_TYPES.MAIN_ROLLING,  capacity: 10, price: { 7: 15000, 14: 25000, 30: 45000 } },
+  { key: 'mainRight',     label: '메인 오른쪽 구좌',   type: AD_SLOT_TYPES.MAIN_SIDE,     capacity: 3,  price: { 7: 12000, 14: 20000, 30: 40000 } },
+  { key: 'productList',   label: '상품목록 (파워광고)', type: AD_SLOT_TYPES.CATEGORY_TOP,  capacity: 5,  price: { 7: 8000,  14: 15000, 30: 30000 } },
+  { key: 'orderComplete', label: '주문완료',           type: AD_SLOT_TYPES.ORDER_COMPLETE, capacity: 5,  price: { 7: 5000,  14: 10000, 30: 20000 } },
 ]
-
-const FULLY_BOOKED_DATES = {
-  mainBanner: ['2025-09-05', '2025-09-06'],
-  mainRight: [],
-  productList: ['2025-09-03'],
-  orderComplete: [],
-}
 
 const PERIODS = [7, 14, 30]
 
+// ---- date utils
 const toDate = (s) => (s ? new Date(s + 'T00:00:00') : null)
 const fmt = (n) => (n || 0).toLocaleString()
-const addDays = (dateStr, days) => {
+const ymd = (d) => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+const addDaysDate = (date, n) => {
+  const d = new Date(date)
+  d.setDate(d.getDate() + n)
+  return d
+}
+const addDaysStr = (dateStr, days) => {
   const d = toDate(dateStr)
   if (!d) return ''
-  const nd = new Date(d)
-  nd.setDate(nd.getDate() + (days - 1))
-  const y = nd.getFullYear()
-  const m = String(nd.getMonth() + 1).padStart(2, '0')
-  const dd = String(nd.getDate()).padStart(2, '0')
-  return `${y}-${m}-${dd}`
-}
-const rangeDates = (startStr, days) => {
-  const d = toDate(startStr)
-  if (!d) return []
-  return Array.from({ length: days }, (_, i) => {
-    const nd = new Date(d)
-    nd.setDate(d.getDate() + i)
-    const y = nd.getFullYear()
-    const m = String(nd.getMonth() + 1).padStart(2, '0')
-    const dd = String(nd.getDate()).padStart(2, '0')
-    return `${y}-${m}-${dd}`
-  })
-}
-const isStartAllowed = (positionKey, startStr, days) => {
-  if (!startStr || !days) return true
-  const booked = new Set(FULLY_BOOKED_DATES[positionKey] || [])
-  const touches = rangeDates(startStr, days).some((d) => booked.has(d))
-  return !touches
+  const nd = addDaysDate(d, days - 1)
+  return ymd(nd)
 }
 const truncate10 = (s = '') => {
   const arr = Array.from(String(s))
@@ -78,124 +68,183 @@ export default function AdsPowerPage() {
   })
   const [category, setCategory] = useState('')
 
-  const productOptions = useMemo(() => {
-    const arr = Array.isArray(PRODUCTS_MOCK) ? PRODUCTS_MOCK : []
-    const filtered = category ? arr.filter((p) => p.category === category) : []
-    const sorted = [...filtered].sort((a, b) =>
-      (a.name ?? '').localeCompare(b.name ?? '', 'ko-KR')
-    )
-    return sorted.map((p) => ({
-      id: p.id ?? p.productId ?? p.sku ?? String(Math.random()),
-      name: truncate10(p.name ?? p.title ?? p.productName ?? '상품'),
-    }))
+  const [loading, setLoading] = useState(false)
+  const [products, setProducts] = useState([])     // 내 상품 목록
+  const [inventory, setInventory] = useState([])   // (디버그) 최근 인벤토리
+  const [booking, setBooking] = useState(null)     // 예약 결과
+
+  const positionConf = useMemo(() => POSITIONS.find((p) => p.key === form.position) || POSITIONS[0], [form.position])
+  const price = positionConf?.price?.[form.period] || 0
+
+  // ---- DayPicker 범위 & 선택 불가 세트
+  const today = useMemo(() => new Date(), [])
+  const calendarFrom = today
+  const calendarTo = useMemo(() => addDaysDate(today, 90), [today])
+  const [unavailableSet, setUnavailableSet] = useState(new Set()) // 'YYYY-MM-DD' Set
+
+  // 카테고리 바뀌면 내 상품 로드
+  useEffect(() => {
+    if (!category) { setProducts([]); setForm((s)=>({ ...s, productId: '' })); return }
+    let alive = true
+    ;(async () => {
+      try {
+        setLoading(true)
+        const data = await getMyProducts({ q: '', page: 0, size: 200, category })
+        const list = Array.isArray(data) ? data : (data?.content || [])
+        const normalized = list.map((p) => ({
+          id: p.id ?? p.productId,
+          name: p.name || p.productName || `상품#${p.id ?? p.productId}`,
+          category: p.category || p.categoryName,
+        }))
+        if (alive) setProducts(normalized.filter((p)=>!category || p.category===category))
+      } catch (e) {
+        console.error(e)
+        if (alive) setProducts([])
+        alert('상품 목록을 불러오지 못했습니다. (로그인/셀러 승인 상태 확인)')
+      } finally {
+        if (alive) setLoading(false)
+      }
+    })()
+    return () => { alive = false }
   }, [category])
 
-  const positionMeta = useMemo(
-    () => POSITIONS.find((p) => p.key === form.position) ?? POSITIONS[0],
-    [form.position]
-  )
-  const price = useMemo(() => positionMeta.price?.[form.period] || 0, [positionMeta, form.period])
+  // 위치/카테고리 변경 시, 달력의 "선택 불가 날짜" 미리 로드
+  useEffect(() => {
+    // CATEGORY_TOP은 category 필수. 없으면 비우고 대기
+    if (positionConf.type === AD_SLOT_TYPES.CATEGORY_TOP && !category) {
+      setUnavailableSet(new Set()); return
+    }
+    ;(async () => {
+      try {
+        setLoading(true)
+        const set = await fetchAdUnavailableDates({
+          type: positionConf.type,
+          category,
+          startDate: ymd(calendarFrom),
+          endDate: ymd(calendarTo),
+        })
+        setUnavailableSet(set)
+      } catch (e) {
+        console.error(e)
+        setUnavailableSet(new Set())
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [positionConf.type, category])
 
   const on = (k) => (e) => {
-    const value = e.target.value
+    const v = e.target.value
     setForm((s) => {
-      if (k === 'period') {
-        const periodDays = Number(value)
-        const newEnd = s.startDate ? addDays(s.startDate, periodDays) : ''
-        return { ...s, period: periodDays, endDate: newEnd }
+      const next = { ...s, [k]: v }
+      if (k === 'period' || k === 'startDate') {
+        const days = Number(k === 'period' ? v : next.period || 0)
+        next.endDate = addDaysStr(next.startDate, days)
       }
-      if (k === 'startDate') {
-        const newStart = value
-        const newEnd = newStart ? addDays(newStart, s.period) : ''
-        return { ...s, startDate: newStart, endDate: newEnd }
-      }
-      return { ...s, [k]: value }
+      return next
     })
   }
 
-  const onChangeStartDate = (e) => {
-    const v = e.target.value
-    const periodDays = Number(form.period)
-    if (!v) return on('startDate')(e)
-    if (!isStartAllowed(form.position, v, periodDays)) {
-      alert('해당 위치는 선택한 기간에 이미 광고가 가득 차 있어 시작일을 선택할 수 없습니다.')
-      setForm((s) => ({ ...s, startDate: '', endDate: '' }))
-      return
+  const productOptions = useMemo(() => {
+    return products.map((p) => ({ id: p.id, name: truncate10(p.name) }))
+  }, [products])
+
+  const canSubmit = useMemo(() => {
+    return !!(category && form.productId && form.position && form.period && form.startDate && form.endDate && form.agree)
+  }, [category, form])
+
+  // 시작일 비활성 판정: 선택한 period 동안 하루라도 막힌 날이 있으면 해당 시작일은 비활성
+  const isStartDisabled = (dateObj) => {
+    if (!dateObj) return true
+    if (positionConf.type === AD_SLOT_TYPES.CATEGORY_TOP && !category) return true
+
+    const days = Number(form.period || 0)
+    if (!days) return true
+
+    // 범위 밖
+    if (dateObj < calendarFrom || dateObj > calendarTo) return true
+
+    for (let i = 0; i < days; i++) {
+      const d = addDaysDate(dateObj, i)
+      const key = ymd(d)
+      if (unavailableSet.has(key)) return true
     }
-    on('startDate')(e)
+    return false
   }
 
-  const onChangeCategory = (e) => {
-    const v = e.target.value
-    setCategory(v)
-    setForm((s) => ({ ...s, productId: '' }))
+  // 🔎 (선택) 인벤토리 확인 버튼 동작: 디버그용
+  const checkInventory = async () => {
+    if (!category || !form.startDate || !form.endDate) return alert('카테고리/기간을 먼저 선택하세요.')
+    try {
+      setLoading(true)
+      const res = await fetchAdInventory({
+        type: positionConf.type,
+        category,
+        startDate: form.startDate,
+        endDate: form.endDate,
+      })
+      setInventory(res || [])
+      const available = (res || []).find((d) => d.available)
+      alert(available ? `가용 슬롯 있음 (slotId=${available.slotId})` : '가용 슬롯이 없습니다.')
+    } catch (e) {
+      console.error(e)
+      alert('인벤토리 조회 실패')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const submit = (e) => {
+  // ✅ 신청하기: 인벤토리 재조회 → 첫 가용 슬롯으로 예약 생성
+  const submit = async (e) => {
     e.preventDefault()
-    if (!category) return alert('카테고리를 선택하세요.')
-    if (!form.productId) return alert('광고할 상품을 선택하세요.')
-    if (!form.position) return alert('광고 위치를 선택하세요.')
-    if (!form.period) return alert('광고 기간을 선택하세요.')
-    if (!form.startDate) return alert('시작일을 선택하세요.')
-    if (!isStartAllowed(form.position, form.startDate, form.period)) {
-      return alert('선택한 시작일은 해당 위치에서 이미 가득 찬 기간과 겹칩니다.')
-    }
-    if (!form.agree) return alert('약관에 동의가 필요합니다.')
+    if (!canSubmit) return alert('필수값을 모두 선택해 주세요.')
 
-    const payload = {
-      category,
-      productId: form.productId,
-      position: form.position,
-      period: form.period,
-      startDate: form.startDate,
-      endDate: form.endDate,
-      price,
-    }
+    try {
+      setLoading(true)
+      const res = await fetchAdInventory({
+        type: positionConf.type,
+        category,
+        startDate: form.startDate,
+        endDate: form.endDate,
+      })
+      const available = (res || []).find((d) => d.available)
+      if (!available) return alert('선택한 기간에는 가용 슬롯이 없습니다. 다른 날짜를 선택해 주세요.')
 
-    console.log('Power Ads apply payload:', payload)
-    alert(
-      `임시: 파워광고 신청이 접수되었습니다.\n` +
-      `위치: ${positionMeta.label}\n기간: ${form.period}일\n총 금액: ${fmt(price)}원`
-    )
-    navigate('/seller')
+      const bookingRes = await createAdBooking({
+        slotId: available.slotId,
+        productId: Number(form.productId),
+        startDate: form.startDate,
+        endDate: form.endDate,
+      })
+      setBooking(bookingRes)
+
+      const finalPrice = bookingRes?.price ?? price
+      alert(`예약이 생성되었습니다.\n예약번호: ${bookingRes?.bookingId}\n결제금액: ${fmt(finalPrice)}원`)
+
+      // (선택) Toss 결제까지 즉시
+      // const orderId = `ad-${bookingRes.bookingId}-${Date.now()}`
+      // const paymentKey = `TEST-${bookingRes.bookingId}`
+      // const confirm = await confirmAdPayment({ paymentKey, orderId, amount: finalPrice, bookingId: bookingRes.bookingId })
+      // alert('결제가 완료되었습니다.')
+      // navigate('/seller')
+
+    } catch (e) {
+      console.error(e)
+      alert(e?.response?.data?.message || '광고 신청 처리 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">파워광고 신청</h1>
-      </div>
+    <div className="mx-auto w-full max-w-[1120px] px-4">
+      <h1 className="mb-4 text-xl font-semibold">파워광고 신청</h1>
 
-      {/* 안내 */}
-      <section className={`${box} mb-4`}>
-        <ul className="list-disc pl-5 text-sm text-gray-600">
-          <li>카테고리를 선택하면 해당 카테고리의 상품이 가나다 순으로 표시됩니다.</li>
-          <li>노출 위치와 기간(7/14/30일)을 지정하면 가격이 자동 계산됩니다.</li>
-          <div className="mt-2 min-w-0">
-            <h2 className="mb-2 text-sm font-semibold">가격표</h2>
-            <div className="space-y-2 text-xs text-gray-600">
-              {POSITIONS.map((p) => (
-                <div key={p.key}>
-                  <div className="font-medium text-gray-800">{p.label}</div>
-                  <div>7일 {fmt(p.price[7])}원 / 14일 {fmt(p.price[14])}원 / 30일 {fmt(p.price[30])}원</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </ul>
-      </section>
-
-      {/* ✅ 반응형 레이아웃: 데스크탑 2:1, 모바일 1열(요약이 아래로) */}
-      <form onSubmit={submit} className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* 좌측 – 설정 */}
-        <section className={`${box} order-1 lg:col-span-2`}>
-          <Field label="카테고리 선택">
-            <select
-              value={category}
-              onChange={onChangeCategory}
-              className={inputCls}
-            >
+      <form onSubmit={submit} className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
+        {/* 좌측 – 입력 */}
+        <section className={`${box} lg:mb-0`}>
+          <Field label="카테고리">
+            <select value={category} onChange={(e)=>setCategory(e.target.value)} className={inputCls}>
               <option value="">카테고리를 선택하세요</option>
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -208,7 +257,7 @@ export default function AdsPowerPage() {
               value={form.productId}
               onChange={on('productId')}
               className={inputCls}
-              disabled={!category}
+              disabled={!category || loading}
             >
               <option value="">{category ? '상품을 선택하세요' : '카테고리를 먼저 선택하세요'}</option>
               {productOptions.map((p) => (
@@ -229,57 +278,52 @@ export default function AdsPowerPage() {
                 onChange={on('position')}
                 className={inputCls}
               >
-                {POSITIONS.map((pos) => (
-                  <option key={pos.key} value={pos.key}>
-                    {pos.label}
-                  </option>
+                {POSITIONS.map((p) => (
+                  <option key={p.key} value={p.key}>{p.label}</option>
                 ))}
               </select>
             </Field>
 
             <Field label="광고 기간">
-              <select
-                value={form.period}
-                onChange={on('period')}
-                className={inputCls}
-              >
+              <select value={form.period} onChange={on('period')} className={inputCls}>
                 {PERIODS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}일
-                  </option>
+                  <option key={d} value={d}>{d}일</option>
                 ))}
               </select>
             </Field>
-          </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {/* ✅ 달력: 불가일은 아예 선택 비활성 */}
             <Field label="시작일">
-              <div className="relative min-w-0">
-                <input
-                  type="date"
-                  value={form.startDate}
-                  onChange={onChangeStartDate}
-                  className={`${inputCls} appearance-none pr-8 min-w-0`}
+              <div className="rounded-lg border p-2">
+                <DayPicker
+                  mode="single"
+                  captionLayout="dropdown"
+                  fromDate={calendarFrom}
+                  toDate={calendarTo}
+                  selected={form.startDate ? new Date(form.startDate) : undefined}
+                  onDayClick={(d, { disabled }) => {
+                    if (disabled) return
+                    const start = ymd(d)
+                    const end = addDaysStr(start, Number(form.period))
+                    setForm((s) => ({ ...s, startDate: start, endDate: end }))
+                  }}
+                  disabled={isStartDisabled}
                 />
               </div>
             </Field>
 
             <Field label="종료일">
-              <div className="min-w-0">
-                <input
-                  type="text"
-                  value={form.endDate}
-                  readOnly
-                  className={`${inputCls} bg-gray-50 min-w-0`}
-                  placeholder="YYYY-MM-DD"
-                />
-              </div>
+              <input
+                type="text"
+                value={form.endDate}
+                readOnly
+                className={`${inputCls} bg-gray-50 min-w-0`}
+                placeholder="YYYY-MM-DD"
+              />
             </Field>
           </div>
 
-
-
-          {/* ✅ 동의 + 버튼을 왼쪽 폼 하단으로 이동 */}
+          {/* ✅ 동의 + 버튼 */}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -291,48 +335,31 @@ export default function AdsPowerPage() {
             </label>
 
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => navigate('/seller')}>
+              <Button type="button" variant="unselected" onClick={() => navigate('/seller')}>
                 취소
               </Button>
-              <Button type="submit">신청하기</Button>
+              <Button type="submit" disabled={loading || !canSubmit}>신청하기</Button>
             </div>
           </div>
         </section>
 
-        {/* 우측 – 요약 (데스크탑 우측, 모바일에서는 아래로 내려감) */}
-        <aside className={`${box} order-2 lg:order-2 lg:sticky lg:top-4 h-fit`}>
-          <h2 className="mb-2 text-base font-semibold">광고 요약</h2>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center justify-between">
-              <span>카테고리</span>
-              <strong>{category || '-'}</strong>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>위치</span>
-              <strong>{positionMeta.label}</strong>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>기간</span>
-              <strong>{form.period}일</strong>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>시작일</span>
-              <strong>{form.startDate || '-'}</strong>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>종료일</span>
-              <strong>{form.endDate || '-'}</strong>
-            </div>
-            <div className="flex items-center justify-between pt-2">
-              <span>결제 금액</span>
-              <strong>{fmt(price)}원</strong>
-            </div>
-          </div>
+        {/* 우측 – 요약 (데스크탑 우측, 모바일에서는 아래로) */}
+        <aside className={`${box}`}>
+          <h2 className="mb-2 text-base font-semibold">신청 요약</h2>
+          <ul className="space-y-1 text-sm">
+            <li className="flex items-center justify-between"><span>카테고리</span><span>{category || '-'}</span></li>
+            <li className="flex items-center justify-between"><span>상품</span><span>{(productOptions.find((p)=>String(p.id)===String(form.productId))?.name) || '-'}</span></li>
+            <li className="flex items-center justify-between"><span>위치</span><span>{positionConf?.label}</span></li>
+            <li className="flex items-center justify-between"><span>기간</span><span>{form.period}일</span></li>
+            <li className="flex items-center justify-between"><span>시작일</span><span>{form.startDate || '-'}</span></li>
+            <li className="flex items-center justify-between"><span>종료일</span><span>{form.endDate || '-'}</span></li>
+            <li className="flex items-center justify-between font-semibold"><span>결제 예정 금액</span><span className="tabular-nums">{fmt(price)}원</span></li>
+          </ul>
 
           <hr className="my-4" />
 
-          <h3 className="mb-2 text-sm font-semibold">위치별 동시 노출 수량</h3>
-          <ul className="space-y-1 text-sm text-gray-600 pl-0 list-none">
+          <h3 className="mb-1 text-sm font-medium text-gray-700">동시 노출 가능 개수</h3>
+          <ul className="space-y-1 text-sm">
             {POSITIONS.map((p) => (
               <li key={p.key} className="flex items-center justify-between">
                 <span>{p.label}</span>
@@ -340,6 +367,24 @@ export default function AdsPowerPage() {
               </li>
             ))}
           </ul>
+
+          {/* (디버그) 최근 인벤토리 확인 결과 */}
+          {!!inventory?.length && (
+            <div className="mt-4 rounded-lg border p-2 text-xs text-gray-600">
+              <div className="mb-1 font-medium">인벤토리 확인 결과</div>
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                {inventory.map((it) => (
+                  <div key={`${it.slotId}-${it.position}`} className="rounded border p-2">
+                    <div>slotId: {it.slotId}</div>
+                    <div>pos: {it.position}</div>
+                    <div className={it.available ? 'text-emerald-600' : 'text-red-500'}>
+                      {it.available ? '가능' : '불가'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </aside>
       </form>
 

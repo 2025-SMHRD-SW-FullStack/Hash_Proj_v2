@@ -1,9 +1,11 @@
 // /src/pages/seller/SellerMain.jsx
 import React, { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import StoreSalesStats from '/src/components/seller/charts/StoreSalesStats'
 
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 const kpi = 'flex items-center justify-between py-2 text-sm'
+
 
 const SellerMain = () => {
   const navigate = useNavigate()

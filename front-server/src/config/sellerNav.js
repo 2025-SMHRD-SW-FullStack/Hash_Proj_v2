@@ -9,8 +9,8 @@ const sellerNav = [
     to: '/seller/feedbacks',       // 그룹 루트 (실제 라우팅은 자식으로 이동)
     type: 'group',
     children: [
-      { label: '피드백 관리', to: '/seller/feedbacks/manage' },
       { label: '피드백 통계', to: '/seller/feedbacks/stats' },
+      { label: '피드백 관리', to: '/seller/feedbacks/manage' },
     ],
   },
 

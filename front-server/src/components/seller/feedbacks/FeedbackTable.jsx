@@ -1,4 +1,3 @@
-// 셀러 피드백 관리
 import React from 'react'
 import { UI } from '/src/constants/sellerfeedbacks'
 import FeedbackRow from './FeedbackRow'
@@ -16,15 +15,15 @@ export default function FeedbackTable({ rows, loading, error, onOpenOrder, onReq
           <col className={UI.COLS.CONTENT} />
           <col className={UI.COLS.ACTION} />
         </colgroup>
-        <thead className="bg-gray-50 text-gray-600 text-center">
+        <thead className="bg-gray-50 text-gray-600">
           <tr>
-            <th className="px-3 py-2">주문번호</th>
-            <th className="px-3 py-2">상품명</th>
-            <th className="px-3 py-2">구매자</th>
-            <th className="px-3 py-2">피드백 작성일</th>
-            <th className="px-3 py-2">상태</th>
-            <th className="px-3 py-2">피드백 내용</th>
-            <th className="px-3 py-2">관리</th>
+            <th className="px-3 py-2 text-left">주문번호</th>
+            <th className="px-3 py-2 text-left">상품명</th>
+            <th className="px-3 py-2 text-left">구매자</th>
+            <th className="px-3 py-2 text-left">피드백 작성일</th>
+            <th className="px-3 py-2 text-left">상태</th>
+            <th className="px-3 py-2 text-left">피드백 내용</th>
+            <th className="px-3 py-2 text-left">관리</th>
           </tr>
         </thead>
         <tbody>

@@ -49,6 +49,7 @@ const AppRouter = () => {
         <Route path="/pay/success" element={<PaySuccess />} />
         <Route path="/pay/fail" element={<PayFail />} />
 
+      </Route>
         {/* 공통 페이지 - 모든 사용자가 접근 가능 */}
 
         {/* 관리자 전용 페이지들 */}
@@ -58,7 +59,6 @@ const AppRouter = () => {
         <Route path="/seller/*" element={<SellerRouter />} />
 
         {isLoggedIn && <Route path="/admin/*" element={<AdminRouter />} />}
-      </Route>
     </Routes>
   )
 }

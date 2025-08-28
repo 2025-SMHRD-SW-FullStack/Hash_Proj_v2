@@ -4,34 +4,25 @@ import useAuthStore from '../stores/authStore'
 export const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL, // Spring 서버 주소
   timeout: 5000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
   withCredentials: true, // 세션 쿠키 자동 포함
 })
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const { accessToken } = useAuthStore.getState(); 
-    
-    // 👇 --- 디버깅 코드 추가 ---
-    // console.log('📦 [Axios Interceptor] 현재 accessToken:', accessToken);
-    
+    const { accessToken } = useAuthStore.getState()
     if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    //   console.log('✅ [Axios Interceptor] Authorization 헤더 추가 완료:', config.headers.Authorization);
-    // } else {
-    //   console.warn('⚠️ [Axios Interceptor] accessToken이 없어 헤더를 추가하지 못했습니다.');
+      // Axios v1 헤더 객체 호환
+      if (config.headers?.set) {
+        config.headers.set('Authorization', `Bearer ${accessToken}`)
+      } else {
+        config.headers.Authorization = `Bearer ${accessToken}`
+      }
     }
-    // -------------------------
-    
-    return config;
-  }, 
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
+    return config
+  },
+  (error) => Promise.reject(error)
+)
 
 // ✅ 자동 리프레시 처리
 let isRefreshing = false
@@ -39,11 +30,8 @@ let failedQueue = []
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error)
-    } else {
-      prom.resolve(token)
-    }
+    if (error) prom.reject(error)
+    else prom.resolve(token)
   })
   failedQueue = []
 }
@@ -51,9 +39,15 @@ const processQueue = (error, token = null) => {
 axiosInstance.interceptors.response.use(
   (res) => res,
   async (err) => {
-    const originalRequest = err.config
+    const originalRequest = err?.config
+    const status = err?.response?.status
 
-    if (err.response?.status === 401 && !originalRequest._retry) {
+    // 네트워크 오류 등은 그대로 던짐
+    if (!originalRequest || !status) {
+      return Promise.reject(err)
+    }
+
+    if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 
       if (isRefreshing) {
@@ -61,50 +55,62 @@ axiosInstance.interceptors.response.use(
           failedQueue.push({ resolve, reject })
         })
           .then((newToken) => {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`
+            // ★ 추가: 큐 재개 시에도 토큰 주입을 확실히
+            if (originalRequest.headers?.set) {
+              originalRequest.headers.set('Authorization', `Bearer ${newToken}`)
+            } else {
+              originalRequest.headers = {
+                ...(originalRequest.headers || {}),
+                Authorization: `Bearer ${newToken}`,
+              }
+            }
             return axiosInstance(originalRequest)
           })
-          .catch((err) => Promise.reject(err))
+          .catch((e) => Promise.reject(e))
       }
 
       isRefreshing = true
-
       try {
-        // 1. 백엔드의 /api/auth/refresh API는 LoginResponse를 반환합니다.
+        // 1) refresh
         const res = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/auth/refresh`,
           {},
           { withCredentials: true }
         )
+        const newAccessToken = res.data?.accessToken
+        if (!newAccessToken) throw new Error('AccessToken이 응답에 없습니다')
 
-        console.log('refresh 응답: ', res.data)
-
-        // 2. 응답에서 새 accessToken을 가져옵니다. (백엔드 LoginResponse DTO 기준)
-        const newAccessToken = res.data.accessToken
-
-        if (!newAccessToken) {
-          console.error('❌ accessToken이 응답에 없습니다!', res.data)
-          throw new Error('AccessToken이 응답에 없습니다')
-        }
-
-        // 3. zustand 스토어의 setAccessToken 액션을 호출하여 전역 상태를 업데이트합니다.
+        // 2) 전역 상태 갱신
         useAuthStore.getState().setAccessToken(newAccessToken)
+
+        // ★ 추가: 디폴트 헤더에도 즉시 반영 (이후 모든 요청)
+        axiosInstance.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`
+
+        // ★ 추가: 실패했던 원요청에도 즉시 주입
+        if (originalRequest.headers?.set) {
+          originalRequest.headers.set('Authorization', `Bearer ${newAccessToken}`)
+        } else {
+          originalRequest.headers = {
+            ...(originalRequest.headers || {}),
+            Authorization: `Bearer ${newAccessToken}`,
+          }
+        }
 
         processQueue(null, newAccessToken)
 
-        // 실패했던 원래 요청 재시도
+        // 3) 원요청 재시도
         return axiosInstance(originalRequest)
       } catch (refreshErr) {
         processQueue(refreshErr, null)
-        // 4. 리프레시 실패 시 로그아웃 처리
         useAuthStore.getState().logout()
-        window.location.href = '/login' // 확실한 리다이렉트를 위해 추가
+        window.location.href = '/login'
         return Promise.reject(refreshErr)
       } finally {
         isRefreshing = false
       }
     }
 
+    // 그 외 에러는 기존 형태 유지
     return Promise.reject(err.response?.data || err.message)
   }
 )

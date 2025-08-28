@@ -1,30 +1,19 @@
-// 셀러 피드백 탭 키 상수, 신규 기준 시간, 공용 UI 토큰/컬럼폭
+// 피드백 관리 전용 상수/스타일
 
-export const TAB_KEYS = {
-  ALL: 'ALL',
-  NEW: 'NEW',                 // 신규 작성
-  WAIT: 'WAIT',               // 작성대기
-  EXPIRED: 'EXPIRED',         // 기간만료
-  REPORT_PENDING: 'REPORT_PENDING',
-  REPORT_APPROVED: 'REPORT_APPROVED',
-  REPORT_REJECTED: 'REPORT_REJECTED',
-  EXCHANGE: 'EXCHANGE',       // 교환처리중
-}
+// 필터 키 (검토 계열 제거)
+export const FEEDBACK_FILTERS = [
+  { key: 'ALL',              label: '전체' },
+  { key: 'NEW',              label: '신규 작성' },   // 오늘/최근 들어온 신규 작성 건(목업 기준 자유)
+  { key: 'PENDING_WRITE',    label: '작성 대기' },
+  { key: 'EXPIRED',          label: '기간 만료' },
+  { key: 'REPORT_PENDING',   label: '신고 대기' },
+  { key: 'REPORTED',         label: '신고 완료' },
+  { key: 'REPORT_REJECTED',  label: '신고 거절' },
+  { key: 'EXCHANGE',         label: '교환 처리중' },
+]
 
-// 최근 작성(신규) 간주 기준 시간(시간)
-export const NEW_THRESHOLD_HOURS = 24
-
-// UI tokens (주문관리 톤과 맞춤)
+// UI 토큰
 export const UI = {
-  box: 'rounded-xl border bg-white p-4 shadow-sm',
+  // 상태 뱃지 공통(표 안에서 쓰는 Pill)
   pill: 'inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[12px] font-medium',
-  COLS: {
-    ORDER: 'w-[140px] min-w-[140px]',
-    PRODUCT: 'min-w-[220px] flex-1',
-    BUYER: 'w-[120px] min-w-[120px]',
-    DATE: 'w-[120px] min-w-[120px]',
-    STATUS: 'w-[120px] min-w-[120px]',
-    CONTENT: 'w-[320px] min-w-[280px]',
-    ACTION: 'w-[96px] min-w-[96px]',
-  },
-}
+};
