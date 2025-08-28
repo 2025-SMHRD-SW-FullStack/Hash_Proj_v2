@@ -97,6 +97,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/ads/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/ads/seller/**").hasAnyRole("SELLER","ADMIN")
                         .requestMatchers("/api/ads/bookings/**").hasAnyRole("SELLER","ADMIN")
+                        .requestMatchers("/api/shipping/webhooks/**", "/api/shipping/events").permitAll()
 
                         // 결제 콜백 공개
                         .requestMatchers("/api/pay/**", "/api/payments/**").permitAll()
