@@ -39,8 +39,7 @@ public class ProductVariant {
     @Column(name = "option4_value", length = 50) private String option4Value;
     @Column(name = "option5_value", length = 50) private String option5Value;
 
-    @PositiveOrZero
-    @Comment("해당 조합 추가금(+원). 0 가능")
+    @Comment("해당 조합 추가금(±원). 음수 가능")
     private int addPrice;
 
     @PositiveOrZero

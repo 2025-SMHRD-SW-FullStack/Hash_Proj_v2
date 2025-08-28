@@ -1,9 +1,12 @@
 package com.meonjeo.meonjeo.order;
 
 import com.meonjeo.meonjeo.common.OrderStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,4 +26,52 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
           and o.confirmedAt is null
     """)
     List<Order> findDeliveredUnconfirmed(@Param("delivered") OrderStatus delivered);
+
+    // ====== [NEW] 셀러 주문 목록 검색 (주문 헤더 페이징) ======
+    @Query(value = """
+        select distinct o
+        from Order o
+        join o.items oi
+        where oi.sellerId = :sellerId
+          and (:status is null or o.status = :status)
+          and (:fromTs is null or o.createdAt >= :fromTs)
+          and (:toTs   is null or o.createdAt <  :toTs)
+          and ( :q is null or :q = '' 
+                or o.orderUid like concat('%', :q, '%')
+                or o.receiver like concat('%', :q, '%')
+                or o.phone    like concat('%', :q, '%')
+          )
+        """,
+            countQuery = """
+        select count(distinct o.id)
+        from Order o
+        join o.items oi
+        where oi.sellerId = :sellerId
+          and (:status is null or o.status = :status)
+          and (:fromTs is null or o.createdAt >= :fromTs)
+          and (:toTs   is null or o.createdAt <  :toTs)
+          and ( :q is null or :q = '' 
+                or o.orderUid like concat('%', :q, '%')
+                or o.receiver like concat('%', :q, '%')
+                or o.phone    like concat('%', :q, '%')
+          )
+        """
+    )
+    Page<Order> searchForSeller(
+            @Param("sellerId") Long sellerId,
+            @Param("status") OrderStatus status,
+            @Param("fromTs") LocalDateTime fromTs,
+            @Param("toTs") LocalDateTime toTs,
+            @Param("q") String q,
+            Pageable pageable
+    );
+
+    // ====== [NEW] 해당 셀러 소유 아이템 존재 여부 ======
+    @Query("""
+        select (count(oi) > 0)
+        from OrderItem oi
+        where oi.order.id = :orderId
+          and oi.sellerId = :sellerId
+    """)
+    boolean existsForSeller(@Param("orderId") Long orderId, @Param("sellerId") Long sellerId);
 }

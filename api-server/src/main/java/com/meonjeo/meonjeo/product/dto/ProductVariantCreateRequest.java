@@ -17,8 +17,8 @@ public record ProductVariantCreateRequest(
         @Schema(description = "옵션4 값")                     String option4Value,
         @Schema(description = "옵션5 값")                     String option5Value,
 
-        @Schema(description = "해당 조합 추가금(+원). 0 가능", example = "5000", minimum = "0")
-        @PositiveOrZero int addPrice,
+        @Schema(description = "해당 조합 추가금(±원). 음수 가능, 절댓값은 기준가의 50% 이내", example = "-3000")
+        int addPrice,
 
         @Schema(description = "해당 조합 재고", example = "20", minimum = "0")
         @PositiveOrZero int stock
