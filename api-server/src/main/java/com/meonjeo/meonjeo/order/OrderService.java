@@ -72,7 +72,7 @@ public class OrderService {
         UserAddress addr = addressRepo.findByIdAndUserId(req.addressId(), userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "ADDRESS_NOT_FOUND_OR_FORBIDDEN"));
 
-        // 배송 요청사항 서버측 방어(trim, 빈문자→null, 200자 컷)
+        // 배송 요청사항 서버측 방어
         String safeMemo = sanitizeMemo(req.requestMemo());
 
         Order order = Order.builder()
@@ -83,7 +83,7 @@ public class OrderService {
                 .addr1(addr.getAddr1())
                 .addr2(addr.getAddr2())
                 .zipcode(addr.getZipcode())
-                .requestMemo(safeMemo)                    // ✅ 요청사항 저장
+                .requestMemo(safeMemo)
                 .createdAt(LocalDateTime.now())
                 .shippingFee(FLAT_SHIPPING_FEE)
                 .build();
@@ -91,7 +91,7 @@ public class OrderService {
 
         int total = 0; // 상품 총액
 
-        // ✅ 단일 셀러 강제
+        // 단일 셀러 강제
         Long masterSellerId = null;
 
         for (CheckoutItem ci : req.items()) {
@@ -101,7 +101,6 @@ public class OrderService {
             Product p = productRepo.findById(ci.productId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND: " + ci.productId()));
 
-            // 셀러 일치성 검사
             if (masterSellerId == null) {
                 masterSellerId = p.getSellerId();
             } else if (!Objects.equals(masterSellerId, p.getSellerId())) {
@@ -160,10 +159,10 @@ public class OrderService {
                     .optionSnapshotJson(optionSnapshotJson)
                     .build());
 
-            total += unit * ci.qty(); // 상품 총액 누적
+            total += unit * ci.qty();
         }
 
-        // ===== 결제 대상: 상품합계 + 배송비 =====
+        // 결제 대상: 상품합계 + 배송비
         int shippingFee = FLAT_SHIPPING_FEE;
         int payableBase = total + shippingFee;
 
@@ -172,11 +171,10 @@ public class OrderService {
         int usePoint = Math.max(0, Math.min(want, Math.min(balance, payableBase)));
         int pay = Math.max(0, payableBase - usePoint);
 
-        order.setTotalPrice(total);     // 상품 총액
+        order.setTotalPrice(total);
         order.setUsedPoint(usePoint);
-        order.setPayAmount(pay);        // 실제 결제금액(상품+배송-포인트)
+        order.setPayAmount(pay);
 
-        // 저장 → orderUid 생성
         Order saved = orderRepo.save(order);
         saved.setOrderUid(newOrderUid(saved.getId()));
         orderRepo.save(saved);
@@ -186,7 +184,6 @@ public class OrderService {
             pointLedger.spend(userId, usePoint, "ORDER_PAY_PRE", "order:pre:" + saved.getId());
         }
 
-        // 응답
         return new CheckoutResponse(
                 saved.getId(),
                 saved.getOrderUid(),
@@ -197,12 +194,23 @@ public class OrderService {
         );
     }
 
+    // =========================
+    // ✅ 결제 승인 처리(UID 기반) : 재고 차감 + 상태 READY 승격
+    // =========================
     @Transactional
-    public void finalizePaid(Long orderId) {
-        Order o = orderRepo.findById(orderId)
+    public void finalizePaidByUid(String orderUid, int paidAmount) {
+        Order o = orderRepo.findByOrderUid(orderUid)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND"));
-        if (o.getStatus() == OrderStatus.PAID) return;
 
+        // 이미 READY 이상이면 멱등 처리
+        if (o.getStatus() == OrderStatus.READY ||
+                o.getStatus() == OrderStatus.IN_TRANSIT ||
+                o.getStatus() == OrderStatus.DELIVERED ||
+                o.getStatus() == OrderStatus.CONFIRMED) {
+            return;
+        }
+
+        // 재고 차감 (PENDING/PAID 등 초기 상태에서만)
         for (OrderItem it : o.getItems()) {
             Product p = productRepo.findById(it.getProductId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND"));
@@ -221,13 +229,32 @@ public class OrderService {
             }
         }
 
-        o.setStatus(OrderStatus.PAID);
+        // 승인 금액 반영 + READY로 승격
+        o.setPayAmount(paidAmount);
+        o.setStatus(OrderStatus.READY);
         orderRepo.save(o);
+    }
+
+    // 호환용(Long id) — 내부적으로 UID 버전 호출
+    @Deprecated
+    @Transactional
+    public void finalizePaid(Long orderId) {
+        Order o = orderRepo.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND"));
+        finalizePaidByUid(o.getOrderUid(), o.getPayAmount());
     }
 
     @Transactional
     public void rollbackPointLock(Long orderId){
         Order o = orderRepo.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND"));
+        rollbackPointLockByUid(o.getOrderUid());
+    }
+
+    // ✅ 실패/취소 시 UID 기반 포인트 롤백(멱등)
+    @Transactional
+    public void rollbackPointLockByUid(String orderUid){
+        Order o = orderRepo.findByOrderUid(orderUid)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND"));
         if (o.getUsedPoint() > 0) {
             pointLedger.accrue(o.getUserId(), o.getUsedPoint(), "ORDER_PAY_PRE_ROLLBACK", "order:pre:"+o.getId());

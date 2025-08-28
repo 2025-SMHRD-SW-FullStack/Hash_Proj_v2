@@ -19,6 +19,9 @@ public interface ShipmentEventRepository extends JpaRepository<ShipmentEvent, Lo
     """)
     List<ShipmentEvent> findLatestOneForOrderAndTrackingNos(Long orderId, Collection<String> trackingNos);
 
+    // ✅ 최신 이벤트 1건 (occurredAt desc, id desc)
+    Optional<ShipmentEvent> findTop1ByOrderIdOrderByOccurredAtDescIdDesc(Long orderId);
+
     // ✅ 트래킹별 최신 판단을 위해 주문 단위 내림차순 조회
     List<ShipmentEvent> findByOrderIdOrderByOccurredAtDesc(Long orderId);
 
