@@ -13,10 +13,18 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class OrderWindowService {
 
-    private final ShipmentRepository shipmentRepo;
+    private final OrderRepository orderRepo;        // ★ 추가
+    private final ShipmentRepository shipmentRepo;  // (레거시 fallback)
 
     /** 최신 배송완료 시각(교환 재배송 포함) */
     public Optional<LocalDateTime> effectiveDeliveredAt(Long orderId) {
+        // 1) 주문 테이블 delivered_at 우선
+        LocalDateTime fromOrder = orderRepo.findById(orderId)
+                .map(Order::getDeliveredAt)
+                .orElse(null);
+        if (fromOrder != null) return Optional.of(fromOrder);
+
+        // 2) (레거시) shipments.delivered_at의 max를 fallback으로
         return Optional.ofNullable(shipmentRepo.maxDeliveredAtByOrderId(orderId));
     }
 
@@ -36,7 +44,7 @@ public class OrderWindowService {
                 .orElse(false);
     }
 
-    /** 프론트 노출용 DTO 작성 */
+    /** 프론트 노출용 DTO */
     public OrderWindowResponse getWindow(Long orderId) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime eff = effectiveDeliveredAt(orderId).orElse(null);

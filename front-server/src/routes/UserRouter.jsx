@@ -3,9 +3,6 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import ChatPage from '../pages/user/ChatPage'
 import OrderPage from '../pages/user/OrderPage'
 import MyPageLayout from '../components/layouts/MyPageLayout'
-import SurveyPage from '../pages/SurveyPage'
-import FeedbackPage from '../pages/feedbackPage/FeedbackPage'
-import MyOrderHistoryPage from '../pages/user/myPage/MyOrderHistoryPage'
 import MyOrderDetailPage from '../pages/user/myPage/MyOrderDetailPage'
 import MyOrders from '../pages/user/myPage/MyOrders'
 import FeedbackEditor from '../pages/feedbackPage/FeedbackEditor'
@@ -14,6 +11,7 @@ import MyCartPage from '../pages/user/myPage/MyCardPage'
 import FAQPage from '../pages/user/myPage/support/FAQPage'
 import QnAPage from '../pages/user/myPage/support/QnAPage'
 import SellerApplyPage from '../pages/user/myPage/support/SellerApplyPage'
+import SurveyPage from '../pages/user/SurveyPage'
 
 const UserRouter = () => {
   return (
@@ -32,7 +30,6 @@ const UserRouter = () => {
 
       {/* 피드백 관련 페이지 */}
       <Route path="survey" element={<SurveyPage />} />
-      <Route path='feedback' element={<FeedbackPage/>}/>
       <Route path="feedback/editor" element={<FeedbackEditor />} />
 
       {/* 기본 리다이렉트 */}
@@ -52,10 +49,6 @@ const UserRouter = () => {
         <Route path="seller-apply" element={<SellerApplyPage />} />
       </Route>
 
-      {/* 설문 & 피드백 */}
-      <Route path="survey" element={<SurveyPage />} />
-      <Route path="feedback/editor" element={<FeedbackEditor />} />
-      
     </Routes>
   )
 }

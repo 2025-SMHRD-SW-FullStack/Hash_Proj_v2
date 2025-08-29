@@ -37,17 +37,15 @@ const MyCartPage = () => {
   }, [items, selectedIds]);
 
   const totals = useMemo(() => {
-    const itemsPrice = selectedItems.reduce((sum, item) => {
-      return sum + (item.price + item.addPrice) * item.quantity;
-    }, 0);
-    const shipping = itemsPrice > 0 ? SHIPPING_FEE : 0;
-    return {
-      itemsPrice,
-      shipping,
-      total: itemsPrice + shipping,
-    };
-  }, [selectedItems]);
-  
+  const itemsPrice = selectedItems.reduce((sum, item) => sum + (item.price + item.addPrice) * item.quantity, 0);
+  const shipping = selectedItems.reduce((sum, item) => sum + (item.shippingFee || SHIPPING_FEE), 0);
+  return {
+    itemsPrice,
+    shipping,
+    total: itemsPrice + shipping,
+  };
+}, [selectedItems]);
+
   const handleCheckout = () => {
     if (selectedItems.length === 0) {
       alert('주문할 상품을 선택해주세요.');
@@ -55,18 +53,11 @@ const MyCartPage = () => {
     }
     
     // 현재 주문 로직은 단일 상품 ID만 지원하므로, 여러 종류의 상품을 한번에 주문하는 것은 제한됩니다.
-    const productIds = new Set(selectedItems.map(item => item.productId));
-    if (productIds.size > 1) {
-      alert('한 번에 한 종류의 상품만 주문할 수 있습니다.');
-      return;
-    }
-
     const productId = selectedItems[0].productId;
     const itemsQuery = selectedItems
-      .map(item => `${item.variantId}_${item.quantity}`)
-      .join(',');
-
-    navigate(`/user/order?productId=${productId}&items=${itemsQuery}`);
+  .map(item => `${item.variantId}_${item.quantity}`)
+  .join(',');
+navigate(`/user/order?items=${itemsQuery}`);
   };
 
 
