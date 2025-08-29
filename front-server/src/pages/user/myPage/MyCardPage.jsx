@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Minus from '../../../assets/icons/ic_minus.svg';
 import Plus from '../../../assets/icons/ic_plus.svg';
 import Delete from '../../../assets/icons/ic_delete.svg';
-import useCartStore from '../../../stores/cardStore';
+import useCartStore from '../../../stores/cartStore';
 import Button from '../../../components/common/Button';
 import Icon from '../../../components/common/Icon';
 

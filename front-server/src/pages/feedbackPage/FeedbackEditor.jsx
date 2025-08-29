@@ -5,6 +5,7 @@ import Button from "../../components/common/Button";
 import ChatRoom from "../../components/chatPage/ChatRoom";
 import Icon from "../../components/common/Icon";
 import deleteIcon from "../../assets/icons/ic_delete.svg";
+import useFeedbackStore from "../../stores/feedbackStore";
 
 const FeedbackEditor = () => {
   const [searchParams] = useSearchParams();
@@ -14,6 +15,7 @@ const FeedbackEditor = () => {
   const type = searchParams.get("type") || "MANUAL";
   const overallScore = searchParams.get("overallScore");
   const scoresJson = searchParams.get("scoresJson");
+  const addFeedback = useFeedbackStore((state) => state.addFeedback);
 
   // --- 수기 작성 관련 상태 ---
   const [manualContent, setManualContent] = useState("");
@@ -35,6 +37,27 @@ const FeedbackEditor = () => {
       setStatus('IN_PROGRESS');
     }
   }, [type, orderItemId]);
+
+  // --- 이미지 프리뷰 로직 수정 ---
+  const handleFileChange = (event) => {
+    const files = Array.from(event.target.files).slice(0, 5 - selectedFiles.length);
+    if (files.length === 0) return;
+
+    setSelectedFiles(prev => [...prev, ...files]);
+
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setImagePreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    // 선택된 파일 목록에서 제거
+    setSelectedFiles(prev => prev.filter((_, i) => i !== indexToRemove));
+
+    // 프리뷰 URL 해제 및 목록에서 제거
+    URL.revokeObjectURL(imagePreviews[indexToRemove]);
+    setImagePreviews(prev => prev.filter((_, i) => i !== indexToRemove));
+  };
+
 
   // --- AI 챗봇 핸들러 ---
 
@@ -102,16 +125,35 @@ const FeedbackEditor = () => {
       return;
     }
     setIsSubmitting(true);
-    // ... (API 제출 로직)
+    
     try {
-      // await submitFeedback(payload);
-      alert("피드백이 성공적으로 제출되었습니다. (테스트)");
-      if (type === 'AI') {
-        setStatus('COMPLETED');
-        setMessages(prev => [...prev, { id: Date.now(), sender: 'bot', text: '소중한 피드백을 제출해주셔서 감사합니다!' }]);
-      } else {
-        navigate("/user/mypage/orders");
+      const payload = {
+        orderItemId: Number(orderItemId),
+        type,
+        overallScore: Number(overallScore),
+        scoresJson,
+        content: finalContent,
+        imagesJson: JSON.stringify(imagePreviews) // 프리뷰 URL을 JSON 문자열로 저장
+      };
+
+      const feedbackResponse = await submitFeedback(payload);
+
+      // productId를 가져오기 위해 상품 정보 조회
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('productId');
+      
+      if(productId) {
+          addFeedback(productId, {
+            ...feedbackResponse,
+            author: '작성자닉네임', // 실제로는 user 정보에서 가져와야 합니다.
+            createdAt: new Date().toISOString(),
+          });
       }
+
+
+      alert("피드백이 성공적으로 제출되었습니다.");
+      navigate(`/product/${productId}`); // 제출 후 상품 상세 페이지로 이동
+
     } catch (e) {
       console.error("피드백 제출 실패:", e);
       alert(`피드백 제출 중 오류가 발생했습니다: ${e.message || ''}`);
@@ -120,8 +162,6 @@ const FeedbackEditor = () => {
     }
   };
 
-  const handleFileChange = (event) => { /* 수기작성 로직 */ };
-  const handleRemoveImage = (index) => { /* 수기작성 로직 */ };
 
   // --- 렌더링 ---
   if (type === "AI") {

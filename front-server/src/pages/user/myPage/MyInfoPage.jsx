@@ -211,11 +211,11 @@ const MyInfoPage = () => {
         <FormRow label="아이디(이메일)">
           <input type="text" value={user?.email || ''} readOnly disabled className={readOnlyInputStyle} />
         </FormRow>
-        <FormRow label="비밀번호">
-          <Button variant="whiteBlack" onClick={() => navigate('/user/change-password')}>
-            비밀번호 변경
+        {/* <FormRow label="비밀번호">
+          <Button variant="whiteBlack" onClick={() => navigate('/find-auth?tab=findPw')}>
+            비밀번호 재설정
           </Button>
-        </FormRow>
+        </FormRow> */}
         <FormRow label="닉네임">
           <input id="nickname" type="text" value={nickname} onChange={e => setNickname(e.target.value)} className={inputStyle} />
         </FormRow>

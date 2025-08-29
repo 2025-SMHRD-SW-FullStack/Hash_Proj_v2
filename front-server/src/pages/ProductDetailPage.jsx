@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import TestImg from '../assets/images/ReSsol_TestImg.png';
 import Button from '../components/common/Button.jsx';
@@ -6,14 +6,18 @@ import Icon from '../components/common/Icon.jsx';
 import Minus from '../assets/icons/ic_minus.svg';
 import Plus from '../assets/icons/ic_plus.svg';
 import Delete from '../assets/icons/ic_delete.svg';
-import Modal from '../components/common/Modal.jsx'; // ✅ 공통 모달 import
+import Modal from '../components/common/Modal.jsx';
 import { getProductDetail } from '../service/productService.js';
-import useCartStore from '../stores/cardStore.js';
+import useCartStore from '../stores/cartStore.js';
+import useFeedbackStore from '../stores/feedbackStore.js';
 
 const ProductDetailPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCartStore();
+  const allFeedbacks = useFeedbackStore((state) => state.feedbacksByProduct);
+  const feedbacks = useMemo(() => allFeedbacks[productId] || [], [allFeedbacks, productId]);
+
 
   const [productData, setProductData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,8 +26,6 @@ const ProductDetailPage = () => {
   const deliverFee = 3000;
 
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-
-  // ✅ 모달 상태
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
 
   useEffect(() => {
@@ -33,7 +35,7 @@ const ProductDetailPage = () => {
         const data = await getProductDetail(productId);
         setProductData(data);
       } catch (err) {
-        setError(err.message);
+        setError(err.message || '상품 정보를 불러오는 데 실패했습니다.');
       } finally {
         setLoading(false);
       }
@@ -89,7 +91,6 @@ const ProductDetailPage = () => {
     navigate(`/user/order?productId=${productId}&items=${itemsQuery}`);
   };
 
-  // ✅ 장바구니 담기
   const handleAddToCart = () => {
     if (selectedItems.length === 0) {
       alert('상품 옵션을 선택해주세요.');
@@ -117,8 +118,20 @@ const ProductDetailPage = () => {
       addToCart(itemToAdd);
     });
 
-    // ✅ 모달 열기
     setIsCartModalOpen(true);
+  };
+  
+  const navigateToFeedbackEditor = () => {
+      const hasPurchased = true; 
+      if (!hasPurchased) {
+          alert("상품을 구매한 사용자만 피드백을 작성할 수 있습니다.");
+          return;
+      }
+      const exampleOrderItemId = "12345";
+      const exampleOverallScore = "5"; 
+      const exampleScoresJson = JSON.stringify({ "품질": 5, "배송": 4 });
+
+      navigate(`/user/feedback/editor?orderItemId=${exampleOrderItemId}&type=MANUAL&overallScore=${exampleOverallScore}&scoresJson=${encodeURIComponent(exampleScoresJson)}&productId=${productId}`);
   };
 
   if (loading) return <div>상품 정보를 불러오는 중...</div>;
@@ -130,8 +143,8 @@ const ProductDetailPage = () => {
   const totalPrice = selectedItems.reduce((total, currentItem) => {
     const variant = variants.find(v => v.id === parseInt(currentItem.variantId));
     const itemPrice = (product.salePrice + (variant?.addPrice || 0)) * currentItem.quantity;
-    return total + itemPrice + deliverFee;
-  }, 0);
+    return total + itemPrice;
+  }, 0) + (selectedItems.length > 0 ? deliverFee : 0);
 
   return (
     <div className='flex items-start'>
@@ -157,6 +170,60 @@ const ProductDetailPage = () => {
           >
             {isDescriptionExpanded ? '접기' : '더보기'}
           </Button>
+        </div>
+
+        {/* --- 피드백 모음 섹션 --- */}
+        <hr className="my-8 border-t border-gray-300" />
+        <div className="feedback-section">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold">피드백 모음 ({feedbacks.length})</h3>
+                <div className="flex items-center text-sm text-gray-500">
+                    <span className="mr-2">
+                        구매 이력이 있는 회원만 작성 가능합니다.
+                    </span>
+                    <button
+                        onClick={navigateToFeedbackEditor}
+                        className="flex items-center text-blue-600 hover:underline"
+                    >
+                        <span className="text-lg mr-1">📝</span>
+                        피드백 작성하기
+                    </button>
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                {feedbacks.length > 0 ? (
+                    feedbacks.slice(0, 2).map((fb, index) => (
+                        <div key={index} className="border-b border-gray-200 pb-6 last:border-b-0">
+                            <div className="flex items-center mb-3">
+                                <p className="font-semibold text-lg mr-2">{fb.author || '익명'}</p>
+                                <p className="text-sm text-gray-500">{new Date(fb.createdAt).toLocaleDateString('ko-KR')}</p>
+                            </div>
+                            
+                            {fb.imagesJson && JSON.parse(fb.imagesJson).length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {JSON.parse(fb.imagesJson).slice(0, 4).map((imgSrc, imgIndex) => (
+                                        <div key={imgIndex} className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden">
+                                            <img src={imgSrc} alt={`피드백 이미지 ${imgIndex + 1}`} className="object-cover w-full h-full" />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <p className="text-gray-800 leading-relaxed mb-3">
+                                {fb.content}
+                            </p>
+                            {index === 1 && feedbacks.length > 2 && (
+                                <div className="text-center mt-4">
+                                  <Button variant="whiteBlack">... 더보기</Button>
+                                </div>
+                            )}
+                        </div>
+                    ))
+                ) : (
+                    <p className="text-gray-500 text-center py-8">아직 작성된 피드백이 없습니다.</p>
+                )}
+            </div>
         </div>
       </div>
 
@@ -232,7 +299,6 @@ const ProductDetailPage = () => {
         </div>
       </aside>
 
-      {/* ✅ 공통 모달 추가 */}
       <Modal
         isOpen={isCartModalOpen}
         onClose={() => setIsCartModalOpen(false)}

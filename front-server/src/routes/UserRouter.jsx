@@ -35,19 +35,19 @@ const UserRouter = () => {
       {/* 기본 리다이렉트 */}
       <Route path="/" element={<Navigate to="mypage/orders" replace />} />
 
-      {/* 마이페이지 */}
-      <Route path="mypage" element={<MyPageLayout />}>
-        <Route index element={<Navigate to="orders" replace />} />
-        <Route path="orders" element={<MyOrders />} />
-        <Route path="orders/:orderId" element={<MyOrderDetailPage />} />
-        <Route path="edit" element={<MyInfoPage />} />
-        <Route path='cart' element={<MyCartPage/>}/>
+        {/* 마이페이지 */}
+        <Route path="mypage" element={<MyPageLayout />}>
+          <Route index element={<Navigate to="orders" replace />} />
+          <Route path="orders" element={<MyOrders />} />
+          <Route path="orders/:orderId" element={<MyOrderDetailPage />} />
+          <Route path="edit" element={<MyInfoPage />} />
+          <Route path='cart' element={<MyCartPage/>}/>
 
-        {/* 고객센터 하위 메뉴 */}
-        <Route path="support/faq" element={<FAQPage />} />
-        <Route path="support/qna" element={<QnAPage />} />
-        <Route path="seller-apply" element={<SellerApplyPage />} />
-      </Route>
+          {/* 고객센터 하위 메뉴 */}
+          <Route path="support/faq" element={<FAQPage />} />
+          <Route path="support/qna" element={<QnAPage />} />
+          <Route path="seller-apply" element={<SellerApplyPage />} />
+        </Route>
 
     </Routes>
   )

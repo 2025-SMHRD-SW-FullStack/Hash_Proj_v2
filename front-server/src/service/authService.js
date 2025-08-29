@@ -68,6 +68,16 @@ export const updateUserInfo = async (payload) => {
   return res.data; // 수정된 UserResponse 반환
 };
 
+// /** 비밀번호 재설정 */
+// export const resetPassword = async ({ email, newPassword }) => {
+//   const res = await axiosInstance.post('/api/auth/reset-password', {
+//     email: String(email || '').trim(),
+//     newPassword,
+//   });
+//   return res.data;
+// };
+
+
 /** 로그아웃 */
 export async function logoutRequest() {
   const res = await axiosInstance.post('/api/auth/logout')

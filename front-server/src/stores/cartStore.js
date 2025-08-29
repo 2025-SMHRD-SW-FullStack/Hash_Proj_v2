@@ -1,5 +1,3 @@
-// src/stores/cartStore.js
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
