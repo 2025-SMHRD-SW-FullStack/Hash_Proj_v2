@@ -1,8 +1,11 @@
 package com.meonjeo.meonjeo.order.seller;
 
 import com.meonjeo.meonjeo.common.OrderStatus;
+import com.meonjeo.meonjeo.common.ShipmentStatus;
 import com.meonjeo.meonjeo.order.*;
 import com.meonjeo.meonjeo.order.seller.dto.*;
+import com.meonjeo.meonjeo.shipment.Shipment;
+import com.meonjeo.meonjeo.shipment.ShipmentRepository;
 import com.meonjeo.meonjeo.shipping.OrderShipment;
 import com.meonjeo.meonjeo.shipping.OrderShipmentRepository;
 import com.meonjeo.meonjeo.shipping.ShipmentEvent;
@@ -31,6 +34,7 @@ public class SellerOrderService {
     private final OrderShipmentRepository orderShipmentRepo;
     private final ShipmentEventRepository shipmentRepo;
     private final DeliveryAutoConfirmService autoConfirm;
+    private final ShipmentRepository shipmentRepository;
 
 
     // ===== 그리드 조회 =====
@@ -98,6 +102,17 @@ public class SellerOrderService {
                 .trackingNo(req.trackingNo())
                 .build();
         orderShipmentRepo.save(os);
+
+        Shipment sm = shipmentRepository.findByOrderId(orderId).orElseGet(Shipment::new);
+        if (sm.getId() == null) {
+            sm.setOrderId(orderId);
+            sm.setSellerId(sellerId);
+            sm.setStatus(ShipmentStatus.READY);
+        }
+        sm.setCourierCode(normalizeCourierCode(req.courierCode(), req.courierName())); // 숫자코드로 정규화
+        sm.setTrackingNo(req.trackingNo());
+        sm.setLastSyncedAt(LocalDateTime.now());
+        shipmentRepository.save(sm);
 
         ShipmentEvent ev0 = ShipmentEvent.builder()
                 .orderId(orderId)
@@ -192,5 +207,19 @@ public class SellerOrderService {
         if (left > 0) return "D-" + left;
         if (left == 0) return "D-day";
         return "마감";
+    }
+
+    private String normalizeCourierCode(String code, String name) {
+        if (code == null) code = "";
+        String c = code.trim().toLowerCase();
+        String n = (name == null ? "" : name).toLowerCase();
+        String s = c + " " + n;
+        if (c.matches("^\\d{2}$")) return c;   // 이미 숫자코드면 그대로
+        if (s.contains("cj")) return "04";
+        if (s.contains("lotte") || s.contains("롯데")) return "05";
+        if (s.contains("hanjin") || s.contains("한진")) return "08";
+        if (s.contains("logen") || s.contains("로젠")) return "06";
+        if (s.contains("post") || s.contains("우체국")) return "01";
+        return c; // 모르면 원문 유지
     }
 }

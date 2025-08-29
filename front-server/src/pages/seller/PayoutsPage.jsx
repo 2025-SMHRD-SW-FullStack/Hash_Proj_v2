@@ -241,7 +241,7 @@ export default function PayoutsPage() {
       )}
 
       {/* 상세 모달 */}
-      <Modal open={!!detail} onClose={() => setDetail(null)} title={`주문 상세 - ${detail?.id ?? ''}`}>
+      <Modal isOpen={!!detail} onClose={() => setDetail(null)} title={`주문 상세 - ${detail?.id ?? ''}`}>
         {detail && <OrderDetailContent row={detail} />}
       </Modal>
 

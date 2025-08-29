@@ -20,7 +20,7 @@ export default function MyOrders() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-semibold">내 주문 / 배송 내역</h1>
+      <h1 className="text-xl font-semibold">내 주문/배송 내역</h1>
 
       {loading && <div>불러오는 중…</div>}
       {!loading && rows.length === 0 && <div className="text-gray-500">주문 내역이 없습니다.</div>}

@@ -45,40 +45,38 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         AuthProvider provider = AuthProvider.valueOf(registrationId.toUpperCase());
 
+        // 1) provider + providerId 로 기존 사용자 검색
         Optional<User> existingByProvider = userRepository.findByProviderAndProviderId(provider, providerId);
         User user = existingByProvider.orElse(null);
 
-        if (user == null && email != null) {
-            // 동일 이메일 계정 존재 시 충돌 회피
-            if (userRepository.findByEmail(email).isPresent()) {
-                email = provider.name().toLowerCase() + "_" + providerId + "@social.mej";
-            }
-        }
-        if (user == null && email == null) {
-            email = provider.name().toLowerCase() + "_" + providerId + "@social.mej";
-        }
-
+        // 2) 최초 가입인 경우 이메일 충돌 회피 및 대체 이메일 생성
         if (user == null) {
-            user = userRepository.save(
-                    User.builder()
-                            .email(email)
-                            .password(passwordEncoder.encode(UUID.randomUUID().toString()))
-                            .nickname(nickname)
-                            .profileImageUrl("") // 소셜 프로필 URL 매핑하려면 OAuth2UserInfo에 추가 구현
-                            .phoneNumber("")     // 온보딩에서 받게 할 거면 빈 값으로 생성
-                            .gender(User.Gender.UNKNOWN)
-                            .birthDate(birthDate != null ? birthDate : LocalDate.of(2000,1,1))
-                            .provider(provider)
-                            .providerId(providerId)
-                            .role(Role.USER)
-                            .enabled(false) // 온보딩 완료 전까지 비활성
-                            .build()
-            );
+            if (email == null || userRepository.findByEmail(email).isPresent()) {
+                // 이메일이 없거나 이미 존재하면 provider 기반 대체 이메일 생성
+                String pid = (providerId != null ? providerId : UUID.randomUUID().toString());
+                email = provider.name().toLowerCase() + "_" + pid + "@social.mej";
+            }
+
+            // ⚠️ phoneNumber / profileImageUrl 같은 '선택 필드'는 아예 세팅하지 않는다(null 유지)
+            user = User.builder()
+                    .email(email)
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .nickname(nickname)
+                    .gender(User.Gender.UNKNOWN)
+                    .birthDate(birthDate != null ? birthDate : LocalDate.of(2000, 1, 1))
+                    .provider(provider)
+                    .providerId(providerId)
+                    .role(Role.USER)
+                    .enabled(true) // 온보딩 단계에서 막고 싶으면 false로 바꾸고, 후속 활성화 로직 추가
+                    .build();
+
+            user = userRepository.save(user);
         } else {
+            // 3) 기존 사용자면 결측만 보완
             boolean changed = false;
             if (isBlank(user.getNickname()) && !isBlank(nickname)) { user.setNickname(nickname); changed = true; }
             if (user.getBirthDate() == null && birthDate != null) { user.setBirthDate(birthDate); changed = true; }
-            if (changed) userRepository.save(user);
+            if (changed) user = userRepository.save(user);
         }
 
         Map<String, Object> customAttributes = Map.of(
@@ -97,9 +95,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             default: throw new IllegalArgumentException("지원하지 않는 OAuth Provider: " + registrationId);
         }
     }
-    private static String sanitizeEmail(String v) { return v == null ? null : v.trim().toLowerCase(); }
+
+    private static String sanitizeEmail(String v) {
+        return v == null ? null : v.trim().toLowerCase();
+    }
     private static String nvl(String v) { return (v == null || v.isBlank()) ? null : v; }
     private static String nvl(String v, String alt) { return (v == null || v.isBlank()) ? alt : v; }
     private static boolean isBlank(String v) { return v == null || v.isBlank(); }
 }
-

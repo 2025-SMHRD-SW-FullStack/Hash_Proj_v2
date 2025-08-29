@@ -431,7 +431,7 @@ export default function OrdersPage() {
       <div className="h-8" />
 
       {/* 상세 모달 */}
-      <Modal open={detailOpen} onClose={() => setDetailOpen(false)} title="주문 상세">
+      <Modal isOpen={detailOpen} onClose={() => setDetailOpen(false)} title="주문 상세">
         {detailRow ? <OrderDetailContent row={detailRow} /> : <div className="p-4">불러오는 중…</div>}
       </Modal>
     </div >

@@ -26,4 +26,24 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
             @Param("from") LocalDateTime fromInclusive,
             @Param("to") LocalDateTime toExclusive
     );
+
+    // ✅ 주문 단위: 이 주문에서 피드백이 작성된 '주문아이템 id' 목록만 뽑기(삭제 제외)
+    @Query("""
+        select distinct f.orderItemId
+        from Feedback f, OrderItem oi
+        where oi.id = f.orderItemId
+          and oi.order.id = :orderId
+          and (f.removed = false or f.removed is null)
+    """)
+    List<Long> findItemIdsWithFeedbackByOrderId(@Param("orderId") Long orderId);
+
+    // (선택) 주문 단위: 피드백 존재 여부만 빠르게 확인하고 싶을 때
+    @Query("""
+        select (count(f) > 0)
+        from Feedback f, OrderItem oi
+        where oi.id = f.orderItemId
+          and oi.order.id = :orderId
+          and (f.removed = false or f.removed is null)
+    """)
+    boolean existsForOrder(@Param("orderId") Long orderId);
 }

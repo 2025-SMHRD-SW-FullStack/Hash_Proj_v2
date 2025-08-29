@@ -62,6 +62,12 @@ export async function signupRequest({
   return res.data
 }
 
+/** [추가] 내 정보 수정 */
+export const updateUserInfo = async (payload) => {
+  const res = await axiosInstance.put('/api/users/me', payload);
+  return res.data; // 수정된 UserResponse 반환
+};
+
 /** 로그아웃 */
 export async function logoutRequest() {
   const res = await axiosInstance.post('/api/auth/logout')

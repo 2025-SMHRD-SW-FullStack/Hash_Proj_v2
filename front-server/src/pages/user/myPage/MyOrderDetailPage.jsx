@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getMyOrderDetail } from '../../../service/myOrderListService';
 import Button from '../../../components/common/Button';
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
+import { checkFeedbackDone, getMyOrderDetail, confirmPurchase } from '../../../service/orderService';
+import ConfirmPurchaseModal from '../../../components/myPage/modals/ConfirmPurchaseModal';
 
-// ✅ 상태 한글 매핑
+// 상태 한글 매핑
 const statusLabel = (s) => ({
   PENDING: '결제 대기',
   PAID: '주문 완료',
@@ -20,6 +21,8 @@ const MyOrderDetailPage = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [feedbackDoneStatus, setFeedbackDoneStatus] = useState({});
 
   useEffect(() => {
     const fetchOrderDetail = async () => {
@@ -27,6 +30,20 @@ const MyOrderDetailPage = () => {
         setLoading(true);
         const data = await getMyOrderDetail(orderId);
         setOrder(data);
+
+        const doneStatus = {};
+        if (data && data.items) {
+          for (const item of data.items) {
+            try {
+              const isDone = await checkFeedbackDone(item.id);
+              doneStatus[item.id] = isDone;
+            } catch (feedbackError) {
+              console.warn(`피드백 상태 확인 실패 (item ID: ${item.id}):`, feedbackError);
+              doneStatus[item.id] = false;
+            }
+          }
+        }
+        setFeedbackDoneStatus(doneStatus);
       } catch (err) {
         setError('주문 상세 정보를 불러오는 데 실패했습니다.');
         console.error(err);
@@ -40,17 +57,31 @@ const MyOrderDetailPage = () => {
   const formatOptions = (jsonString) => {
     try {
       const options = JSON.parse(jsonString);
-      return Object.entries(options)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join(', ');
-    } catch (e) {
-      return '옵션 정보 없음';
-    }
+      return Object.entries(options).map(([key, value]) => `${key}: ${value}`).join(', ');
+    } catch (e) { return '옵션 정보 없음'; }
   };
 
-  // 피드백 작성 페이지로 이동
-  const handleWriteFeedback = (orderItemId) => {
-    navigate(`/user/feedback/${orderItemId}`);
+  // [수정] item 객체를 받아 item.id 와 item.productId 를 정확히 사용합니다.
+  const handleWriteFeedback = (item) => {
+    if (order.status === 'CONFIRMED') {
+      navigate(`/user/survey?orderItemId=${item.id}&productId=${item.productId}`);
+    } else {
+      setOpenConfirm(true);
+    }
+  };
+  
+  const handleConfirmAndFeedback = async () => {
+    try {
+      await confirmPurchase(orderId);
+      const firstItem = order.items[0];
+      if (firstItem) {
+        navigate(`/user/survey?orderItemId=${firstItem.id}&productId=${firstItem.productId}`);
+      }
+    } catch (e) {
+      alert("구매 확정 중 오류가 발생했습니다.");
+    } finally {
+      setOpenConfirm(false);
+    }
   };
 
   if (loading) return <div>로딩 중...</div>;
@@ -60,19 +91,15 @@ const MyOrderDetailPage = () => {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">주문 상세 내역</h2>
-
       <div className="border rounded-lg p-6 space-y-4 bg-white">
-        {/* 주문 정보 */}
+        {/* 주문 정보 등 */}
         <div>
           <h3 className="font-bold text-lg">주문 정보</h3>
           <p><strong>주문번호:</strong> {order.orderUid}</p>
           <p><strong>주문일자:</strong> {new Date(order.createdAt).toLocaleString('ko-KR')}</p>
           <p><strong>주문상태:</strong> {statusLabel(order.status)}</p>
         </div>
-
         <hr/>
-
-        {/* 주문 상품 */}
         <div>
           <h3 className="font-bold text-lg mb-2">주문 상품</h3>
           {order.items.map(item => (
@@ -83,20 +110,20 @@ const MyOrderDetailPage = () => {
                 <p className="text-sm text-gray-600">{formatOptions(item.optionSnapshotJson)}</p>
                 <p className="text-sm">{item.unitPrice.toLocaleString()}원 / {item.qty}개</p>
               </div>
-
-              {/* 배송 완료 상태일 때만 피드백 작성 버튼 */}
-              {order.status === 'DELIVERED' && (
-                <Button size="sm" onClick={() => handleWriteFeedback(item.id)}>
+              {(order.status === 'DELIVERED' || order.status === 'CONFIRMED') && !feedbackDoneStatus[item.id] && (
+                <Button size="sm" onClick={() => handleWriteFeedback(item)}>
                   피드백 작성
                 </Button>
+              )}
+              {order.status === 'CONFIRMED' && feedbackDoneStatus[item.id] && (
+                <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">
+                  포인트 지급 완료
+                </span>
               )}
             </div>
           ))}
         </div>
-
         <hr/>
-
-        {/* 배송지 정보 */}
         <div>
           <h3 className="font-bold text-lg">배송지 정보</h3>
           <p><strong>받는분:</strong> {order.receiver}</p>
@@ -104,10 +131,7 @@ const MyOrderDetailPage = () => {
           <p><strong>주소:</strong> ({order.zipcode}) {order.addr1} {order.addr2}</p>
           <p><strong>배송메모:</strong> {order.requestMemo || '없음'}</p>
         </div>
-
         <hr/>
-
-        {/* 결제 정보 */}
         <div>
           <h3 className="font-bold text-lg">결제 정보</h3>
           <p><strong>총 상품금액:</strong> {order.totalPrice.toLocaleString()}원</p>
@@ -115,11 +139,15 @@ const MyOrderDetailPage = () => {
           <p><strong>사용 포인트:</strong> {order.usedPoint.toLocaleString()}P</p>
           <p className="font-bold"><strong>총 결제금액:</strong> {order.payAmount.toLocaleString()}원</p>
         </div>
-
         <div className="text-center pt-4">
           <Button variant="whiteBlack" onClick={() => navigate(-1)}>목록으로 돌아가기</Button>
         </div>
       </div>
+      <ConfirmPurchaseModal
+        open={openConfirm}
+        onClose={() => setOpenConfirm(false)}
+        onConfirm={handleConfirmAndFeedback}
+      />
     </div>
   );
 };

@@ -52,13 +52,13 @@ public class User {
     private String nickname;
 
     /* 필수: 프로필 이미지 URL */
-    @NotBlank @Size(max = 500)
-    @Column(name = "profile_image_url", nullable = false, length = 500)
+    @Size(max = 500)
+    @Column(name = "profile_image_url", nullable = true, length = 500)
     private String profileImageUrl;
 
     /* 필수: 휴대폰 번호 */
-    @NotBlank @Size(max = 20)
-    @Column(name = "phone_number", nullable = false, length = 20)
+    @Size(max = 20)
+    @Column(name = "phone_number", nullable = true, length = 20)
     private String phoneNumber;
 
     /* 휴대폰 인증 상태/시각 (컨트롤러에서 isPhoneVerified() 사용) */
