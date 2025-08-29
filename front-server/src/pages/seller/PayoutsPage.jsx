@@ -22,10 +22,13 @@ const fmtDate = (d) =>
 const cut = (s = '', n = 20) => (s.length > n ? s.slice(0, n) + '…' : s)
 
 // ---- 컬럼 폭
-const COLW = { ORDER_ID: 100, PRODUCT: 300, DEADLINE: 100, PRICE: 120, FEE: 90, WRITER: 140, PAYOUT: 130, STATE: 95, NOTE: 100 }
+const COLW = {
+  ORDER_ID: 120, PRODUCT: 320, DEADLINE: 120, PRICE: 140, FEE: 110,
+  WRITER: 160, PAYOUT: 150, STATE: 120, NOTE: 120
+}
 const TABLE_MIN_W = Object.values(COLW).reduce((a, b) => a + b, 0)
 
-// ---- 헤더 정의(공백 텍스트 노드 방지용)
+// ---- 헤더 정의
 const HEADERS = [
   { w: COLW.ORDER_ID, label: '주문번호' },
   { w: COLW.PRODUCT, label: '상품' },
@@ -52,22 +55,37 @@ export default function PayoutsPage() {
       setError(null)
       try {
         const page = await fetchSellerOrders({ page: 0, size: 50 })
-        const list = (page?.content ?? []).map((it) => ({
-          id: it.id ?? it.orderId,
-          orderNo: String(it.orderNo ?? it.id ?? it.orderId ?? '-'),
-          product: it.productName ?? it.itemName ?? it.product?.name ?? '-',
-          buyerName: it.receiverName ?? it.buyerName ?? it.buyer?.name ?? '-',
-          price: Number(it.totalPrice ?? it.price ?? it.amount ?? 0) || 0,
-          deliveredAt: it.deliveredAt ?? it.deliveryCompletedAt ?? it.shippedAt ?? null,
-          feedbackAt: it.feedbackAt ?? it.feedbackSubmittedAt ?? null,
-          payoutStatus: it.payoutStatus ?? it.status ?? 'PENDING',
-          refundPaid: !!it.refundPaid,
-        }))
-        setRaw(list) // ✅ setRows → setRaw 로 수정
+
+        const list = (page?.content ?? []).map((it) => {
+          // orders 스키마 매핑
+          const orderNo =
+            it.orderUid ?? it.order_uid ?? it.orderNo ?? it.order_no ?? it.id ?? it.orderId ?? '-'
+
+          const pay =
+            it.payAmount ?? it.pay_amount ?? it.totalPrice ?? it.total_price ?? it.amount ?? null
+          const price = (pay !== null && Number.isFinite(Number(pay))) ? Number(pay) : null
+
+          const deliveredAt = it.deliveredAt ?? it.delivered_at ?? null
+          const buyerName = it.receiver ?? it.receiverName ?? it.buyerName ?? it.buyer?.name ?? '-'
+
+          return {
+            id: it.id ?? it.orderId,
+            orderNo: String(orderNo),
+            product: it.productName ?? it.itemName ?? it.product?.name ?? '-',
+            buyerName,
+            price,                                // ✅ pay_amount 사용
+            deliveredAt,
+            feedbackAt: it.feedbackAt ?? it.feedback_submitted_at ?? null,
+            payoutStatus: it.payoutStatus ?? it.status ?? 'PENDING',
+            refundPaid: !!it.refundPaid,
+          }
+        })
+
+        setRaw(list)
       } catch (e) {
         console.error(e)
         setError('주문 목록을 불러오지 못했습니다.')
-        setRaw([])   // ✅ setRows → setRaw
+        setRaw([])
       } finally {
         setLoading(false)
       }
@@ -77,8 +95,9 @@ export default function PayoutsPage() {
   // 행 계산
   const rows = useMemo(() => {
     return (raw || []).map((o) => {
-      const fee = Math.round((o.price || 0) * FEE_RATE)
-      const basePayout = (o.price || 0) - fee - WRITER_FEE
+      const hasPrice = typeof o.price === 'number' && !Number.isNaN(o.price)
+      const fee = hasPrice ? Math.round(o.price * FEE_RATE) : 0
+      const basePayout = hasPrice ? (o.price - fee - WRITER_FEE) : null
 
       const delivered = toDate(o.deliveredAt)
       const deadline = delivered ? addDays(delivered, 7) : null
@@ -86,11 +105,11 @@ export default function PayoutsPage() {
 
       const feedbackSubmitted = o.feedbackSubmitted ?? !!o.feedbackAt
       const refundPaid = !!o.refundPaid
-      const refundDue = !feedbackSubmitted && deadlinePassed && !refundPaid ? WRITER_FEE : 0
+      const refundDue = (!feedbackSubmitted && deadlinePassed && !refundPaid) ? WRITER_FEE : 0
 
       let writerState = { label: '선차감(대기)', cls: 'bg-yellow-50 text-yellow-700 ring-yellow-200' }
       if (feedbackSubmitted) writerState = { label: '지급(작성)', cls: 'bg-blue-50 text-blue-700 ring-blue-200' }
-      if (refundDue > 0) writerState = { label: '환급 대상', cls: 'bg-green-50 text-green-700 ring-green-200' }
+      if (refundDue > 0)   writerState = { label: '환급 대상', cls: 'bg-green-50 text-green-700 ring-green-200' }
 
       const payoutState =
         o.payoutStatus === 'PAID'
@@ -105,7 +124,8 @@ export default function PayoutsPage() {
   const summary = useMemo(() => {
     const s = { payableNow: 0, refundDue: 0, fees: 0, count: 0 }
     rows.forEach((r) => {
-      if (r.payoutState.label === '정산 가능') {
+      const hasPrice = typeof r.basePayout === 'number'
+      if (hasPrice && r.payoutState.label === '정산 가능') {
         s.payableNow += (r.basePayout - r.refundDue)
         s.fees += r.fee
         s.count += 1
@@ -148,58 +168,74 @@ export default function PayoutsPage() {
         </section>
       )}
 
-      {/* 목록 */}
+      {/* 목록 (가로/세로 스크롤 모두 지원) */}
       {!loading && !error && (
         <section className={`${box} overflow-hidden`}>
-          <div className="w-full overflow-x-auto [scrollbar-gutter:stable]">
-            <div className="max-h-[560px] overflow-y-auto">
-              <table className="table-fixed text-left text-sm whitespace-nowrap" style={{ width: TABLE_MIN_W }}>
-                <colgroup>
-                  {HEADERS.map((h, i) => (
-                    <col key={i} style={{ width: h.w }} />
-                  ))}
-                </colgroup>
+          <div
+            className="w-full max-h-[60vh] lg:max-h-[560px] overflow-auto [scrollbar-gutter:stable_both-edges]"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            <table
+              className="table-fixed text-left text-sm whitespace-nowrap"
+              style={{ minWidth: TABLE_MIN_W }}
+            >
+              <colgroup>
+                {HEADERS.map((h, i) => (
+                  <col key={i} style={{ width: h.w }} />
+                ))}
+              </colgroup>
 
-                <thead className="sticky top-0 z-10 border-b bg-gray-50 text-center text-[13px] text-gray-500">
-                  <tr>
-                    {HEADERS.map((h) => (
-                      <th key={h.label} className="px-3 py-2">{h.label}</th>
-                    ))}
+              <thead className="sticky top-0 z-10 border-b bg-gray-50 text-center text-[13px] text-gray-500">
+                <tr>
+                  {HEADERS.map((h) => (
+                    <th key={h.label} className="px-3 py-2">{h.label}</th>
+                  ))}
+                </tr>
+              </thead>
+
+              <tbody className="[&>tr]:h-12 text-center">
+                {rows.map((r) => (
+                  <tr key={r.id} className="border-b last:border-none">
+                    <td
+                      className="px-3 py-2 font-mono text-[13px] text-blue-600 hover:underline cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis"
+                      onClick={() => setDetail(r)}
+                      title="상세 보기"
+                    >
+                      {r.orderNo}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap overflow-hidden text-ellipsis" title={r.product}>
+                      {cut(r.product, 20)}
+                    </td>
+                    <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{fmtDate(r.deadline)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {r.price != null ? `${fmt(r.price)}원` : '-'}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {r.price != null ? `-${fmt(r.fee)}원` : '-'}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className={badge(r.writerState.cls)}>{r.writerState.label}</span>
+                    </td>
+                    <td className="px-3 py-2 font-semibold whitespace-nowrap">
+                      {r.basePayout != null ? `${fmt(r.basePayout - r.refundDue)}원` : '-'}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className={badge(r.payoutState.cls)}>{r.payoutState.label}</span>
+                    </td>
+                    <td className="px-3 py-2 text-[12px] text-gray-600">
+                      {r.refundDue > 0 ? `환급 ${fmt(r.refundDue)}원` : '-'}
+                    </td>
                   </tr>
-                </thead>
-
-                <tbody className="[&>tr]:h-12 text-center">
-                  {rows.map((r) => (
-                    <tr key={r.id} className="border-b last:border-none">
-                      <td
-                        className="px-3 py-2 font-mono text-[13px] text-blue-600 hover:underline cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis"
-                        onClick={() => setDetail(r)}
-                        title="상세 보기"
-                      >
-                        {r.orderNo}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap overflow-hidden text-ellipsis" title={r.product}>
-                        {cut(r.product, 20)}
-                      </td>
-                      <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{fmtDate(r.deadline)}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{fmt(r.price)}원</td>
-                      <td className="px-3 py-2 whitespace-nowrap">-{fmt(r.fee)}원</td>
-                      <td className="px-3 py-2"><span className={badge(r.writerState.cls)}>{r.writerState.label}</span></td>
-                      <td className="px-3 py-2 font-semibold whitespace-nowrap">{fmt(r.basePayout - r.refundDue)}원</td>
-                      <td className="px-3 py-2"><span className={badge(r.payoutState.cls)}>{r.payoutState.label}</span></td>
-                      <td className="px-3 py-2 text-[12px] text-gray-600">{r.refundDue > 0 ? `환급 ${fmt(r.refundDue)}원` : '-'}</td>
-                    </tr>
-                  ))}
-                  {rows.length === 0 && (
-                    <tr>
-                      <td colSpan={HEADERS.length} className="px-3 py-8 text-center text-gray-500">
-                        데이터가 없습니다.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                ))}
+                {rows.length === 0 && (
+                  <tr>
+                    <td colSpan={HEADERS.length} className="px-3 py-8 text-center text-gray-500">
+                      데이터가 없습니다.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </section>
       )}

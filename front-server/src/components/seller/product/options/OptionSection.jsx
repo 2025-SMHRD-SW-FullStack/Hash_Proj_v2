@@ -1,3 +1,4 @@
+// src/components/seller/product/options/OptionSection.jsx
 // OptionSection.jsx — 단독형/조합형(최대 5단) – 자동 적용 버전
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import FieldRow from '../form/FieldRow'

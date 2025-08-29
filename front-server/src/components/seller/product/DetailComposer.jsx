@@ -1,3 +1,5 @@
+// src/components/seller/product/DetailComposer.jsx
+
 import React, { useEffect, useRef } from 'react'
 import Button from '../../common/Button'
 

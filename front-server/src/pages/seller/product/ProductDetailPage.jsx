@@ -1,3 +1,4 @@
+// src/pages/seller/product/ProductDetailPage.jsx
 import React, { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 

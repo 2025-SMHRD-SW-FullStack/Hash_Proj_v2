@@ -1,3 +1,5 @@
+//src/components/seller/FeedbackStatsCard.jsx
+
 import React, { useMemo, useState } from 'react'
 import Button from '/src/components/common/Button'
 import DonutBase from '/src/components/common/charts/DonutBase'

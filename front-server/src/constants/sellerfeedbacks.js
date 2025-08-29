@@ -1,3 +1,5 @@
+// src/constants/sellerfeedbacks.js
+
 // 피드백 관리 전용 상수/스타일
 
 // 필터 키 (검토 계열 제거)

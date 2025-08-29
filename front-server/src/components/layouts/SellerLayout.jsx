@@ -1,6 +1,6 @@
 // /src/components/layouts/SellerLayout.jsx
 import React, { useEffect, useMemo, useState } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import Header from './Header'
 import sellerNav from '../../config/sellerNav'
 
@@ -9,19 +9,14 @@ const itemBase =
 const itemIdle = 'text-gray-900 hover:bg-gray-100'
 const itemActive = 'bg-black text-white'
 
-// ★ 버튼 기본 스타일 완전 제거(테두리/아웃라인/브라우저 UI)
-const btnReset =
-  'appearance-none border-0 outline-none ring-0 focus:outline-none focus:ring-0'
-
 export default function SellerLayout({ children }) {
   const { pathname } = useLocation()
-  const navigate = useNavigate()
 
   // 피드백 그룹 open 상태: 경로가 /seller/feedbacks* 이면 자동 open
   const inFeedback = pathname.startsWith('/seller/feedbacks')
   const [openFeedback, setOpenFeedback] = useState(inFeedback)
 
-  // 라우트가 바뀔 때 자동 동기화 (다른 메뉴 가면 자동 닫힘/비활성)
+  // 라우트 변경 시 동기화
   useEffect(() => {
     setOpenFeedback(pathname.startsWith('/seller/feedbacks'))
   }, [pathname])
@@ -29,7 +24,7 @@ export default function SellerLayout({ children }) {
   const navItems = useMemo(() => sellerNav, [])
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden bg-gray-50">
       <Header />
 
       <div className="flex w-full gap-8 px-6 py-6">
@@ -54,31 +49,27 @@ export default function SellerLayout({ children }) {
               }
 
               // 그룹(상품 피드백)
-              const groupActive = inFeedback // 경로 기준 활성 표시
+              const groupActive = inFeedback
               return (
                 <div key={it.to} className="space-y-1">
-                  {/* 그룹 헤더: 폭 통일, 보더 없음, 삼각형 없음 */}
+                  {/* 그룹 헤더 */}
                   <button
                     type="button"
                     onClick={() => setOpenFeedback((v) => !v)}
-                    className={`${itemBase} ${
-                      groupActive ? itemActive : itemIdle
-                    } text-left`}
+                    className={`${itemBase} ${groupActive ? itemActive : itemIdle} text-left`}
                   >
                     {it.label}
                   </button>
 
                   {/* 서브메뉴 */}
                   {openFeedback && (
-                    <div className="pl-4 space-y-1">
+                    <div className="space-y-1 pl-4">
                       {it.children?.map((c) => (
                         <NavLink
                           key={c.to}
                           to={c.to}
                           className={({ isActive }) =>
-                            `${itemBase} ${
-                              isActive ? itemActive : itemIdle
-                            }`
+                            `${itemBase} ${isActive ? itemActive : itemIdle}`
                           }
                         >
                           {c.label}

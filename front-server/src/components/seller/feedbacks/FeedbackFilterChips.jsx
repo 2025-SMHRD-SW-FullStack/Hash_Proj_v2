@@ -1,3 +1,5 @@
+// src/components/seller/feedbacks/FeedbackFilterChips.jsx
+
 import React from 'react'
 import StatusChips from '/src/components/product/StatusChips'
 import { TAB_KEYS } from '/src/constants/sellerfeedbacks'

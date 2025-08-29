@@ -1,3 +1,5 @@
+// /src/components/seller/feedbacks/FeedbackTable.jsx
+
 import React from 'react'
 import { UI } from '/src/constants/sellerfeedbacks'
 import FeedbackRow from './FeedbackRow'

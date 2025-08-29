@@ -1,107 +1,135 @@
-import React, { useMemo } from 'react'
-import ORDERS_MOCK from '/src/data/sellerOrders'
-
-const box = 'rounded-xl border bg-white p-4 shadow-sm'
-const toDate = (s) => (s ? new Date(s + (s.length === 10 ? 'T00:00:00' : '')) : null)
-const addDays = (d, n) => new Date(d.getTime() + n * 86400000)
-const today0 = () => { const t = new Date(); t.setHours(0,0,0,0); return t }
+import React, { useEffect, useMemo, useState } from 'react'
+import ProductPicker from '/src/components/seller/feedbacks/ProductPicker'
+import AgeDonut from '/src/components/seller/charts/AgeDonut'
+import { RatingsDistribution, QuestionAverages } from '/src/components/seller/charts/RatingsBar'
+import { fetchFeedbackStats } from '/src/service/feedbackService'
+import AiSummaryPanel from '../../../components/seller/feedbacks/AiSummaryPanel'
+// ---- UI 토큰(프로젝트 톤과 맞춤)
+const box = 'rounded-xl border bg-white p-4 shadow-sm text-gray-900'
+const statNumber = 'text-2xl font-bold'
+const statSub = 'text-xs text-gray-500'
 
 export default function FeedbacksStatsPage() {
-  const stats = useMemo(() => {
-    const delivered = ORDERS_MOCK.filter(o => !!o.deliveredAt)
-    const submitted  = delivered.filter(o => !!o.feedbackAt)
-    const reviewed   = submitted.filter(o => !!o.feedbackReviewed)
+  const [picked, setPicked] = useState({ category: null, productId: null })
+  const [loading, setLoading] = useState(false)
+  const [data, setData] = useState(null)
 
-    const expired = delivered.filter(o => {
-      const d = toDate(o.deliveredAt); if (!d || o.feedbackAt) return false
-      return today0() > addDays(d, 7)
-    })
-
-    // 평균 작성 소요(D)
-    const deltas = submitted
-      .map(o => (toDate(o.feedbackAt).getTime() - toDate(o.deliveredAt).getTime()) / 86400000)
-      .filter(n => Number.isFinite(n))
-    const avgDays = deltas.length ? (deltas.reduce((a,b)=>a+b,0) / deltas.length) : 0
-
-    // 상품별 제출 건수 Top 5
-    const byProduct = {}
-    submitted.forEach(o => { byProduct[o.product] = (byProduct[o.product] || 0) + 1 })
-    const topProducts = Object.entries(byProduct)
-      .sort((a,b) => b[1] - a[1])
-      .slice(0, 5)
-
-    const rate = (num, den) => (den ? Math.round((num/den)*100) : 0)
-
-    return {
-      totalDelivered: delivered.length,
-      totalSubmitted: submitted.length,
-      totalReviewed: reviewed.length,
-      totalExpired: expired.length,
-      submitRate: rate(submitted.length, delivered.length),
-      reviewRate: rate(reviewed.length, submitted.length),
-      avgDays: Number(avgDays.toFixed(1)),
-      topProducts,
+  const load = async ({ category, productId }) => {
+    if (!category || !productId) return
+    setLoading(true)
+    try {
+      const res = await fetchFeedbackStats({ category, productId })
+      setData(res)
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }
+
+  useEffect(() => { load(picked) }, [picked.category, picked.productId])
+
+  const summary = data?.summary
+  const stars = data?.stars
+  const demo = data?.demographics
+
+  const cards = useMemo(() => ([
+    {
+      title: '배송완료 건',
+      main: summary?.delivered ?? '-',
+      sub: '',
+    },
+    {
+      title: '피드백 작성',
+      main: summary ? `${summary.written}` : '-',
+      sub: summary ? `작성률 ${summary.writeRate}%` : '',
+    },
+    {
+      title: '신고완료',
+      main: summary ? `${summary.reported}` : '-',
+      sub: summary ? `신고율 ${summary.reportRate}% (작성 대비)` : '',
+    },
+    {
+      title: '기간 만료(미작성)',
+      main: summary ? `${summary.expired}` : '-',
+      sub: summary ? `평균 작성 소요 ${summary.avgWriteDays}일` : '',
+    },
+  ]), [summary])
 
   return (
-    <div className="mx-auto w-full max-w-7xl">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">피드백 통계</h1>
-      </div>
+    <div className="mx-auto w-full max-w-[1120px] px-6 py-6">
+      <h1 className="mb-4 text-xl font-semibold">피드백 통계</h1>
 
-      {/* KPI 카드 */}
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className={box}>
-          <div className="text-sm text-gray-500">배송완료 건</div>
-          <div className="mt-1 text-2xl font-semibold">{stats.totalDelivered.toLocaleString()}</div>
-        </div>
-        <div className={box}>
-          <div className="text-sm text-gray-500">피드백 작성</div>
-          <div className="mt-1 text-2xl font-semibold">{stats.totalSubmitted.toLocaleString()}</div>
-          <div className="mt-2 text-sm text-gray-500">작성률 {stats.submitRate}%</div>
-        </div>
-        <div className={box}>
-          <div className="text-sm text-gray-500">검토 완료</div>
-          <div className="mt-1 text-2xl font-semibold">{stats.totalReviewed.toLocaleString()}</div>
-          <div className="mt-2 text-sm text-gray-500">검토율 {stats.reviewRate}%</div>
-        </div>
-        <div className={box}>
-          <div className="text-sm text-gray-500">기간 만료(미작성)</div>
-          <div className="mt-1 text-2xl font-semibold">{stats.totalExpired.toLocaleString()}</div>
-          <div className="mt-2 text-sm text-gray-500">평균 작성 소요 {stats.avgDays}일</div>
-        </div>
+      {/* 선택 영역 */}
+      <section className={`${box}`}>
+        <ProductPicker value={picked} onChange={setPicked} />
+        {loading && <p className="mt-2 text-sm text-gray-500">불러오는 중…</p>}
       </section>
 
-      {/* 상품별 작성 Top5 */}
-      <section className={`${box} mt-4`}>
-        <div className="mb-3 text-base font-semibold">상품별 작성 Top 5</div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b bg-gray-50 text-[13px] text-gray-500">
-              <tr>
-                <th className="px-3 py-2 w-12">#</th>
-                <th className="px-3 py-2">상품명</th>
-                <th className="px-3 py-2">작성 수</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.topProducts.length === 0 && (
-                <tr><td colSpan={3} className="px-3 py-6 text-center text-gray-500">데이터가 없습니다.</td></tr>
-              )}
-              {stats.topProducts.map(([name, count], idx) => (
-                <tr key={name} className="border-b last:border-none">
-                  <td className="px-3 py-2">{idx+1}</td>
-                  <td className="px-3 py-2">{name}</td>
-                  <td className="px-3 py-2">{count.toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* 상단 요약 카드 */}
+      <section className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-4">
+        {cards.map((c, i) => (
+          <div key={i} className={`${box}`}>
+            <div className="text-sm text-gray-600">{c.title}</div>
+            <div className={statNumber}>{c.main}</div>
+            {c.sub && <div className={statSub}>{c.sub}</div>}
+          </div>
+        ))}
       </section>
 
-      <div className="h-8" />
+      {/* 하단 상세 */}
+      <section className="mt-6 space-y-6">
+        {/* 피드백 통계 */}
+        <div className={`${box}`}>
+          <h2 className="mb-3 text-base font-semibold">피드백 통계</h2>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* 연령별 분포 - 도넛 */}
+            <div>
+              <h3 className="mb-2 text-sm font-medium">연령별 분포</h3>
+              <AgeDonut data={demo || []} />
+            </div>
+
+            {/* 별점 분포 - 막대 */}
+            <div>
+              <h3 className="mb-2 text-sm font-medium">별점 분포</h3>
+              <RatingsDistribution data={stars?.distribution || []} />
+              <div className="mt-2 text-right text-sm text-gray-600">
+                전체 평균: <span className="font-semibold">{stars?.overallAvg ?? '-'}</span> / 5
+              </div>
+            </div>
+          </div>
+
+          {/* 각 설문 별 평균 별점 */}
+          <div className="mt-6">
+            <h3 className="mb-2 text-sm font-medium">각 설문 별 평균</h3>
+            <QuestionAverages data={stars?.byQuestion || []} />
+          </div>
+        </div>
+
+        {/* AI 요약 (자리만) */}
+        <div className={`${box}`}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold">AI 요약</h2>
+            <div className="text-xs text-gray-500">
+              매일 0시에 생성 · 신고 피드백 제외 · 마지막 생성: {data?.lastGeneratedAt || '-'}
+            </div>
+          </div>
+
+          {/* AI 요약 (달력 + 해당일 요약) */}
+          <div className={`${box}`}>
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-base font-semibold">AI 요약</h2>
+            </div>
+
+            <AiSummaryPanel
+              aiDaily={data?.aiDaily || []}
+              lastGeneratedAt={data?.lastGeneratedAt}
+            />
+
+            <p className="mt-3 text-xs text-gray-500">
+              판매 기간 동안 날짜별 요약본이 누적됩니다. 피드백 작성 가능 마지막날 다음날 생성분이 최종 요약본입니다.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
