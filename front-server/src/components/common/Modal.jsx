@@ -1,44 +1,65 @@
-// src/components/common/Modal.jsx
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Button from "./Button";
 
-const Modal = ({ isOpen, onClose, title, children, footer }) => {
+const Modal = ({ 
+  isOpen, 
+  onClose, 
+  title, 
+  children, 
+  footer, 
+  maxWidth = "max-w-2xl" 
+}) => {
+  // ESC로 닫기 + body 스크롤 잠금
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e) => e.key === "Escape" && onClose?.();
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen, onClose]);
+
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="fixed inset-0 z-[1000] flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
+          {/* 배경 클릭으로 닫기 */}
+          <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+
           {/* 모달 컨테이너 */}
           <motion.div
-            className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 relative"
+            className={`relative w-full ${maxWidth} rounded-2xl bg-white shadow-2xl p-6`}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
           >
-            {/* 닫기 버튼 */}
-            <button
-              onClick={onClose}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-
-            {/* 제목 */}
+            {/* 헤더 */}
             {title && (
-              <h2 className="text-lg font-semibold mb-4 border-b pb-2">
-                {title}
-              </h2>
+              <div className="flex items-center justify-between border-b pb-3 mb-4">
+                <h3 className="text-lg font-semibold">{title}</h3>
+                <Button variant="signUp" size="sm" onClick={onClose}>
+                  닫기
+                </Button>
+              </div>
             )}
 
-            {/* 내용 */}
-            <div className="mb-4">{children}</div>
+            {/* 본문 */}
+            <div className="max-h-[70vh] overflow-y-auto overflow-x-hidden">
+              {children}
+            </div>
 
-            {/* 푸터 영역 (예: 확인 / 취소 버튼) */}
+            {/* 푸터 */}
             {footer && (
-              <div className="flex justify-end gap-2 border-t pt-3">
+              <div className="flex justify-end gap-2 border-t pt-3 mt-4">
                 {footer}
               </div>
             )}
