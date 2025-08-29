@@ -20,14 +20,17 @@ const Header = () => {
     navigate('/')
   }
 
-  const clickMessage = () => {}
+    // 현재 정책: 로그인하면 모두에게 셀러 페이지 버튼 노출
+    // TODO(roles): ['SELLER','SUPER_ADMIN'].includes(user?.role) 로 교체
+  const canSeeSellerButton = isLoggedIn
+    // (미리 자리만) const canSeeAdminButton = isLoggedIn && user?.role === 'SUPER_ADMIN'
 
   return (
     <header className="sticky top-0 z-50 flex flex-row items-center justify-between bg-white text-[#222222] shadow-md">
       {/* 왼쪽 영역 */}
         <img
           src={Logo}
-          alt="리쏠 로고"
+          alt="먼저써봄 로고"
           className="m-4 h-[30px] cursor-pointer sm:h-[65px]"
           onClick={() => navigate('/')}
         />
@@ -36,10 +39,16 @@ const Header = () => {
       <div className="mr-8 flex items-center space-x-4">
         {/* TODO: 유저 구분해서 나타나도록 */}
         {isLoggedIn && (
-          <Button variant="admin" size="md">
+
+          <Button 
+            variant="admin" 
+            size="md"
+            onClick={()=> navigate('/seller')}
+            >
             셀러 페이지
           </Button>
         )}
+         
 
         {isLoggedIn ? (
           <div className="flex items-center space-x-2">

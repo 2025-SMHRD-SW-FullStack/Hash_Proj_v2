@@ -6,23 +6,26 @@ import Icon from '../components/common/Icon.jsx';
 import Minus from '../assets/icons/ic_minus.svg';
 import Plus from '../assets/icons/ic_plus.svg';
 import Delete from '../assets/icons/ic_delete.svg';
+import Modal from '../components/common/Modal.jsx'; // ✅ 공통 모달 import
 import { getProductDetail } from '../service/productService.js';
+import useCartStore from '../stores/cardStore.js';
 
 const ProductDetailPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const { addToCart } = useCartStore();
 
-  // --- 상태 관리 ---
   const [productData, setProductData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
   const deliverFee = 3000;
-  
-  // ✅ [신규] 상품 설명 더보기 상태
+
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
-  // --- 데이터 로딩 ---
+  // ✅ 모달 상태
+  const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -38,7 +41,6 @@ const ProductDetailPage = () => {
     fetchProduct();
   }, [productId]);
 
-  // --- 이벤트 핸들러 (기존과 동일) ---
   const handleOptionChange = (e) => {
     const selectedVariantId = e.target.value;
     if (!selectedVariantId) return;
@@ -74,22 +76,51 @@ const ProductDetailPage = () => {
     setSelectedItems(prevItems => prevItems.filter(item => item.variantId !== variantId));
   };
   
-  const handlePurchase = (variantId) => {
+  const handlePurchase = () => {
     if (selectedItems.length === 0) {
       alert('상품 옵션을 선택해주세요.');
       return;
     }
 
-   // 선택된 상품 배열을 "variantId_수량,variantId_수량" 형태의 문자열로 변환합니다.
     const itemsQuery = selectedItems
       .map(item => `${item.variantId}_${item.quantity}`)
       .join(',');
 
-    // 상품 ID와 변환된 상품 목록 문자열을 쿼리 파라미터로 넘겨줍니다.
     navigate(`/user/order?productId=${productId}&items=${itemsQuery}`);
   };
 
-  // --- 렌더링 로직 ---
+  // ✅ 장바구니 담기
+  const handleAddToCart = () => {
+    if (selectedItems.length === 0) {
+      alert('상품 옵션을 선택해주세요.');
+      return;
+    }
+
+    const { product, variants } = productData;
+
+    selectedItems.forEach(item => {
+      const variant = variants.find(v => v.id === parseInt(item.variantId));
+      if (!variant) return;
+
+      const itemToAdd = {
+        productId: product.id,
+        variantId: variant.id,
+        quantity: item.quantity,
+        name: product.name,
+        brand: product.brand,
+        thumbnailUrl: product.thumbnailUrl,
+        price: product.salePrice,
+        addPrice: variant.addPrice,
+        option1Value: variant.option1Value,
+        option2Value: variant.option2Value,
+      };
+      addToCart(itemToAdd);
+    });
+
+    // ✅ 모달 열기
+    setIsCartModalOpen(true);
+  };
+
   if (loading) return <div>상품 정보를 불러오는 중...</div>;
   if (error) return <div>오류: {error}</div>;
   if (!productData) return <div>상품 정보가 없습니다.</div>;
@@ -103,40 +134,33 @@ const ProductDetailPage = () => {
   }, 0);
 
   return (
-    // ✅ [변경] flex 대신 align-items-start를 사용해 상단 정렬
     <div className='flex items-start'>
-      
       {/* 왼쪽: 상품 이미지 및 상세 설명 */}
       <div className='w-3/4 ml-10'>
         <div className='flex flex-col items-center'>
-            <h2 className='text-2xl font-bold my-4'>[{product.brand}] {product.name}</h2>
-            <img src={TestImg} alt={product.name} className='my-5 w-[300px]'/>
+          <h2 className='text-2xl font-bold my-4'>[{product.brand}] {product.name}</h2>
+          <img src={TestImg} alt={product.name} className='my-5 w-[300px]'/>
         </div>
-        
-        {/* ✅ [변경] 상품 상세 설명 영역 (더보기 기능 적용) */}
+
         <div 
-          className={`
-            w-full bg-gray-100 overflow-hidden transition-all duration-500 ease-in-out
-            ${isDescriptionExpanded ? 'max-h-full' : 'max-h-96'}` // 높이 조절
-          }
+          className={`w-full bg-gray-100 overflow-hidden transition-all duration-500 ease-in-out
+            ${isDescriptionExpanded ? 'max-h-full' : 'max-h-96'}`}
         >
           <div dangerouslySetInnerHTML={{ __html: product.detailHtml }} />
         </div>
-        
-        {/* ✅ [신규] 더보기 버튼 */}
+
         <div className='flex justify-center my-4'>
-            <Button 
-                variant="signUp" 
-                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                className='w-full'
-            >
-                {isDescriptionExpanded ? '접기' : '더보기'}
-            </Button>
+          <Button 
+            variant="signUp" 
+            onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+            className='w-full'
+          >
+            {isDescriptionExpanded ? '접기' : '더보기'}
+          </Button>
         </div>
       </div>
 
       {/* 오른쪽: 구매 옵션 패널 */}
-      {/* ✅ [변경] h-screen을 제거하고, 패널 내용만큼 높이가 늘어나도록 수정 */}
       <aside className='sticky top-8 p-8 w-1/4 flex flex-col'>
         <div className='w-full'>
           <div>
@@ -167,8 +191,7 @@ const ProductDetailPage = () => {
             ))}
           </select>
         </div>
-        
-        {/* ✅ [변경] 옵션 목록에서 overflow-y-auto 제거 */}
+
         <div className='space-y-3 pr-2'>
           {selectedItems.map(item => {
             const variant = variants.find(v => v.id === parseInt(item.variantId));
@@ -177,7 +200,6 @@ const ProductDetailPage = () => {
 
             return (
               <div key={item.variantId} className='bg-gray-100 p-3 rounded-md'>
-                {/* ... (옵션 UI는 기존과 동일) ... */}
                 <div className='flex justify-between items-start'>
                   <p className='text-sm text-gray-700 max-w-[80%]'>{`${variant.option1Value} ${variant.option2Value || ''}`}</p>
                   <Icon src={Delete} alt="삭제" className='w-4 h-4 cursor-pointer' onClick={() => handleRemoveItem(item.variantId)} />
@@ -194,8 +216,7 @@ const ProductDetailPage = () => {
             );
           })}
         </div>
-        
-        {/* ✅ [변경] mt-auto 제거 (자연스럽게 아래에 붙도록) */}
+
         <div className='pt-4'>
           {selectedItems.length > 0 && (
             <div className='flex justify-between items-center mb-4'>
@@ -205,11 +226,28 @@ const ProductDetailPage = () => {
           )}
           <Button className='w-full mb-2' onClick={handlePurchase}>구매하기</Button>
           <div className='flex gap-2 w-full'>
-            <Button variant='signUp' className='flex-1'>장바구니</Button>
+            <Button variant='signUp' className='flex-1' onClick={handleAddToCart}>장바구니</Button>
             <Button variant='signUp' className='flex-1'>1:1 채팅하기</Button>
           </div>
         </div>
       </aside>
+
+      {/* ✅ 공통 모달 추가 */}
+      <Modal
+        isOpen={isCartModalOpen}
+        onClose={() => setIsCartModalOpen(false)}
+        title="🛒 장바구니 안내"
+        footer={
+          <>
+            <Button variant="signUp" onClick={() => setIsCartModalOpen(false)}>닫기</Button>
+            <Button onClick={() => navigate('/user/mypage/cart')}>장바구니 바로가기</Button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-700">
+          선택한 상품이 장바구니에 담겼습니다.
+        </p>
+      </Modal>
     </div>
   );
 };

@@ -1,0 +1,51 @@
+// /src/service/adsService.js
+import api from '../config/axiosInstance'
+
+// ✅ 백엔드 베이스 경로 한 곳에서 관리
+//    서버가 '/api/ad' 라우트를 쓰면 아래를 '/api/ad' 로 바꿔주세요.
+const ADS_BASE = '/api/ads'
+
+/** 선택 불가 날짜(캘린더) 조회: from~to 범위 내에서 예약 불가 일자 세트 */
+export const fetchAdUnavailableDates = async ({ type, category, startDate, endDate }) => {
+  const params = {
+    type,
+    startDate, // 'YYYY-MM-DD'
+    endDate,   // 'YYYY-MM-DD'
+  }
+  // CATEGORY_TOP일 때만 category 필수
+  if (type === 'CATEGORY_TOP' && category) params.category = category
+
+  const { data } = await api.get(`${ADS_BASE}/availability/calendar`, { params })
+  // 서버가 Set을 내려도 JSON에선 배열로 직렬화될 가능성이 높음 → 배열로 정규화
+  const arr = Array.isArray(data) ? data : Array.from(data || [])
+  return new Set(arr.map(String)) // 'YYYY-MM-DD' 문자열 Set
+}
+
+/** 인벤토리 조회: 기간 동안 가용 슬롯 탐색 */
+export const fetchAdInventory = async ({ type, category, startDate, endDate }) => {
+  const params = { type, startDate, endDate }
+  if (type === 'CATEGORY_TOP' && category) params.category = category
+  const res = await api.get(`${ADS_BASE}/inventory`, { params })
+  return res.data // [{ slotId, position, available }]
+}
+
+/** 예약 생성(결제 전 선점 단계) */
+export const createAdBooking = async ({ slotId, productId, startDate, endDate }) => {
+  const payload = { slotId, productId, startDate, endDate }
+  const res = await api.post(`${ADS_BASE}/book`, payload)
+  return res.data // { bookingId, price, status }
+}
+
+// (선택) 내 예약 목록
+// export const fetchMyAdBookings = async ({ page = 0, size = 20 } = {}) => {
+//   const res = await api.get(`${ADS_BASE}/me/bookings`, { params: { page, size } })
+//   return res.data
+// }
+
+/** (선택) Toss 결제 승인 확인 */
+export const confirmAdPayment = async ({ paymentKey, orderId, amount, bookingId }) => {
+  const res = await api.post('/api/payments/toss/ad/confirm', {
+    paymentKey, orderId, amount, bookingId,
+  })
+  return res.data // { bookingId, paymentKey, amount, approvedAt }
+}
