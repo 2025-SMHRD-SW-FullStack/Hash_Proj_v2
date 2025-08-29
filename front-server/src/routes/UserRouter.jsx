@@ -7,11 +7,11 @@ import MyOrderDetailPage from '../pages/user/myPage/MyOrderDetailPage'
 import MyOrders from '../pages/user/myPage/MyOrders'
 import FeedbackEditor from '../pages/feedbackPage/FeedbackEditor'
 import MyInfoPage from '../pages/user/myPage/MyInfoPage'
-import MyCartPage from '../pages/user/myPage/MyCardPage'
 import FAQPage from '../pages/user/myPage/support/FAQPage'
 import QnAPage from '../pages/user/myPage/support/QnAPage'
 import SellerApplyPage from '../pages/user/myPage/support/SellerApplyPage'
 import SurveyPage from '../pages/user/SurveyPage'
+import MyCartpage from '../pages/user/myPage/MyCartPage'
 
 const UserRouter = () => {
   return (
@@ -41,7 +41,7 @@ const UserRouter = () => {
         <Route path="orders" element={<MyOrders />} />
         <Route path="orders/:orderId" element={<MyOrderDetailPage />} />
         <Route path="edit" element={<MyInfoPage />} />
-        <Route path='cart' element={<MyCartPage/>}/>
+        <Route path='cart' element={<MyCartpage/>}/>
 
         {/* 고객센터 하위 메뉴 */}
         <Route path="support/faq" element={<FAQPage />} />

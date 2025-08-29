@@ -6,14 +6,13 @@ import Icon from '../components/common/Icon.jsx';
 import Minus from '../assets/icons/ic_minus.svg';
 import Plus from '../assets/icons/ic_plus.svg';
 import Delete from '../assets/icons/ic_delete.svg';
-import Modal from '../components/common/Modal.jsx'; // ✅ 공통 모달 import
+import Modal from '../components/common/Modal.jsx';
 import { getProductDetail } from '../service/productService.js';
-import useCartStore from '../stores/cardStore.js';
+import { addCartItem } from '../service/cartService.js';
 
 const ProductDetailPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCartStore();
 
   const [productData, setProductData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,8 +21,6 @@ const ProductDetailPage = () => {
   const deliverFee = 3000;
 
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-
-  // ✅ 모달 상태
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
 
   useEffect(() => {
@@ -56,12 +53,11 @@ const ProductDetailPage = () => {
       ...prevItems,
       { variantId: selectedVariantId, quantity: 1 }
     ]);
-    
     e.target.value = '';
   };
-  
+
   const handleQuantityChange = (variantId, amount) => {
-    setSelectedItems(prevItems => 
+    setSelectedItems(prevItems =>
       prevItems.map(item => {
         if (item.variantId === variantId) {
           const newQuantity = item.quantity + amount;
@@ -71,54 +67,61 @@ const ProductDetailPage = () => {
       })
     );
   };
-  
+
   const handleRemoveItem = (variantId) => {
     setSelectedItems(prevItems => prevItems.filter(item => item.variantId !== variantId));
   };
-  
+
   const handlePurchase = () => {
     if (selectedItems.length === 0) {
       alert('상품 옵션을 선택해주세요.');
       return;
     }
-
-    const itemsQuery = selectedItems
-      .map(item => `${item.variantId}_${item.quantity}`)
-      .join(',');
-
+    // 기존 즉시구매 플로우 유지
+    const itemsQuery = selectedItems.map(item => `${item.variantId}_${item.quantity}`).join(',');
     navigate(`/user/order?productId=${productId}&items=${itemsQuery}`);
   };
 
-  // ✅ 장바구니 담기
-  const handleAddToCart = () => {
-    if (selectedItems.length === 0) {
+  // ✅ 서버 장바구니 담기
+  const handleAddToCart = async () => {
+    if (!productData || selectedItems.length === 0) {
       alert('상품 옵션을 선택해주세요.');
       return;
     }
-
     const { product, variants } = productData;
 
-    selectedItems.forEach(item => {
-      const variant = variants.find(v => v.id === parseInt(item.variantId));
-      if (!variant) return;
+    // 라벨명
+    const labels = [
+      product.option1Name, product.option2Name, product.option3Name,
+      product.option4Name, product.option5Name
+    ];
 
-      const itemToAdd = {
-        productId: product.id,
-        variantId: variant.id,
-        quantity: item.quantity,
-        name: product.name,
-        brand: product.brand,
-        thumbnailUrl: product.thumbnailUrl,
-        price: product.salePrice,
-        addPrice: variant.addPrice,
-        option1Value: variant.option1Value,
-        option2Value: variant.option2Value,
-      };
-      addToCart(itemToAdd);
-    });
+    try {
+      // 선택된 각 variantId마다 서버 /api/me/cart/items 호출
+      for (const item of selectedItems) {
+        const variant = variants.find(v => v.id === parseInt(item.variantId));
+        if (!variant) continue;
 
-    // ✅ 모달 열기
-    setIsCartModalOpen(true);
+        // 라벨→값 맵 구성 (라벨이 없으면 스킵)
+        const options = {};
+        if (labels[0]) options[labels[0]] = variant.option1Value ?? null;
+        if (labels[1]) options[labels[1]] = variant.option2Value ?? null;
+        if (labels[2]) options[labels[2]] = variant.option3Value ?? null;
+        if (labels[3]) options[labels[3]] = variant.option4Value ?? null;
+        if (labels[4]) options[labels[4]] = variant.option5Value ?? null;
+
+        await addCartItem({
+          productId: product.id,
+          qty: item.quantity,
+          options
+        });
+      }
+
+      setIsCartModalOpen(true);
+    } catch (e) {
+      const msg = e?.response?.data?.message || e?.message || '장바구니 담기 중 오류가 발생했습니다.';
+      alert(msg);
+    }
   };
 
   if (loading) return <div>상품 정보를 불러오는 중...</div>;
@@ -142,7 +145,7 @@ const ProductDetailPage = () => {
           <img src={TestImg} alt={product.name} className='my-5 w-[300px]'/>
         </div>
 
-        <div 
+        <div
           className={`w-full bg-gray-100 overflow-hidden transition-all duration-500 ease-in-out
             ${isDescriptionExpanded ? 'max-h-full' : 'max-h-96'}`}
         >
@@ -150,8 +153,8 @@ const ProductDetailPage = () => {
         </div>
 
         <div className='flex justify-center my-4'>
-          <Button 
-            variant="signUp" 
+          <Button
+            variant="signUp"
             onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
             className='w-full'
           >
@@ -184,7 +187,7 @@ const ProductDetailPage = () => {
             <option value="">선택해주세요.</option>
             {variants.map((v) => (
               <option key={v.id} value={v.id} disabled={v.stock === 0}>
-                {`${v.option1Value} ${v.option2Value || ''}`}
+                {`${v.option1Value ?? ''} ${v.option2Value ?? ''}`.trim()}
                 {v.addPrice > 0 ? ` (+${v.addPrice.toLocaleString()}원)` : ''}
                 {v.stock === 0 ? ' (품절)' : ''}
               </option>
@@ -196,12 +199,12 @@ const ProductDetailPage = () => {
           {selectedItems.map(item => {
             const variant = variants.find(v => v.id === parseInt(item.variantId));
             if (!variant) return null;
-            const itemPrice = (product.salePrice + variant.addPrice) * item.quantity;
+            const itemPrice = (product.salePrice + (variant.addPrice || 0)) * item.quantity;
 
             return (
               <div key={item.variantId} className='bg-gray-100 p-3 rounded-md'>
                 <div className='flex justify-between items-start'>
-                  <p className='text-sm text-gray-700 max-w-[80%]'>{`${variant.option1Value} ${variant.option2Value || ''}`}</p>
+                  <p className='text-sm text-gray-700 max-w-[80%]'>{`${variant.option1Value ?? ''} ${variant.option2Value ?? ''}`.trim()}</p>
                   <Icon src={Delete} alt="삭제" className='w-4 h-4 cursor-pointer' onClick={() => handleRemoveItem(item.variantId)} />
                 </div>
                 <div className='flex items-center justify-between mt-2'>
@@ -232,7 +235,7 @@ const ProductDetailPage = () => {
         </div>
       </aside>
 
-      {/* ✅ 공통 모달 추가 */}
+      {/* 장바구니 안내 모달 */}
       <Modal
         isOpen={isCartModalOpen}
         onClose={() => setIsCartModalOpen(false)}
@@ -244,9 +247,7 @@ const ProductDetailPage = () => {
           </>
         }
       >
-        <p className="text-sm text-gray-700">
-          선택한 상품이 장바구니에 담겼습니다.
-        </p>
+        <p className="text-sm text-gray-700">선택한 상품이 장바구니에 담겼습니다.</p>
       </Modal>
     </div>
   );
