@@ -67,9 +67,14 @@ const MyPageLayout = () => {
             )}
           </div>
 
-          <Button className="w-full h-14 text-base" variant="whiteBlack">
+          <Button
+            className="w-full h-14 text-base"
+            variant="whiteBlack"
+            onClick={() => navigate("/user/mypage/point-exchange")}
+          >
             포인트 교환하기
           </Button>
+
         </div>
 
         {/* --- 내비게이션 메뉴 --- */}
@@ -90,7 +95,7 @@ const MyPageLayout = () => {
             </li>
             <li>
               <NavLink
-                to="/user/mypage/feedback"
+                to="/user/mypage/feedback-history" 
                 end
                 className={({ isActive }) =>
                   `${baseLinkStyle} ${

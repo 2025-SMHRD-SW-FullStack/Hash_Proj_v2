@@ -9,6 +9,7 @@ const useAuthStore = create(
       isLoggedIn: false, // 로그인 여부
       user: null, // 로그인한 사용자 정보 (UserResponse DTO에 해당)
       accessToken: null, // 액세스 토큰
+      points: 0, // 포인트 상태
 
       // --- 액션 (Actions) ---
 
@@ -17,13 +18,14 @@ const useAuthStore = create(
        * @param {object} data - 백엔드 /api/auth/login에서 받은 LoginResponse 객체
        */
       login: (data) => {
-        const { accessToken, user } = data
+        const { accessToken, user, points } = data
 
         // 상태 업데이트
         set({
           isLoggedIn: true,
           user: user,
           accessToken: accessToken,
+          points: points, 
         })
       },
 
@@ -39,6 +41,7 @@ const useAuthStore = create(
           isLoggedIn: false,
           user: null,
           accessToken: null,
+          points: 0,
         })
       },
 
@@ -49,6 +52,10 @@ const useAuthStore = create(
       setAccessToken: (newAccessToken) => {
         // 상태의 accessToken만 업데이트
         set({ accessToken: newAccessToken })
+      },
+      // ✅ 포인트 업데이트 액션 추가
+      setPoints: (newPoints) => {
+        set({ points: newPoints });
       },
     }),
     {

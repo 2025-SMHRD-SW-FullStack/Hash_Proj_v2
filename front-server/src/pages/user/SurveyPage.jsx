@@ -137,8 +137,8 @@ export default function SurveyPage() {
       <FeedbackChoiceModal
         open={openChoice}
         onClose={() => setOpenChoice(false)}
-        onPickManual={() => navigate(`/user/feedback/editor?orderItemId=${orderItemId}&type=MANUAL&overallScore=${overallScore}&scoresJson=${encodeURIComponent(JSON.stringify(answers))}`)}
-        onPickAI={() => navigate(`/user/feedback/editor?orderItemId=${orderItemId}&type=AI&overallScore=${overallScore}&scoresJson=${encodeURIComponent(JSON.stringify(answers))}`)}
+        onPickManual={() => navigate(`/user/feedback/editor?orderItemId=${orderItemId}&productId=${productId}&type=MANUAL&overallScore=${overallScore}&scoresJson=${encodeURIComponent(JSON.stringify(answers))}`)}
+        onPickAI={() => navigate(`/user/feedback/editor?orderItemId=${orderItemId}&productId=${productId}&type=AI&overallScore=${overallScore}&scoresJson=${encodeURIComponent(JSON.stringify(answers))}`)}
       />
     </div>
   );

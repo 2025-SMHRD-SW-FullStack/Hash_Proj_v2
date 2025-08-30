@@ -26,7 +26,7 @@ const AppRouter = () => {
       <Route element={<MainLayout />}>
 
         <Route path="/" element={<MainPage />} />
-        <Route path='/product' element={<ProductPage />} />
+        <Route path='/products' element={<ProductPage />} />
         {/* ✅ :productId를 사용해 동적 경로로 변경 */}
         <Route path="/product/:productId" element={<ProductDetailPage />} />
 

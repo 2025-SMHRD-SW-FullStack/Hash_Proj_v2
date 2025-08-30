@@ -27,10 +27,10 @@ const FormRow = ({ label, children }) => (
 );
 
 // 기본 입력 필드 스타일
-const inputStyle = "w-full h-11 rounded-lg border border-gray-300 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition";
+const inputStyle =
+  'w-full h-11 rounded-lg border border-gray-300 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition';
 // 읽기 전용 입력 필드 스타일
 const readOnlyInputStyle = `${inputStyle} bg-gray-100 cursor-not-allowed`;
-
 
 // =================================================================================
 // ✨ MyInfoPage 컴포넌트 ✨
@@ -52,7 +52,10 @@ const MyInfoPage = () => {
     part2: user?.phoneNumber?.substring(3, 7) || '',
     part3: user?.phoneNumber?.substring(7, 11) || '',
   });
-  const fullPhoneNumber = useMemo(() => `${phoneParts.part1}${phoneParts.part2}${phoneParts.part3}`, [phoneParts]);
+  const fullPhoneNumber = useMemo(
+    () => `${phoneParts.part1}${phoneParts.part2}${phoneParts.part3}`,
+    [phoneParts]
+  );
 
   // 전화번호 인증 관련 상태
   const [isPhoneEditable, setIsPhoneEditable] = useState(false);
@@ -68,11 +71,22 @@ const MyInfoPage = () => {
   // 주소록 관련 상태
   const [addresses, setAddresses] = useState([]);
   const [isAddrModalOpen, setIsAddrModalOpen] = useState(false);
-  const primaryAddress = useMemo(() => addresses.find(a => a.primaryAddress) || addresses[0], [addresses]);
+  const primaryAddress = useMemo(
+    () => addresses.find((a) => a.primaryAddress) || addresses[0],
+    [addresses]
+  );
 
   // 전화번호 자동 포커스 이동을 위한 Ref
   const phoneInput2 = useRef(null);
   const phoneInput3 = useRef(null);
+
+  // 성별, 생년월일
+  const [gender, setGender] = useState(() => {
+    if (user?.gender === 'M') return 'male';
+    if (user?.gender === 'F') return 'female';
+    return '';
+  });
+  const [birthDate, setBirthDate] = useState(user?.birthDate || '');
 
   // --- 생명주기 및 데이터 로딩 (useEffect) ---
 
@@ -83,7 +97,7 @@ const MyInfoPage = () => {
       return;
     }
     timerRef.current = setInterval(() => {
-      setLeftSec(s => (s > 0 ? s - 1 : 0));
+      setLeftSec((s) => (s > 0 ? s - 1 : 0));
     }, 1000);
     return () => clearInterval(timerRef.current);
   }, [leftSec]);
@@ -94,7 +108,7 @@ const MyInfoPage = () => {
       const addrData = await getAddresses();
       setAddresses(addrData || []);
     } catch (error) {
-      console.error("주소록 로딩 실패", error);
+      console.error('주소록 로딩 실패', error);
     }
   };
 
@@ -102,14 +116,13 @@ const MyInfoPage = () => {
     reloadAddresses();
   }, []);
 
-
   // --- 이벤트 핸들러 ---
 
   // 전화번호 입력 변경 핸들러 (자동 포커스 이동 포함)
   const handlePhonePartChange = (part, maxLength, nextRef) => (e) => {
     const { value } = e.target;
     if (value.length <= maxLength) {
-      setPhoneParts(prev => ({ ...prev, [part]: value }));
+      setPhoneParts((prev) => ({ ...prev, [part]: value }));
       if (value.length === maxLength && nextRef?.current) {
         nextRef.current.focus();
       }
@@ -151,13 +164,13 @@ const MyInfoPage = () => {
         setInfoMsg('✅ 인증되었습니다. 저장을 눌러 변경을 완료하세요.');
         setIsPhoneEditable(false);
         setLeftSec(0);
-        setPhoneError(''); // 성공 시 에러 메시지 초기화
+        setPhoneError('');
       } else {
         throw new Error('인증 토큰이 없습니다.');
       }
     } catch (e) {
       setPhoneError('인증번호가 올바르지 않습니다.');
-      setInfoMsg(''); // 실패 시 안내 메시지 초기화
+      setInfoMsg('');
     } finally {
       setIsVerifying(false);
     }
@@ -168,7 +181,9 @@ const MyInfoPage = () => {
     const payload = {
       nickname,
       profileImageUrl,
-      // ✨ 참고: 성별, 생년월일 저장은 백엔드 구현 필요
+      birthDate,
+      gender:
+        gender === 'male' ? 'M' : gender === 'female' ? 'F' : 'UNKNOWN',
     };
 
     if (phoneVerifyToken) {
@@ -201,7 +216,18 @@ const MyInfoPage = () => {
             className="w-32 h-32 rounded-full object-cover border-4 border-gray-100"
           />
           <button className="absolute bottom-1 right-1 bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition">
-             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" /></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z"
+                clipRule="evenodd"
+              />
+            </svg>
           </button>
         </div>
       </div>
@@ -209,28 +235,69 @@ const MyInfoPage = () => {
       {/* 기본 정보 */}
       <SectionContainer title="기본 정보">
         <FormRow label="아이디(이메일)">
-          <input type="text" value={user?.email || ''} readOnly disabled className={readOnlyInputStyle} />
+          <input
+            type="text"
+            value={user?.email || ''}
+            readOnly
+            disabled
+            className={readOnlyInputStyle}
+          />
         </FormRow>
-        {/* <FormRow label="비밀번호">
-          <Button variant="whiteBlack" onClick={() => navigate('/find-auth?tab=findPw')}>
-            비밀번호 재설정
-          </Button>
-        </FormRow> */}
         <FormRow label="닉네임">
-          <input id="nickname" type="text" value={nickname} onChange={e => setNickname(e.target.value)} className={inputStyle} />
+          <input
+            id="nickname"
+            type="text"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            className={inputStyle}
+          />
         </FormRow>
         <FormRow label="전화번호">
           <div className="flex items-center gap-2">
-            <input type="tel" maxLength="3" value={phoneParts.part1} onChange={handlePhonePartChange('part1', 3, phoneInput2)} readOnly={!isPhoneEditable} className={`${inputStyle} text-center ${!isPhoneEditable ? 'bg-gray-100' : ''}`} />
+            <input
+              type="tel"
+              maxLength="3"
+              value={phoneParts.part1}
+              onChange={handlePhonePartChange('part1', 3, phoneInput2)}
+              readOnly={!isPhoneEditable}
+              className={`${inputStyle} text-center ${
+                !isPhoneEditable ? 'bg-gray-100' : ''
+              }`}
+            />
             <span>-</span>
-            <input type="tel" maxLength="4" ref={phoneInput2} value={phoneParts.part2} onChange={handlePhonePartChange('part2', 4, phoneInput3)} readOnly={!isPhoneEditable} className={`${inputStyle} text-center ${!isPhoneEditable ? 'bg-gray-100' : ''}`} />
+            <input
+              type="tel"
+              maxLength="4"
+              ref={phoneInput2}
+              value={phoneParts.part2}
+              onChange={handlePhonePartChange('part2', 4, phoneInput3)}
+              readOnly={!isPhoneEditable}
+              className={`${inputStyle} text-center ${
+                !isPhoneEditable ? 'bg-gray-100' : ''
+              }`}
+            />
             <span>-</span>
-            <input type="tel" maxLength="4" ref={phoneInput3} value={phoneParts.part3} onChange={handlePhonePartChange('part3', 4, null)} readOnly={!isPhoneEditable} className={`${inputStyle} text-center ${!isPhoneEditable ? 'bg-gray-100' : ''}`} />
-            
+            <input
+              type="tel"
+              maxLength="4"
+              ref={phoneInput3}
+              value={phoneParts.part3}
+              onChange={handlePhonePartChange('part3', 4, null)}
+              readOnly={!isPhoneEditable}
+              className={`${inputStyle} text-center ${
+                !isPhoneEditable ? 'bg-gray-100' : ''
+              }`}
+            />
+
             {!phoneVerifyToken && (
-                <Button variant="whiteBlack" onClick={() => setIsPhoneEditable(true)} disabled={isPhoneEditable} className="flex-shrink-0">
-                    수정
-                </Button>
+              <Button
+                variant="whiteBlack"
+                onClick={() => setIsPhoneEditable(true)}
+                disabled={isPhoneEditable}
+                className="flex-shrink-0"
+              >
+                수정
+              </Button>
             )}
           </div>
         </FormRow>
@@ -239,65 +306,123 @@ const MyInfoPage = () => {
           <FormRow label="인증번호">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className='relative w-full'>
-                    <input type="text" placeholder="인증번호 6자리" value={otp} onChange={e => setOtp(e.target.value)} className={inputStyle} maxLength="6"/>
-                    {leftSec > 0 && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-blue-500 font-semibold">{`${Math.floor(leftSec/60)}:${(leftSec%60).toString().padStart(2, '0')}`}</span>}
+                <div className="relative w-full">
+                  <input
+                    type="text"
+                    placeholder="인증번호 6자리"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className={inputStyle}
+                    maxLength="6"
+                  />
+                  {leftSec > 0 && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-blue-500 font-semibold">{`${Math.floor(
+                      leftSec / 60
+                    )}:${(leftSec % 60).toString().padStart(2, '0')}`}</span>
+                  )}
                 </div>
-                <Button onClick={handleSendCode} disabled={isSending || leftSec > 0} className="flex-shrink-0">
-                  {isSending ? '전송 중...' : (leftSec > 0 ? '재전송' : '인증번호 받기')}
+                <Button
+                  onClick={handleSendCode}
+                  disabled={isSending || leftSec > 0}
+                  className="flex-shrink-0"
+                >
+                  {isSending ? '전송 중...' : leftSec > 0 ? '재전송' : '인증번호 받기'}
                 </Button>
               </div>
-              <Button onClick={handleVerifyCode} disabled={isVerifying || !otp} className="w-full">
+              <Button
+                onClick={handleVerifyCode}
+                disabled={isVerifying || !otp}
+                className="w-full"
+              >
                 {isVerifying ? '확인 중...' : '인증번호 확인'}
               </Button>
               {(infoMsg || phoneError) && (
-                <p className={`text-xs mt-1 ${phoneError ? 'text-red-500' : 'text-green-600'}`}>
+                <p
+                  className={`text-xs mt-1 ${
+                    phoneError ? 'text-red-500' : 'text-green-600'
+                  }`}
+                >
                   {phoneError || infoMsg}
                 </p>
               )}
             </div>
           </FormRow>
         )}
-        {/* ✨ 요청 이미지 기반 추가 항목 (백엔드 연동 필요) */}
         <FormRow label="성별">
-            <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="gender" value="male" className="form-radio h-4 w-4"/>
-                    <span>남성</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="gender" value="female" className="form-radio h-4 w-4"/>
-                    <span>여성</span>
-                </label>
-            </div>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-not-allowed">
+              <input
+                type="radio"
+                name="gender"
+                value="male"
+                checked={gender === 'male'}
+                disabled
+                className="form-radio h-4 w-4"
+              />
+              <span>남성</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-not-allowed">
+              <input
+                type="radio"
+                name="gender"
+                value="female"
+                checked={gender === 'female'}
+                disabled
+                className="form-radio h-4 w-4"
+              />
+              <span>여성</span>
+            </label>
+          </div>
         </FormRow>
+
         <FormRow label="생년월일">
-            <input type="text" placeholder="예) 19990101" className={inputStyle} maxLength="8" />
+          <input
+            type="text"
+            value={birthDate}
+            readOnly
+            className={`${inputStyle} bg-gray-100 cursor-not-allowed`}
+          />
         </FormRow>
       </SectionContainer>
-      
+
       {/* 주소록 */}
       <SectionContainer title="주소록">
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-600">기본 배송지</p>
-          <Button variant="whiteBlack" onClick={() => setIsAddrModalOpen(true)}>+ 배송지 관리</Button>
+          <Button variant="whiteBlack" onClick={() => setIsAddrModalOpen(true)}>
+            + 배송지 관리
+          </Button>
         </div>
         {primaryAddress ? (
           <div>
-            <p className="font-semibold">{primaryAddress.receiver} <span className='text-gray-500 font-normal'>({primaryAddress.phone})</span></p>
-            <p className="text-sm text-gray-600 mt-1">({primaryAddress.zipcode}) {primaryAddress.addr1} {primaryAddress.addr2}</p>
+            <p className="font-semibold">
+              {primaryAddress.receiver}{' '}
+              <span className="text-gray-500 font-normal">
+                ({primaryAddress.phone})
+              </span>
+            </p>
+            <p className="text-sm text-gray-600 mt-1">
+              ({primaryAddress.zipcode}) {primaryAddress.addr1}{' '}
+              {primaryAddress.addr2}
+            </p>
           </div>
         ) : (
-          <p className="text-gray-500 text-center py-4">등록된 배송지가 없습니다.</p>
+          <p className="text-gray-500 text-center py-4">
+            등록된 배송지가 없습니다.
+          </p>
         )}
       </SectionContainer>
 
       {/* 최종 동작 버튼 */}
       <div className="flex justify-between items-center pt-4">
-        <Button variant="text" className="text-gray-500 hover:text-red-500">회원 탈퇴</Button>
+        <Button variant="text" className="text-gray-500 hover:text-red-500">
+          회원 탈퇴
+        </Button>
         <div className="flex justify-end space-x-2">
-            <Button variant="unselected" onClick={() => navigate(-1)}>취소</Button>
-            <Button onClick={handleSave}>수정하기</Button>
+          <Button variant="unselected" onClick={() => navigate(-1)}>
+            취소
+          </Button>
+          <Button onClick={handleSave}>수정하기</Button>
         </div>
       </div>
 
@@ -307,7 +432,9 @@ const MyInfoPage = () => {
           setIsAddrModalOpen(false);
           reloadAddresses();
         }}
-        onSelected={() => { /* 선택 시 동작은 이 페이지에선 불필요 */ }}
+        onSelected={() => {
+          /* 선택 시 동작은 이 페이지에선 불필요 */
+        }}
       />
     </div>
   );

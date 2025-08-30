@@ -1,23 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import TestImg from '../assets/images/ReSsol_TestImg.png';
+import { getProductDetail } from '../service/productService.js';
+import useCartStore from '../stores/cartStore.js';
+import useFeedbackStore from '../stores/feedbackStore.js';
 import Button from '../components/common/Button.jsx';
 import Icon from '../components/common/Icon.jsx';
 import Minus from '../assets/icons/ic_minus.svg';
 import Plus from '../assets/icons/ic_plus.svg';
 import Delete from '../assets/icons/ic_delete.svg';
 import Modal from '../components/common/Modal.jsx';
-import { getProductDetail } from '../service/productService.js';
-import useCartStore from '../stores/cartStore.js';
-import useFeedbackStore from '../stores/feedbackStore.js';
+import TestImg from '../assets/images/ReSsol_TestImg.png';
+
+const EMPTY_ARRAY = [];
 
 const ProductDetailPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCartStore();
-  const allFeedbacks = useFeedbackStore((state) => state.feedbacksByProduct);
-  const feedbacks = useMemo(() => allFeedbacks[productId] || [], [allFeedbacks, productId]);
-
+  const feedbacks = useFeedbackStore((state) => state.feedbacksByProduct[productId] || EMPTY_ARRAY);
 
   const [productData, setProductData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,12 +58,11 @@ const ProductDetailPage = () => {
       ...prevItems,
       { variantId: selectedVariantId, quantity: 1 }
     ]);
-    
     e.target.value = '';
   };
-  
+
   const handleQuantityChange = (variantId, amount) => {
-    setSelectedItems(prevItems => 
+    setSelectedItems(prevItems =>
       prevItems.map(item => {
         if (item.variantId === variantId) {
           const newQuantity = item.quantity + amount;
@@ -73,21 +72,17 @@ const ProductDetailPage = () => {
       })
     );
   };
-  
+
   const handleRemoveItem = (variantId) => {
     setSelectedItems(prevItems => prevItems.filter(item => item.variantId !== variantId));
   };
-  
+
   const handlePurchase = () => {
     if (selectedItems.length === 0) {
       alert('상품 옵션을 선택해주세요.');
       return;
     }
-
-    const itemsQuery = selectedItems
-      .map(item => `${item.variantId}_${item.quantity}`)
-      .join(',');
-
+    const itemsQuery = selectedItems.map(item => `${item.variantId}_${item.quantity}`).join(',');
     navigate(`/user/order?productId=${productId}&items=${itemsQuery}`);
   };
 
@@ -120,19 +115,6 @@ const ProductDetailPage = () => {
 
     setIsCartModalOpen(true);
   };
-  
-  const navigateToFeedbackEditor = () => {
-      const hasPurchased = true; 
-      if (!hasPurchased) {
-          alert("상품을 구매한 사용자만 피드백을 작성할 수 있습니다.");
-          return;
-      }
-      const exampleOrderItemId = "12345";
-      const exampleOverallScore = "5"; 
-      const exampleScoresJson = JSON.stringify({ "품질": 5, "배송": 4 });
-
-      navigate(`/user/feedback/editor?orderItemId=${exampleOrderItemId}&type=MANUAL&overallScore=${exampleOverallScore}&scoresJson=${encodeURIComponent(exampleScoresJson)}&productId=${productId}`);
-  };
 
   if (loading) return <div>상품 정보를 불러오는 중...</div>;
   if (error) return <div>오류: {error}</div>;
@@ -148,14 +130,13 @@ const ProductDetailPage = () => {
 
   return (
     <div className='flex items-start'>
-      {/* 왼쪽: 상품 이미지 및 상세 설명 */}
       <div className='w-3/4 ml-10'>
         <div className='flex flex-col items-center'>
           <h2 className='text-2xl font-bold my-4'>[{product.brand}] {product.name}</h2>
           <img src={TestImg} alt={product.name} className='my-5 w-[300px]'/>
         </div>
 
-        <div 
+        <div
           className={`w-full bg-gray-100 overflow-hidden transition-all duration-500 ease-in-out
             ${isDescriptionExpanded ? 'max-h-full' : 'max-h-96'}`}
         >
@@ -163,71 +144,52 @@ const ProductDetailPage = () => {
         </div>
 
         <div className='flex justify-center my-4'>
-          <Button 
-            variant="signUp" 
+          <Button
+            variant="signUp"
             onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
             className='w-full'
           >
             {isDescriptionExpanded ? '접기' : '더보기'}
           </Button>
         </div>
-
-        {/* --- 피드백 모음 섹션 --- */}
+        
         <hr className="my-8 border-t border-gray-300" />
         <div className="feedback-section">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold">피드백 모음 ({feedbacks.length})</h3>
-                <div className="flex items-center text-sm text-gray-500">
-                    <span className="mr-2">
-                        구매 이력이 있는 회원만 작성 가능합니다.
-                    </span>
-                    <button
-                        onClick={navigateToFeedbackEditor}
-                        className="flex items-center text-blue-600 hover:underline"
-                    >
-                        <span className="text-lg mr-1">📝</span>
-                        피드백 작성하기
-                    </button>
-                </div>
-            </div>
-
-            <div className="space-y-6">
-                {feedbacks.length > 0 ? (
-                    feedbacks.slice(0, 2).map((fb, index) => (
-                        <div key={index} className="border-b border-gray-200 pb-6 last:border-b-0">
-                            <div className="flex items-center mb-3">
-                                <p className="font-semibold text-lg mr-2">{fb.author || '익명'}</p>
-                                <p className="text-sm text-gray-500">{new Date(fb.createdAt).toLocaleDateString('ko-KR')}</p>
-                            </div>
-                            
-                            {fb.imagesJson && JSON.parse(fb.imagesJson).length > 0 && (
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {JSON.parse(fb.imagesJson).slice(0, 4).map((imgSrc, imgIndex) => (
-                                        <div key={imgIndex} className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden">
-                                            <img src={imgSrc} alt={`피드백 이미지 ${imgIndex + 1}`} className="object-cover w-full h-full" />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            <p className="text-gray-800 leading-relaxed mb-3">
-                                {fb.content}
-                            </p>
-                            {index === 1 && feedbacks.length > 2 && (
-                                <div className="text-center mt-4">
-                                  <Button variant="whiteBlack">... 더보기</Button>
-                                </div>
-                            )}
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-2xl font-bold">피드백 모음 ({feedbacks.length})</h3>
+          </div>
+          <div className="space-y-6">
+            {feedbacks.length > 0 ? (
+              feedbacks.slice(0, 2).map((fb, index) => (
+                <div key={index} className="border-b border-gray-200 pb-6 last:border-b-0">
+                  <div className="flex items-center mb-3">
+                    <p className="font-semibold text-lg mr-2">{fb.author || '익명'}</p>
+                    <p className="text-sm text-gray-500">{new Date(fb.createdAt).toLocaleDateString('ko-KR')}</p>
+                  </div>
+                  {fb.imagesJson && JSON.parse(fb.imagesJson).length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {JSON.parse(fb.imagesJson).slice(0, 4).map((imgSrc, imgIndex) => (
+                        <div key={imgIndex} className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden">
+                          <img src={imgSrc} alt={`피드백 이미지 ${imgIndex + 1}`} className="object-cover w-full h-full" />
                         </div>
-                    ))
-                ) : (
-                    <p className="text-gray-500 text-center py-8">아직 작성된 피드백이 없습니다.</p>
-                )}
-            </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-gray-800 leading-relaxed mb-3">{fb.content}</p>
+                  {index === 1 && feedbacks.length > 2 && (
+                    <div className="text-center mt-4">
+                      <Button variant="whiteBlack">... 더보기</Button>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-8">아직 작성된 피드백이 없습니다.</p>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* 오른쪽: 구매 옵션 패널 */}
       <aside className='sticky top-8 p-8 w-1/4 flex flex-col'>
         <div className='w-full'>
           <div>
@@ -251,7 +213,7 @@ const ProductDetailPage = () => {
             <option value="">선택해주세요.</option>
             {variants.map((v) => (
               <option key={v.id} value={v.id} disabled={v.stock === 0}>
-                {`${v.option1Value} ${v.option2Value || ''}`}
+                {`${v.option1Value ?? ''} ${v.option2Value ?? ''}`.trim()}
                 {v.addPrice > 0 ? ` (+${v.addPrice.toLocaleString()}원)` : ''}
                 {v.stock === 0 ? ' (품절)' : ''}
               </option>
@@ -263,12 +225,12 @@ const ProductDetailPage = () => {
           {selectedItems.map(item => {
             const variant = variants.find(v => v.id === parseInt(item.variantId));
             if (!variant) return null;
-            const itemPrice = (product.salePrice + variant.addPrice) * item.quantity;
+            const itemPrice = (product.salePrice + (variant.addPrice || 0)) * item.quantity;
 
             return (
               <div key={item.variantId} className='bg-gray-100 p-3 rounded-md'>
                 <div className='flex justify-between items-start'>
-                  <p className='text-sm text-gray-700 max-w-[80%]'>{`${variant.option1Value} ${variant.option2Value || ''}`}</p>
+                  <p className='text-sm text-gray-700 max-w-[80%]'>{`${variant.option1Value ?? ''} ${variant.option2Value ?? ''}`.trim()}</p>
                   <Icon src={Delete} alt="삭제" className='w-4 h-4 cursor-pointer' onClick={() => handleRemoveItem(item.variantId)} />
                 </div>
                 <div className='flex items-center justify-between mt-2'>
@@ -310,9 +272,7 @@ const ProductDetailPage = () => {
           </>
         }
       >
-        <p className="text-sm text-gray-700">
-          선택한 상품이 장바구니에 담겼습니다.
-        </p>
+        <p className="text-sm text-gray-700">선택한 상품이 장바구니에 담겼습니다.</p>
       </Modal>
     </div>
   );
