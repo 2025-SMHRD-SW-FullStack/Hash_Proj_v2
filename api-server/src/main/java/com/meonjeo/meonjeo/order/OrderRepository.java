@@ -74,4 +74,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
           and oi.sellerId = :sellerId
     """)
     boolean existsForSeller(@Param("orderId") Long orderId, @Param("sellerId") Long sellerId);
+
+    @Query("""
+        select distinct o
+        from Order o
+        join fetch o.items oi
+        where oi.sellerId = :sellerId
+          and o.confirmedAt is not null
+          and o.confirmedAt >= :fromTs
+          and o.confirmedAt <  :toTs
+    """)
+    List<Order> findConfirmedOrdersForSeller(
+            @Param("sellerId") Long sellerId,
+            @Param("fromTs") java.time.LocalDateTime fromTs,
+            @Param("toTs")   java.time.LocalDateTime toTs
+    );
 }
