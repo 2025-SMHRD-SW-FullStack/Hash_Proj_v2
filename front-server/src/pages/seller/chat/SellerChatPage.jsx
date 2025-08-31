@@ -1,14 +1,14 @@
 import React, { useState, Suspense, useEffect } from 'react'
-import ChatList from '../../components/chat/ChatList'
-const ChatRoom = React.lazy(() => import('../../components/chat/ChatRoom'))
-import useAppModeStore from '../../stores/appModeStore'
+import ChatList from '../../../components/chat/ChatList'
+const ChatRoom = React.lazy(() => import('../../../components/chat/ChatRoom'))
+import useAppModeStore from '../../../stores/appModeStore'
 
-export default function ChatPage() {
+export default function SellerChatPage() {
   const [selectedRoomId, setSelectedRoomId] = useState(null)
   const { setMode } = useAppModeStore()
 
-  // ✅ 유저 모드 고정
-  useEffect(() => { setMode('user') }, [setMode])
+  // ✅ 셀러 모드 고정
+  useEffect(() => { setMode('seller') }, [setMode])
 
   const open = (roomId) => {
     const rid = Number(roomId)
