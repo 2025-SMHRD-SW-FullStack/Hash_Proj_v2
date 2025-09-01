@@ -1,3 +1,4 @@
+// src/main/java/com/meonjeo/meonjeo/user/UserService.java
 package com.meonjeo.meonjeo.user;
 
 import com.meonjeo.meonjeo.auth.AuthProvider;
@@ -47,7 +48,7 @@ public class UserService {
         return userRepository.existsByEmailOrPhoneNumber(e, p);
     }
 
-    /* ===== 회원가입 ===== */
+    /* ===== 회원가입(로컬) ===== */
     @Transactional
     public User registerUser(SignupRequest req) {
         final String email = req.getEmail().trim().toLowerCase();
@@ -67,24 +68,22 @@ public class UserService {
             throw new PasswordMismatchException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
         }
 
-        // 엔터티 생성
         User user = User.builder()
                 .email(email)
                 .password(passwordEncoder.encode(req.getPassword()))
                 .nickname(req.getNickname())
                 .profileImageUrl(req.getProfileImageUrl())
                 .phoneNumber(req.getPhoneNumber())
-                .gender(User.Gender.valueOf(req.getGender()))
+                // ✅ gender: "M"/"F"만 유지, "UNKNOWN"/빈문자/이상값/null → null
+                .gender(toGenderOrNull(req.getGender()))
                 .provider(AuthProvider.LOCAL)
-                .providerId(null)          // LOCAL은 null 허용
+                .providerId(null)
                 .role(Role.USER)
-                .enabled(true)             // 가입 완료 → 로그인 가능
+                .enabled(true)
                 .build();
 
-        // 생년월일 파싱
-        if (req.getBirthDate() != null && !req.getBirthDate().isBlank()) {
-            user.setBirthDateFromString(req.getBirthDate());
-        }
+        // 생년월일 파싱(빈값이면 null)
+        user.setBirthDateFromString(req.getBirthDate());
 
         // 휴대폰 인증 완료 마킹 (컨트롤러에서 validateShortToken 통과 가정)
         user.markPhoneVerified();
@@ -98,17 +97,25 @@ public class UserService {
         User user = userRepository.findByEmail(email.trim().toLowerCase())
                 .orElseThrow(() -> new RuntimeException("사용자 정보를 찾을 수 없습니다."));
 
-        if (req.getNickname() != null && !req.getNickname().isBlank()) {
-            user.setNickname(req.getNickname().trim());
+        if (req.getNickname() != null) {
+            String v = req.getNickname().trim();
+            if (!v.isBlank()) user.setNickname(v);
         }
-        if (req.getProfileImageUrl() != null && !req.getProfileImageUrl().isBlank()) {
-            user.setProfileImageUrl(req.getProfileImageUrl().trim());
+        if (req.getProfileImageUrl() != null) {
+            String v = req.getProfileImageUrl().trim();
+            user.setProfileImageUrl(v.isBlank() ? null : v);
         }
-        if (req.getGender() != null && !req.getGender().isBlank()) {
-            user.setGender(User.Gender.valueOf(req.getGender().trim()));
+
+        // ✅ 성별: null/빈문자/UNKNOWN/이상값은 지우기, "M"/"F"만 세팅
+        if (req.getGender() != null) {
+            user.setGender(toGenderOrNull(req.getGender()));
         }
-        if (req.getBirthDate() != null && !req.getBirthDate().isBlank()) {
-            user.setBirthDateFromString(req.getBirthDate().trim());
+
+        // ✅ 생년월일: null/빈문자면 지우기, 값 있으면 파싱
+        if (req.getBirthDate() != null) {
+            String v = req.getBirthDate().trim();
+            if (v.isBlank()) user.setBirthDate(null);
+            else user.setBirthDateFromString(v);
         }
 
         // 전화번호 변경은 본인인증 토큰 필수
@@ -126,10 +133,23 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    /** "M"/"F"만 유지, 그 외는 전부 null로 정규화 */
+    private User.Gender toGenderOrNull(String g) {
+        if (g == null) return null;
+        String v = g.trim().toUpperCase();
+        if (v.isEmpty() || "UNKNOWN".equals(v)) return null;
+        try {
+            User.Gender parsed = User.Gender.valueOf(v);
+            return (parsed == User.Gender.M || parsed == User.Gender.F) ? parsed : null;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
     /* ===== 기타 ===== */
     public User getUserFromPrincipal(UserDetails userDetails) {
-        String email = userDetails.getUsername();
-        return userRepository.findByEmail(email)
+        String e = userDetails.getUsername();
+        return userRepository.findByEmail(e)
                 .orElseThrow(() -> new RuntimeException("사용자 정보를 찾을 수 없습니다."));
     }
 

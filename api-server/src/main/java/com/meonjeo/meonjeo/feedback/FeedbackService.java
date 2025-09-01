@@ -6,6 +6,8 @@ import com.meonjeo.meonjeo.feedback.dto.FeedbackUpdateRequest;
 import com.meonjeo.meonjeo.order.*;
 import com.meonjeo.meonjeo.security.AuthSupport;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,18 @@ public class FeedbackService {
     private final PointLedgerPort pointLedger;
     private final AuthSupport auth;
     private final OrderWindowService windowService;
+
+    private FeedbackResponse toResponse(Feedback fb) {
+        return new FeedbackResponse(
+                fb.getId(),
+                fb.getOrderItemId(),
+                fb.getOverallScore(),
+                fb.getContent(),
+                fb.getImagesJson(),
+                fb.getAwardedPoint(),
+                fb.getAwardedAt()
+        );
+    }
 
     @Transactional
     public FeedbackResponse create(FeedbackCreateRequest req) {
@@ -56,9 +70,10 @@ public class FeedbackService {
         if (o.getConfirmedAt() == null || o.getConfirmationType() != Order.ConfirmationType.MANUAL)
             throw new ResponseStatusException(HttpStatus.CONFLICT, "NEED_MANUAL_CONFIRM_FIRST");
 
-        // 1회만 작성 가능
-        if (feedbackRepo.existsByOrderItemIdAndUserId(orderItemId, uid))
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "ALREADY_WRITTEN");
+        // ✅ 상품 기준 1회만 작성 가능 (스키마 변경 없이 조인 검사)
+        Long productId = item.getProductId();
+        if (feedbackRepo.existsForUserAndProduct(uid, productId))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "ALREADY_WRITTEN_FOR_PRODUCT");
 
         // 저장 (요청값 스냅샷 + deadlineAt)
         Feedback fb = feedbackRepo.save(Feedback.builder()
@@ -85,15 +100,7 @@ public class FeedbackService {
             feedbackRepo.save(fb);
         }
 
-        return new FeedbackResponse(
-                fb.getId(),
-                fb.getOrderItemId(),
-                fb.getOverallScore(),
-                fb.getContent(),
-                fb.getImagesJson(),
-                fb.getAwardedPoint(),
-                fb.getAwardedAt()
-        );
+        return toResponse(fb);
     }
 
     @Transactional
@@ -129,18 +136,30 @@ public class FeedbackService {
         if (req.imagesJson() != null) fb.setImagesJson(req.imagesJson());
 
         feedbackRepo.save(fb);
-
-        return new FeedbackResponse(
-                fb.getId(),
-                fb.getOrderItemId(),
-                fb.getOverallScore(),
-                fb.getContent(),
-                fb.getImagesJson(),
-                fb.getAwardedPoint(),
-                fb.getAwardedAt()
-        );
-
-
+        return toResponse(fb);
     }
 
+    // === 목록: 내 피드백 ===
+    @Transactional(readOnly = true)
+    public Page<FeedbackResponse> listMyFeedbacks(Pageable pageable) {
+        Long uid = auth.currentUserId();
+        return feedbackRepo.findByUserIdAndRemovedFalseOrderByIdDesc(uid, pageable)
+                .map(this::toResponse);
+    }
+
+    // === 목록: 상품 피드백 ===
+    @Transactional(readOnly = true)
+    public Page<FeedbackResponse> listByProduct(Long productId, Pageable pageable) {
+        return feedbackRepo.pageByProduct(productId, pageable)
+                .map(this::toResponse);
+    }
+
+    // === 관리자 삭제: 하드딜리트 ===
+    @Transactional
+    public void adminDeleteHard(Long feedbackId) {
+        if (!feedbackRepo.existsById(feedbackId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "FEEDBACK_NOT_FOUND");
+        }
+        feedbackRepo.deleteById(feedbackId);
+    }
 }

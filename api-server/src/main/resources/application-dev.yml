@@ -25,18 +25,30 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      # 업로드 모듈 가이드: 1파일 ≤10MB, 총합 ≤30MB
+      max-file-size: 12MB
+      max-request-size: 40MB
 
   jackson:
     serialization:
       fail-on-empty-beans: false
 
+# ===== 파일 스토리지 (DEV: S3로 테스트 가능) =====
+storage:
+  mode: s3
+  s3:
+    bucket: meonjeo                # 콘솔 버킷명과 정확히 일치
+    region: kr-standard
+    endpoint: https://kr.object.ncloudstorage.com
+    path-style: true
+    public-base-url: https://kr.object.ncloudstorage.com/meonjeo
+    acl-public-read: true          # ← 이거 켜면 객체에만 공개 ACL 붙임
+
 phone:
   short-token:
-    validity-seconds: 600        # 단기 토큰 유효시간(10분)
+    validity-seconds: 600
   code:
-    ttl-seconds: 180             # 인증코드 유효시간(3분)
+    ttl-seconds: 180
     max-attempts: 5
 
 ai:
