@@ -40,13 +40,11 @@ public class SecurityConfig {
     private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
     private final Environment env;
 
-    // ✅ 정확한 Origin만 허용 (크리덴셜 허용 시 * 사용 불가)
     private static final List<String> DEV_ORIGINS = List.of(
             "http://localhost:5173",
             "http://localhost:3000"
     );
     private static final List<String> PROD_ORIGINS = List.of(
-            // TODO: 실제 도메인으로 필요시 수정
             "https://meonjeo.com",
             "https://www.meonjeo.com",
             "https://dev.meonjeo.com"
@@ -60,6 +58,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                // CSRF: 전역 비활성 + 필요시 특정 경로만 예외 처리 가능
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -80,27 +79,25 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/sms/**",
 
-                                // ✅ 공개: 상품 목록/상세
+                                // 공개: 상품/채널
                                 "/api/products/**",
-
-                                // ✅ 공개 채널 조회(지도/리스트)
                                 "/api/channels/**",
 
                                 // OAuth2 엔드포인트
-                                "/oauth2/**", "/login/oauth2/**"
+                                "/oauth2/**", "/login/oauth2/**",
+
+                                // WebSocket handshake
+                                "/ws-stomp/**",
+
+                                // 결제 콜백
+                                "/api/pay/**", "/api/payments/**"
                         ).permitAll()
 
-                        // ✅ 관리자 잠금
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                        // ✅ 광고 관리자/셀러 잠금 (Step2에서 추가한 부분 유지)
                         .requestMatchers("/api/ads/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/ads/seller/**").hasAnyRole("SELLER","ADMIN")
                         .requestMatchers("/api/ads/bookings/**").hasAnyRole("SELLER","ADMIN")
                         .requestMatchers("/api/shipping/webhooks/**", "/api/shipping/events").permitAll()
-
-                        // 결제 콜백 공개
-                        .requestMatchers("/api/pay/**", "/api/payments/**").permitAll()
 
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
@@ -120,7 +117,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(resolveAllowedOrigins()); // ★ 핵심 변경
+        config.setAllowedOrigins(resolveAllowedOrigins());
         config.setAllowedHeaders(List.of(
                 "Authorization", "Content-Type", "X-Requested-With",
                 "Accept", "Origin"

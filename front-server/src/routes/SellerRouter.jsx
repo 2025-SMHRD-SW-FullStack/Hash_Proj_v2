@@ -11,6 +11,8 @@ import ProductsPage from '../pages/seller/product/ProductsPage'
 import ProductNewPage from '../pages/seller/product/ProductNewPage'
 import ProductDetailPage from '../pages/seller/product/ProductDetailPage'
 import ProductEditPage from '../pages/seller/product/ProductEditPage'
+import SellerChatPage from '../pages/seller/chat/SellerChatPage'
+import SellerChatRoomPage from '../pages/seller/chat/SellerChatRoomPage'
 
 
 
@@ -23,6 +25,8 @@ const SellerRouter = () => {
 
         {/* 셀러페이지 메인 */}
         <Route index element={<SellerMain />} />
+        <Route path="chat" element={<SellerChatPage />} />
+        <Route path="chat/rooms/:roomId" element={<SellerChatRoomPage />} />
 
         {/* 피드백 관리 */}
         <Route path="feedbacks">

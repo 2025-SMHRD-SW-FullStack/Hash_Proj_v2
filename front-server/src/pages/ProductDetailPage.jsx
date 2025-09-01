@@ -1,14 +1,22 @@
-import { useMemo, useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+// src/pages/ProductDetailPage.jsx
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+
+// 필요한 서비스 및 스토어 import
 import { getProductDetail } from '../service/productService.js';
-import useCartStore from '../stores/cartStore.js';
-import useFeedbackStore from '../stores/feedbackStore.js';
+import { addCartItem } from '../service/cartService.js';
+import { findOrCreateUserSellerRoom, findOrCreateRoomByProduct } from '../service/chatService';
+import useAuthStore from '../stores/authStore';
+import useFeedbackStore from '../stores/feedbackStore.js'; // 피드백 스토어 추가
+
+// 컴포넌트 및 아이콘 import
 import Button from '../components/common/Button.jsx';
 import Icon from '../components/common/Icon.jsx';
+import Modal from '../components/common/Modal.jsx';
 import Minus from '../assets/icons/ic_minus.svg';
 import Plus from '../assets/icons/ic_plus.svg';
 import Delete from '../assets/icons/ic_delete.svg';
-import Modal from '../components/common/Modal.jsx';
 import TestImg from '../assets/images/ReSsol_TestImg.png';
 
 const EMPTY_ARRAY = [];
@@ -16,7 +24,8 @@ const EMPTY_ARRAY = [];
 const ProductDetailPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCartStore();
+  const location = useLocation();
+  const { isLoggedIn } = useAuthStore();
   const feedbacks = useFeedbackStore((state) => state.feedbacksByProduct[productId] || EMPTY_ARRAY);
 
   const [productData, setProductData] = useState(null);
@@ -27,6 +36,7 @@ const ProductDetailPage = () => {
 
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -46,35 +56,28 @@ const ProductDetailPage = () => {
   const handleOptionChange = (e) => {
     const selectedVariantId = e.target.value;
     if (!selectedVariantId) return;
-
     const isAlreadySelected = selectedItems.some(item => item.variantId === selectedVariantId);
     if (isAlreadySelected) {
       alert('이미 선택된 옵션입니다.');
       e.target.value = '';
       return;
     }
-
-    setSelectedItems(prevItems => [
-      ...prevItems,
-      { variantId: selectedVariantId, quantity: 1 }
-    ]);
+    setSelectedItems(prev => [...prev, { variantId: selectedVariantId, quantity: 1 }]);
     e.target.value = '';
   };
 
   const handleQuantityChange = (variantId, amount) => {
-    setSelectedItems(prevItems =>
-      prevItems.map(item => {
-        if (item.variantId === variantId) {
-          const newQuantity = item.quantity + amount;
-          return { ...item, quantity: Math.max(1, newQuantity) };
-        }
-        return item;
-      })
+    setSelectedItems(prev =>
+      prev.map(item =>
+        item.variantId === variantId
+          ? { ...item, quantity: Math.max(1, item.quantity + amount) }
+          : item
+      )
     );
   };
 
   const handleRemoveItem = (variantId) => {
-    setSelectedItems(prevItems => prevItems.filter(item => item.variantId !== variantId));
+    setSelectedItems(prev => prev.filter(item => item.variantId !== variantId));
   };
 
   const handlePurchase = () => {
@@ -86,34 +89,60 @@ const ProductDetailPage = () => {
     navigate(`/user/order?productId=${productId}&items=${itemsQuery}`);
   };
 
-  const handleAddToCart = () => {
-    if (selectedItems.length === 0) {
+  // ✅ 서버 API를 호출하는 올바른 장바구니 저장 로직
+  const handleAddToCart = async () => {
+    if (!productData || selectedItems.length === 0) {
       alert('상품 옵션을 선택해주세요.');
       return;
     }
-
     const { product, variants } = productData;
+    const labels = [product.option1Name, product.option2Name, product.option3Name, product.option4Name, product.option5Name];
 
-    selectedItems.forEach(item => {
-      const variant = variants.find(v => v.id === parseInt(item.variantId));
-      if (!variant) return;
+    try {
+      for (const item of selectedItems) {
+        const variant = variants.find(v => v.id === parseInt(item.variantId));
+        if (!variant) continue;
+        const options = {};
+        if (labels[0]) options[labels[0]] = variant.option1Value ?? null;
+        if (labels[1]) options[labels[1]] = variant.option2Value ?? null;
+        if (labels[2]) options[labels[2]] = variant.option3Value ?? null;
+        if (labels[3]) options[labels[3]] = variant.option4Value ?? null;
+        if (labels[4]) options[labels[4]] = variant.option5Value ?? null;
 
-      const itemToAdd = {
-        productId: product.id,
-        variantId: variant.id,
-        quantity: item.quantity,
-        name: product.name,
-        brand: product.brand,
-        thumbnailUrl: product.thumbnailUrl,
-        price: product.salePrice,
-        addPrice: variant.addPrice,
-        option1Value: variant.option1Value,
-        option2Value: variant.option2Value,
-      };
-      addToCart(itemToAdd);
-    });
+        await addCartItem({ productId: product.id, qty: item.quantity, options });
+      }
+      setIsCartModalOpen(true);
+    } catch (e) {
+      const msg = e?.response?.data?.message || e?.message || '장바구니 담기 중 오류가 발생했습니다.';
+      alert(msg);
+    }
+  };
 
-    setIsCartModalOpen(true);
+  const getSellerId = (pd) => {
+    const p = pd?.product || {};
+    return p.sellerId ?? p.seller_id ?? p.seller?.id ?? pd?.sellerId ?? null;
+  };
+
+  const handleOpenChat = async () => {
+    if (!isLoggedIn) {
+      navigate('/login', { state: { redirectTo: location.pathname } });
+      return;
+    }
+    if (!productData) return;
+
+    try {
+      setChatLoading(true);
+      const sid = getSellerId(productData);
+      const room = sid
+        ? await findOrCreateUserSellerRoom(sid)
+        : await findOrCreateRoomByProduct(Number(productId));
+      navigate(`/user/chat/rooms/${room.roomId}`);
+    } catch (e) {
+      const msg = e?.response?.data?.message || e?.message || '채팅방 생성 중 오류가 발생했습니다.';
+      alert(msg);
+    } finally {
+      setChatLoading(false);
+    }
   };
 
   if (loading) return <div>상품 정보를 불러오는 중...</div>;
@@ -122,6 +151,7 @@ const ProductDetailPage = () => {
 
   const { product, variants } = productData;
 
+  // ✅ 올바른 총 금액 계산 로직
   const totalPrice = selectedItems.reduce((total, currentItem) => {
     const variant = variants.find(v => v.id === parseInt(currentItem.variantId));
     const itemPrice = (product.salePrice + (variant?.addPrice || 0)) * currentItem.quantity;
@@ -130,29 +160,24 @@ const ProductDetailPage = () => {
 
   return (
     <div className='flex items-start'>
-      <div className='w-3/4 ml-10'>
+      {/* 왼쪽 */}
+      <div className='ml-10 w-3/4'>
         <div className='flex flex-col items-center'>
-          <h2 className='text-2xl font-bold my-4'>[{product.brand}] {product.name}</h2>
+          <h2 className='my-4 text-2xl font-bold'>[{product.brand}] {product.name}</h2>
           <img src={TestImg} alt={product.name} className='my-5 w-[300px]'/>
         </div>
 
-        <div
-          className={`w-full bg-gray-100 overflow-hidden transition-all duration-500 ease-in-out
-            ${isDescriptionExpanded ? 'max-h-full' : 'max-h-96'}`}
-        >
+        <div className={`w-full overflow-hidden bg-gray-100 transition-all duration-500 ease-in-out ${isDescriptionExpanded ? 'max-h-full' : 'max-h-96'}`}>
           <div dangerouslySetInnerHTML={{ __html: product.detailHtml }} />
         </div>
 
-        <div className='flex justify-center my-4'>
-          <Button
-            variant="signUp"
-            onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-            className='w-full'
-          >
+        <div className='my-4 flex justify-center'>
+          <Button variant="signUp" onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className='w-full'>
             {isDescriptionExpanded ? '접기' : '더보기'}
           </Button>
         </div>
-        
+
+        {/* ✅ 피드백 모음 섹션 추가 */}
         <hr className="my-8 border-t border-gray-300" />
         <div className="feedback-section">
           <div className="flex justify-between items-center mb-6">
@@ -190,11 +215,12 @@ const ProductDetailPage = () => {
         </div>
       </div>
 
-      <aside className='sticky top-8 p-8 w-1/4 flex flex-col'>
+      {/* 오른쪽: 구매 옵션 패널 */}
+      <aside className='sticky top-8 flex w-1/4 flex-col p-8'>
         <div className='w-full'>
           <div>
             <span className='text-2xl text-[#23a4d3]'>{product.salePrice.toLocaleString()}원&ensp;</span>
-            <span className='text-lg line-through text-gray-600'>{product.basePrice.toLocaleString()}원</span>
+            <span className='text-lg text-gray-600 line-through'>{product.basePrice.toLocaleString()}원</span>
           </div>
           <div>
             <span className='text-xl'>배송비 {deliverFee.toLocaleString()}원&ensp;</span>
@@ -207,11 +233,13 @@ const ProductDetailPage = () => {
           </div>
           <span className='text-2xl'>모집 기간: ~{product.saleEndAt?.slice(0, 10)}</span>
         </div>
-        <hr className="w-full border-t my-4 border-gray-200" />
-        <div className='w-full mb-4'>
-          <select onChange={handleOptionChange} defaultValue="" className='w-full p-2 border border-gray-300 rounded-md'>
+
+        <hr className="my-4 w-full border-t border-gray-200" />
+
+        <div className='mb-4 w-full'>
+          <select onChange={handleOptionChange} defaultValue="" className='w-full rounded-md border border-gray-300 p-2'>
             <option value="">선택해주세요.</option>
-            {variants.map((v) => (
+            {variants.map(v => (
               <option key={v.id} value={v.id} disabled={v.stock === 0}>
                 {`${v.option1Value ?? ''} ${v.option2Value ?? ''}`.trim()}
                 {v.addPrice > 0 ? ` (+${v.addPrice.toLocaleString()}원)` : ''}
@@ -228,16 +256,16 @@ const ProductDetailPage = () => {
             const itemPrice = (product.salePrice + (variant.addPrice || 0)) * item.quantity;
 
             return (
-              <div key={item.variantId} className='bg-gray-100 p-3 rounded-md'>
-                <div className='flex justify-between items-start'>
-                  <p className='text-sm text-gray-700 max-w-[80%]'>{`${variant.option1Value ?? ''} ${variant.option2Value ?? ''}`.trim()}</p>
-                  <Icon src={Delete} alt="삭제" className='w-4 h-4 cursor-pointer' onClick={() => handleRemoveItem(item.variantId)} />
+              <div key={item.variantId} className='rounded-md bg-gray-100 p-3'>
+                <div className='flex items-start justify-between'>
+                  <p className='max-w-[80%] text-sm text-gray-700'>{`${variant.option1Value ?? ''} ${variant.option2Value ?? ''}`.trim()}</p>
+                  <Icon src={Delete} alt="삭제" className='h-4 w-4 cursor-pointer' onClick={() => handleRemoveItem(item.variantId)} />
                 </div>
-                <div className='flex items-center justify-between mt-2'>
-                  <div className='flex items-center justify-between p-1 border border-solid border-gray-300 rounded-md bg-white'>
-                    <Icon src={Minus} alt='감소' onClick={() => handleQuantityChange(item.variantId, -1)} className='w-5 h-5 cursor-pointer' />
+                <div className='mt-2 flex items-center justify-between'>
+                  <div className='flex items-center justify-between rounded-md border border-solid border-gray-300 bg-white p-1'>
+                    <Icon src={Minus} alt='감소' onClick={() => handleQuantityChange(item.variantId, -1)} className='h-5 w-5 cursor-pointer' />
                     <span className='px-3 text-base font-semibold'>{item.quantity}</span>
-                    <Icon src={Plus} alt='증가' onClick={() => handleQuantityChange(item.variantId, 1)} className='w-5 h-5 cursor-pointer' />
+                    <Icon src={Plus} alt='증가' onClick={() => handleQuantityChange(item.variantId, 1)} className='h-5 w-5 cursor-pointer' />
                   </div>
                   <span className='text-base font-bold'>{itemPrice.toLocaleString()}원</span>
                 </div>
@@ -248,15 +276,17 @@ const ProductDetailPage = () => {
 
         <div className='pt-4'>
           {selectedItems.length > 0 && (
-            <div className='flex justify-between items-center mb-4'>
+            <div className='mb-4 flex items-center justify-between'>
               <span className='text-lg font-bold'>총 상품 금액</span>
               <span className='text-2xl font-bold'>{totalPrice.toLocaleString()}원</span>
             </div>
           )}
-          <Button className='w-full mb-2' onClick={handlePurchase}>구매하기</Button>
-          <div className='flex gap-2 w-full'>
+          <Button className='mb-2 w-full' onClick={handlePurchase}>구매하기</Button>
+          <div className='flex w-full gap-2'>
             <Button variant='signUp' className='flex-1' onClick={handleAddToCart}>장바구니</Button>
-            <Button variant='signUp' className='flex-1'>1:1 채팅하기</Button>
+            <Button variant='signUp' className='flex-1' onClick={handleOpenChat} disabled={chatLoading}>
+              {chatLoading ? '열고 있어요…' : '1:1 문의하기'}
+            </Button>
           </div>
         </div>
       </aside>

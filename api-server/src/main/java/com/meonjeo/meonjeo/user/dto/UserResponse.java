@@ -22,6 +22,7 @@ public class UserResponse {
     private String provider;
     private boolean socialUser;
 
+
     public UserResponse(User u) {
         this.id = u.getId();
         this.email = u.getEmail();

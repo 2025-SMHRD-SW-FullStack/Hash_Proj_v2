@@ -1,16 +1,37 @@
 // /src/pages/seller/SellerMain.jsx
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useEffect, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import StoreSalesStats from '/src/components/seller/charts/StoreSalesStats'
+import ChatList from '../../components/chat/ChatList'
+const ChatRoom = React.lazy(() => import('../../components/chat/ChatRoom'))
+import useAppModeStore from '../../stores/appModeStore'
 
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 const kpi = 'flex items-center justify-between py-2 text-sm'
 
-
 const SellerMain = () => {
   const navigate = useNavigate()
+  const { setMode } = useAppModeStore()
 
-  // --- 목업 데이터 (백 붙기 전) ---
+  // ✅ 이 페이지는 항상 셀러 모드
+  useEffect(() => { setMode('seller') }, [setMode])
+
+  // ─ 채팅 패널 상태 ─
+  const [selectedRoomId, setSelectedRoomId] = useState(null)
+  const openRoom = (roomId) => {
+    const rid = Number(roomId)
+    if (Number.isFinite(rid) && rid > 0) setSelectedRoomId(rid)
+  }
+  const closeRoom = () => setSelectedRoomId(null)
+
+  // ✅ ESC 눌러 닫기
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') closeRoom() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // --- (목업 데이터) ---
   const orders = [
     { id: 'O-001', status: '발송대기', price: 39000, exchangeRequested: false, returnRequested: false, cancelRequested: false, deliveredAt: null, purchaseConfirmed: false, feedbackSubmitted: false, feedbackReviewed: false },
     { id: 'O-002', status: '배송중',   price: 59000, exchangeRequested: false, returnRequested: false, cancelRequested: false, deliveredAt: null, purchaseConfirmed: false, feedbackSubmitted: false, feedbackReviewed: false },
@@ -18,13 +39,6 @@ const SellerMain = () => {
     { id: 'O-004', status: '배송완료', price: 29000, exchangeRequested: false, returnRequested: true,  cancelRequested: false, deliveredAt: '2025-08-21', purchaseConfirmed: true,  feedbackSubmitted: true,  feedbackReviewed: true  },
   ]
 
-  const chats = [
-    { id: 'room-101', buyer: '김**', lastMsg: '배송 언제쯤?', unread: 2 },
-    { id: 'room-055', buyer: '박**', lastMsg: '교환 요청합니다', unread: 0 },
-    { id: 'room-022', buyer: '이**', lastMsg: '사용법 문의', unread: 1 },
-  ]
-
-  // --- 파생 집계 ---
   const counts = useMemo(() => {
     const by = (fn) => orders.filter(fn).length
     return {
@@ -55,7 +69,7 @@ const SellerMain = () => {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      {/* 상단 요약: 주문 / 배송 / 정산 */}
+      {/* 상단 요약 */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* 주문 */}
         <section className={box}>
@@ -114,22 +128,52 @@ const SellerMain = () => {
           </div>
         </section>
 
-        {/* 상품문의/톡톡 */}
+        {/* 상품문의/채팅(셀러) */}
         <section className={box}>
-          <h2 className="mb-2 text-base font-semibold">상품문의</h2>
-          <div className="rounded-md border border-dashed p-4 text-center text-sm text-gray-500">
-            문의가 없습니다.
+          <h2 className="mb-2 text-base font-semibold">상품문의 (셀러 채팅)</h2>
+          <div className="rounded-lg border p-3">
+            <ChatList onOpenRoom={openRoom} />
           </div>
           <button
             className="mt-3 w-full rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
-            onClick={() => navigate('/user/chat')}
+            onClick={() => navigate('/seller/chat')}
           >
-            채팅 페이지로 이동
+            채팅 전체 페이지로 이동
           </button>
         </section>
       </div>
 
-      {/* 하단 여백 */}
+      {/* ✅ 오버레이 (배경 클릭으로 닫힘) */}
+      {selectedRoomId && (
+        <div
+          className="fixed inset-0 z-30 bg-black/30 backdrop-blur-[1px]"
+          onClick={closeRoom}
+        />
+      )}
+
+      {/* ✅ 슬라이드 채팅 패널 + 닫기 버튼 */}
+      <div
+        className={`fixed top-0 right-0 z-40 h-full w-full max-w-md transform bg-white shadow-xl transition-transform duration-300 ease-in-out ${
+          selectedRoomId ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        aria-hidden={!selectedRoomId}
+      >
+        {/* Close(X) */}
+        <button
+          aria-label="채팅 닫기"
+          onClick={closeRoom}
+          className="absolute right-3 top-3 rounded-full border px-2 py-1 text-sm hover:bg-gray-100"
+        >
+          ×
+        </button>
+
+        {selectedRoomId && (
+          <Suspense fallback={<div className="p-4">채팅방 불러오는 중…</div>}>
+            <ChatRoom roomId={selectedRoomId} onClose={closeRoom} />
+          </Suspense>
+        )}
+      </div>
+
       <div className="h-8" />
     </div>
   )
