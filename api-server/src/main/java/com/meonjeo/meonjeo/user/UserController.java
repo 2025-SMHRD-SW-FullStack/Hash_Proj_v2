@@ -1,6 +1,7 @@
 package com.meonjeo.meonjeo.user;
 
 import com.meonjeo.meonjeo.auth.CustomUserDetails;
+import com.meonjeo.meonjeo.user.dto.AccountDeletionRequest;
 import com.meonjeo.meonjeo.user.dto.MyPageResponse;
 import com.meonjeo.meonjeo.user.dto.UserResponse;
 import com.meonjeo.meonjeo.user.dto.UserUpdateRequest;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final AccountDeletionService accountDeletionService;
 
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/me")
@@ -54,5 +56,19 @@ public class UserController {
 
         User user = userService.findById(me.getUser().getId());
         return ResponseEntity.ok(new MyPageResponse(user));
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/me/delete")
+    @Operation(
+            summary = "회원탈퇴(하드 딜리트)",
+            description = "LOCAL: 비밀번호 확인 필요 / SOCIAL: 확인 문구 '탈퇴합니다' 필요"
+    )
+    public ResponseEntity<Void> deleteMe(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails me,
+            @RequestBody @jakarta.validation.Valid AccountDeletionRequest request
+    ) {
+        accountDeletionService.deleteMe(me.getUser().getId(), request);
+        return ResponseEntity.ok().build();
     }
 }
