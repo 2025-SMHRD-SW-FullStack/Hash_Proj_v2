@@ -24,4 +24,5 @@ public class FeedbackController {
     public FeedbackResponse update(@PathVariable Long id, @RequestBody FeedbackUpdateRequest req) {
         return service.update(id, req);
     }
+
 }

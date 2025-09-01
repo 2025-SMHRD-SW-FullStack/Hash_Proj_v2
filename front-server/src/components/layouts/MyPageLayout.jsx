@@ -3,6 +3,7 @@ import useAuthStore from '../../stores/authStore';
 import { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import { getMyPointBalance } from '../../service/pointService';
+import PersonIcon from '../../assets/icons/ic_person.svg'
 import Icon from '../common/Icon';
 import arrowDown from '../../assets/icons/ic_arrow_down.svg';
 
@@ -35,7 +36,7 @@ const MyPageLayout = () => {
   // 🔽 NavLink 스타일 정의 (변수명 개선)
   const baseLinkStyle =
   'block w-full p-4 text-left text-base text-gray-600 rounded-lg hover:bg-gray-100 transition-colors';
-  const selectedLinkStyle = 'bg-[#E4F5FA] text-[#35A6CF] font-bold';
+  const selectedLinkStyle = 'bg-[#A2BAFA] text-white font-bold';
   const subLinkStyle =
     'block w-full py-2 px-8 text-left text-sm text-gray-500 rounded-lg hover:bg-gray-100 transition-colors';
 
@@ -45,7 +46,7 @@ const MyPageLayout = () => {
       <aside className="w-1/5 flex-shrink-0">
         <div className="flex flex-col items-center p-4 border rounded-lg shadow">
           <img
-            src={user?.profileImageUrl || 'https://via.placeholder.com/150'}
+            src={user?.profileImageUrl || PersonIcon}
             alt="프로필 사진"
             className="w-24 h-24 rounded-full object-cover mb-4"
           />
@@ -67,9 +68,14 @@ const MyPageLayout = () => {
             )}
           </div>
 
-          <Button className="w-full h-14 text-base" variant="whiteBlack">
+          <Button
+            className="w-full h-14 text-base"
+            variant="whiteBlack"
+            onClick={() => navigate("/user/mypage/point-exchange")}
+          >
             포인트 교환하기
           </Button>
+
         </div>
 
         {/* --- 내비게이션 메뉴 --- */}
@@ -90,7 +96,7 @@ const MyPageLayout = () => {
             </li>
             <li>
               <NavLink
-                to="/user/mypage/feedback"
+                to="/user/mypage/feedback-history" 
                 end
                 className={({ isActive }) =>
                   `${baseLinkStyle} ${

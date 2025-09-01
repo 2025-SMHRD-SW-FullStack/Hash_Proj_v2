@@ -274,7 +274,7 @@ const EmailSignUpForm = () => {
       <form className="mx-auto w-full max-w-[960px]" onSubmit={handleSubmit}>
         <div>
           <div className='flex'>
-            <h1 className="text-2xl font-bold text-[#75C9E8]">먼저 써봄&ensp;</h1>
+            <h1 className="text-2xl font-bold text-[#5882F6]">먼저 써봄&ensp;</h1>
             <h1 className="text-2xl font-bold">회원가입</h1>
           </div>
           <div>

@@ -1,3 +1,4 @@
+// src/pages/user/myPage/OrderCard.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,6 +13,8 @@ import TrackingModal from "../../../components/myPage/modals/TrackingModal";
 import InfoModal from "../../../components/common/InfoModal";
 import Button from "../../../components/common/Button";
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
+import ExchangeRequestModal from "../../../components/myPage/modals/ExchangeRequestModal";
+import { getMyExchanges } from "../../../service/exchangeService";
 
 const statusLabel = (s) => ({
   READY: "배송 준비중",
@@ -22,7 +25,34 @@ const statusLabel = (s) => ({
   PAID: "결제 완료",
 }[s] || s);
 
-export default function OrderCard({ order, onChanged }) {
+function VariationRow({ variation }) {
+  const totalPrice = variation.quantity * variation.unitPrice;
+  return (
+    <div className="flex items-center text-sm text-gray-700">
+      <span>{variation.options}</span>
+      <span className="shrink-0 ml-2">{variation.quantity}개 · {totalPrice.toLocaleString()}원</span>
+    </div>
+  );
+}
+
+function GroupedProductRow({ product }) {
+  const thumb = product.thumbnailUrl || TestImg;
+  return (
+    <div className="flex items-start gap-4">
+      <div className="w-24 h-24 rounded-lg bg-gray-100 shrink-0 overflow-hidden">
+        <img src={thumb} alt={product.productName} className="w-full h-full object-cover" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-base mb-2">{product.productName}</div>
+        <div className="space-y-1">
+          {product.variations.map(v => <VariationRow key={v.id} variation={v} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const OrderCard = ({ order, onChanged }) => {
   const navi = useNavigate();
 
   const [detail, setDetail] = useState(null);
@@ -32,29 +62,22 @@ export default function OrderCard({ order, onChanged }) {
   const [openConfirm, setOpenConfirm] = useState(false);
   const [openTrack, setOpenTrack] = useState(false);
   const [openReadyInfo, setOpenReadyInfo] = useState(false);
+  const [openExchangeModal, setOpenExchangeModal] = useState(false);
+  const [existingExchangeIds, setExistingExchangeIds] = useState(new Set());
 
-  // 주문 상세
   useEffect(() => {
-    (async () => {
-      try { setDetail(await getMyOrderDetail(order.id)); } catch (e) { console.error(e); }
-    })();
+    (async () => { try { setDetail(await getMyOrderDetail(order.id)); } catch (e) { console.error(e); }})();
   }, [order.id]);
 
-  // 배송 상태별 트래킹
   useEffect(() => {
     if (["IN_TRANSIT", "DELIVERED", "CONFIRMED"].includes(order.status)) {
-      (async () => {
-        try { setTrack(await getTracking(order.id)); } catch (e) { console.error(e); }
-      })();
+      (async () => { try { setTrack(await getTracking(order.id)); } catch (e) { console.error(e); }})();
     } else setTrack(null);
   }, [order.id, order.status]);
 
-  // 피드백 완료 여부
   useEffect(() => {
     if (["DELIVERED", "CONFIRMED"].includes(order.status)) {
-      (async () => {
-        try { setFeedbackDone(await checkFeedbackDone(order.id)); } catch (e) { console.error(e); }
-      })();
+      (async () => { try { setFeedbackDone(await checkFeedbackDone(order.id)); } catch (e) { console.error(e); }})();
     } else setFeedbackDone(false);
   }, [order.id, order.status]);
 
@@ -70,9 +93,58 @@ export default function OrderCard({ order, onChanged }) {
   const items = detail?.items ?? [];
   const totalPrice = Number(detail?.payAmount ?? detail?.totalPrice ?? order?.payAmount ?? 0);
 
+  const handleOpenExchangeModal = async () => {
+    try {
+      const exchanges = await getMyExchanges();
+      const itemIdsInOrder = new Set(items.map(it => it.id));
+      const requestedIds = new Set(
+        exchanges.filter(ex => itemIdsInOrder.has(ex.orderItemId)).map(ex => ex.orderItemId)
+      );
+      setExistingExchangeIds(requestedIds);
+    } catch (e) {
+      console.error("교환 내역 조회 실패:", e);
+      setExistingExchangeIds(new Set());
+    }
+    setOpenExchangeModal(true);
+  };
+
+  const groupedItems = useMemo(() => {
+    if (!items || items.length === 0) return [];
+    const groups = items.reduce((acc, item) => {
+      const groupId = item.productId || item.productName;
+      if (!acc[groupId]) {
+        acc[groupId] = {
+          groupId,
+          productName: item.productName || item.name || item.product?.name || "상품",
+          thumbnailUrl: item.thumbnailUrl || item.imageUrl || item.productThumbnail || "",
+          variations: [],
+        };
+      }
+      const optionValues = [];
+      try {
+        const opts = JSON.parse(item.optionSnapshotJson || '{}');
+        Object.values(opts).forEach(v => { if(v) optionValues.push(String(v)); });
+      } catch(e) {}
+      const optsString = optionValues.filter(Boolean).join(" / ") || "기본";
+      acc[groupId].variations.push({
+        id: item.id,
+        options: optsString,
+        quantity: Number(item.quantity ?? item.qty ?? 1),
+        unitPrice: Number(item.unitPrice ?? item.price ?? 0),
+      });
+      return acc;
+    }, {});
+    return Object.values(groups);
+  }, [items]);
+
+  const handleReorder = () => {
+    if (!items.length) { alert("주문 상품 정보를 불러올 수 없습니다."); return; }
+    const firstProductId = items[0].productId;
+    navi(`/product/${firstProductId}`);
+  };
+
   return (
     <div className="rounded-2xl border border-gray-200 p-4 bg-white">
-      {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600">{headerLeft}</div>
         <div className="inline-flex items-center gap-2">
@@ -81,63 +153,42 @@ export default function OrderCard({ order, onChanged }) {
         </div>
       </div>
 
-      {/* 아이템 리스트 */}
-      <div className="mt-4 space-y-3">
-        {items.map((it) => <OrderItemRow key={it.id} item={it} />)}
+      <div className="mt-4 space-y-4 mb-4">
+        {groupedItems.map((p) => <GroupedProductRow key={p.groupId} product={p} />)}
         {items.length === 0 && <div className="text-sm text-gray-500">주문 상품 정보를 불러오는 중…</div>}
       </div>
 
-      {/* 합계/버튼 */}
-      <div className="mt-4 flex items-center justify-between">
-    <div className="text-sm">
-        <span className="text-gray-500">결제금액</span>{" "}
-        <b>{totalPrice.toLocaleString()}원</b>
-    </div>
+      <div className="flex items-center justify-between">
+        <div className="text-sm">
+          <span className="text-gray-500">결제금액</span>{" "}
+          <b>{totalPrice.toLocaleString()}원</b>
+        </div>
 
-    <div className="flex items-center gap-4">
-        {/* READY */}
-        {order.status === "READY" && (
-            <Button variant="unselected" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>
-        )}
-
-        {/* IN_TRANSIT */}
-        {order.status === "IN_TRANSIT" && (
-            <Button variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>
-        )}
-
-        {/* DELIVERED */}
-        {order.status === "DELIVERED" && (
+        <div className="flex items-center gap-4">
+          {order.status === "PENDING" && <Button onClick={handleReorder}>다시 주문하기</Button>}
+          {order.status === "READY" && <Button variant="unselected" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
+          {order.status === "IN_TRANSIT" && <Button variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
+          {order.status === "DELIVERED" && (
             <>
-                <Button onClick={() => setOpenConfirm(true)}>
-                    구매확정 후 피드백 작성
-                </Button>
-                <Button variant="unselected" onClick={() => navi(`/support/exchange?orderId=${order.id}`)}>교환 신청</Button>
+              <Button onClick={() => setOpenConfirm(true)}>구매확정 후 피드백 작성</Button>
+              <Button variant="unselected" onClick={handleOpenExchangeModal}>교환 신청</Button>
             </>
-        )}
-
-        {/* CONFIRMED */}
-        {order.status === "CONFIRMED" && (
+          )}
+          {order.status === "CONFIRMED" && (
             <>
-                {!feedbackDone ? (
-                    <Button onClick={() => navi(`/user/mypage/orders/${order.id}?tab=feedback`)}>
-                        피드백 작성
-                    </Button>
-                ) : (
-                    <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">
-                        포인트 지급 완료
-                    </span>
-                )}
+              {!feedbackDone ? (
+                <Button onClick={() => navi(`/user/mypage/orders/${order.id}?tab=feedback`)}>피드백 작성</Button>
+              ) : (
+                <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">
+                  포인트 지급 완료
+                </span>
+              )}
             </>
-        )}
-        
-        {/* 모든 주문 상태에서 항상 표시되도록 위치 변경 */}
-        <Button variant="unselected" onClick={() => navi(`/user/mypage/orders/${order.id}`)}>
-            주문 상세 보기
-        </Button>
-    </div>
-</div>
+          )}
+          <Button variant="unselected" onClick={() => navi(`/user/mypage/orders/${order.id}`)}>주문 상세 보기</Button>
+        </div>
+      </div>
 
-      {/* 모달 */}
       <ConfirmPurchaseModal
         open={openConfirm}
         onClose={() => setOpenConfirm(false)}
@@ -162,38 +213,17 @@ export default function OrderCard({ order, onChanged }) {
           }
         }}
       />
-
       <TrackingModal open={openTrack} onClose={() => setOpenTrack(false)} orderId={order.id} />
       <InfoModal open={openReadyInfo} onClose={() => setOpenReadyInfo(false)} title="배송 조회" message={"현재 상태: 배송 준비중\n집화가 시작되면 배송 조회가 가능합니다."} />
+      <ExchangeRequestModal
+        open={openExchangeModal}
+        onClose={() => setOpenExchangeModal(false)}
+        orderItems={items}
+        onComplete={onChanged}
+        existingExchangeIds={existingExchangeIds}
+      />
     </div>
   );
-}
+};
 
-function OrderItemRow({ item }) {
-  const thumb = item.thumbnailUrl || item.imageUrl || item.productThumbnail || "";
-  const name = item.productName || item.name || item.product?.name || "상품";
-  const qty = Number(item.quantity ?? item.qty ?? 1);
-  const unit = Number(item.unitPrice ?? item.price ?? 0);
-
-  const optionValues = [];
-  const pushIf = (v) => { if (v) optionValues.push(String(v)); };
-  pushIf(item.option1Value || item.options?.option1Value || item.options?.option1);
-  pushIf(item.option2Value || item.options?.option2Value || item.options?.option2);
-  pushIf(item.option3Value || item.options?.option3Value || item.options?.option3);
-  pushIf(item.option4Value || item.options?.option4Value || item.options?.option4);
-  pushIf(item.option5Value || item.options?.option5Value || item.options?.option5);
-  const opts = optionValues.filter(Boolean).join(" / ");
-
-  return (
-    <div className="flex items-center gap-4">
-      <div className="w-20 h-20 rounded-lg bg-gray-100 shrink-0 overflow-hidden">
-        {thumb ? <img src={thumb} alt="" className="w-full h-full object-cover" /> : <img src={TestImg} alt="상품 이미지" className="w-full h-full object-cover" />}
-      </div>
-      <div className="flex-1">
-        <div className="font-medium">{name}</div>
-        {opts && <div className="text-sm text-gray-500">{opts}</div>}
-        <div className="text-sm text-gray-600 mt-0.5">{qty}개 · {(unit * qty).toLocaleString()}원</div>
-      </div>
-    </div>
-  );
-}
+export default OrderCard;

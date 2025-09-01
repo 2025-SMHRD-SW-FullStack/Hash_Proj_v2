@@ -1,150 +1,162 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import TestImg from '../assets/images/ReSsol_TestImg.png'
-import Button from '../components/common/Button.jsx'
-import Icon from '../components/common/Icon.jsx'
-import Minus from '../assets/icons/ic_minus.svg'
-import Plus from '../assets/icons/ic_plus.svg'
-import Delete from '../assets/icons/ic_delete.svg'
-import Modal from '../components/common/Modal.jsx'
-import { getProductDetail } from '../service/productService.js'
-import { addCartItem } from '../service/cartService.js'
-import useAuthStore from '../stores/authStore'
-import { findOrCreateUserSellerRoom, findOrCreateRoomByProduct } from '../service/chatService'
+// src/pages/ProductDetailPage.jsx
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+
+// 필요한 서비스 및 스토어 import
+import { getProductDetail } from '../service/productService.js';
+import { addCartItem } from '../service/cartService.js';
+import { findOrCreateUserSellerRoom, findOrCreateRoomByProduct } from '../service/chatService';
+import useAuthStore from '../stores/authStore';
+import useFeedbackStore from '../stores/feedbackStore.js'; // 피드백 스토어 추가
+
+// 컴포넌트 및 아이콘 import
+import Button from '../components/common/Button.jsx';
+import Icon from '../components/common/Icon.jsx';
+import Modal from '../components/common/Modal.jsx';
+import Minus from '../assets/icons/ic_minus.svg';
+import Plus from '../assets/icons/ic_plus.svg';
+import Delete from '../assets/icons/ic_delete.svg';
+import TestImg from '../assets/images/ReSsol_TestImg.png';
+
+const EMPTY_ARRAY = [];
 
 const ProductDetailPage = () => {
-  const { productId } = useParams()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { isLoggedIn } = useAuthStore()
+  const { productId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isLoggedIn } = useAuthStore();
+  const feedbacks = useFeedbackStore((state) => state.feedbacksByProduct[productId] || EMPTY_ARRAY);
 
-  const [productData, setProductData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [selectedItems, setSelectedItems] = useState([])
-  const deliverFee = 3000
+  const [productData, setProductData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const deliverFee = 3000;
 
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
-  const [isCartModalOpen, setIsCartModalOpen] = useState(false)
-  const [chatLoading, setChatLoading] = useState(false)
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        setLoading(true)
-        const data = await getProductDetail(productId)
-        setProductData(data)
+        setLoading(true);
+        const data = await getProductDetail(productId);
+        setProductData(data);
       } catch (err) {
-        setError(err.message)
+        setError(err.message || '상품 정보를 불러오는 데 실패했습니다.');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    fetchProduct()
-  }, [productId])
+    };
+    fetchProduct();
+  }, [productId]);
 
   const handleOptionChange = (e) => {
-    const selectedVariantId = e.target.value
-    if (!selectedVariantId) return
-    const isAlreadySelected = selectedItems.some(item => item.variantId === selectedVariantId)
+    const selectedVariantId = e.target.value;
+    if (!selectedVariantId) return;
+    const isAlreadySelected = selectedItems.some(item => item.variantId === selectedVariantId);
     if (isAlreadySelected) {
-      alert('이미 선택된 옵션입니다.')
-      e.target.value = ''
-      return
+      alert('이미 선택된 옵션입니다.');
+      e.target.value = '';
+      return;
     }
-    setSelectedItems(prev => [...prev, { variantId: selectedVariantId, quantity: 1 }])
-    e.target.value = ''
-  }
+    setSelectedItems(prev => [...prev, { variantId: selectedVariantId, quantity: 1 }]);
+    e.target.value = '';
+  };
 
   const handleQuantityChange = (variantId, amount) => {
     setSelectedItems(prev =>
-      prev.map(item => item.variantId === variantId
-        ? { ...item, quantity: Math.max(1, item.quantity + amount) }
-        : item
+      prev.map(item =>
+        item.variantId === variantId
+          ? { ...item, quantity: Math.max(1, item.quantity + amount) }
+          : item
       )
-    )
-  }
+    );
+  };
 
   const handleRemoveItem = (variantId) => {
-    setSelectedItems(prev => prev.filter(item => item.variantId !== variantId))
-  }
+    setSelectedItems(prev => prev.filter(item => item.variantId !== variantId));
+  };
 
   const handlePurchase = () => {
     if (selectedItems.length === 0) {
-      alert('상품 옵션을 선택해주세요.')
-      return
+      alert('상품 옵션을 선택해주세요.');
+      return;
     }
-    const itemsQuery = selectedItems.map(item => `${item.variantId}_${item.quantity}`).join(',')
-    navigate(`/user/order?productId=${productId}&items=${itemsQuery}`)
-  }
+    const itemsQuery = selectedItems.map(item => `${item.variantId}_${item.quantity}`).join(',');
+    navigate(`/user/order?productId=${productId}&items=${itemsQuery}`);
+  };
 
+  // ✅ 서버 API를 호출하는 올바른 장바구니 저장 로직
   const handleAddToCart = async () => {
     if (!productData || selectedItems.length === 0) {
-      alert('상품 옵션을 선택해주세요.')
-      return
+      alert('상품 옵션을 선택해주세요.');
+      return;
     }
-    const { product, variants } = productData
-    const labels = [product.option1Name, product.option2Name, product.option3Name, product.option4Name, product.option5Name]
+    const { product, variants } = productData;
+    const labels = [product.option1Name, product.option2Name, product.option3Name, product.option4Name, product.option5Name];
 
     try {
       for (const item of selectedItems) {
-        const variant = variants.find(v => v.id === parseInt(item.variantId))
-        if (!variant) continue
-        const options = {}
-        if (labels[0]) options[labels[0]] = variant.option1Value ?? null
-        if (labels[1]) options[labels[1]] = variant.option2Value ?? null
-        if (labels[2]) options[labels[2]] = variant.option3Value ?? null
-        if (labels[3]) options[labels[3]] = variant.option4Value ?? null
-        if (labels[4]) options[labels[4]] = variant.option5Value ?? null
+        const variant = variants.find(v => v.id === parseInt(item.variantId));
+        if (!variant) continue;
+        const options = {};
+        if (labels[0]) options[labels[0]] = variant.option1Value ?? null;
+        if (labels[1]) options[labels[1]] = variant.option2Value ?? null;
+        if (labels[2]) options[labels[2]] = variant.option3Value ?? null;
+        if (labels[3]) options[labels[3]] = variant.option4Value ?? null;
+        if (labels[4]) options[labels[4]] = variant.option5Value ?? null;
 
-        await addCartItem({ productId: product.id, qty: item.quantity, options })
+        await addCartItem({ productId: product.id, qty: item.quantity, options });
       }
-      setIsCartModalOpen(true)
+      setIsCartModalOpen(true);
     } catch (e) {
-      const msg = e?.response?.data?.message || e?.message || '장바구니 담기 중 오류가 발생했습니다.'
-      alert(msg)
+      const msg = e?.response?.data?.message || e?.message || '장바구니 담기 중 오류가 발생했습니다.';
+      alert(msg);
     }
-  }
+  };
 
-  // 상품 → 셀러ID 추출(가능하면 사용)
   const getSellerId = (pd) => {
-    const p = pd?.product || {}
-    return p.sellerId ?? p.seller_id ?? p.seller?.id ?? pd?.sellerId ?? null
-  }
+    const p = pd?.product || {};
+    return p.sellerId ?? p.seller_id ?? p.seller?.id ?? pd?.sellerId ?? null;
+  };
 
   const handleOpenChat = async () => {
     if (!isLoggedIn) {
-      navigate('/login', { state: { redirectTo: location.pathname } })
-      return
+      navigate('/login', { state: { redirectTo: location.pathname } });
+      return;
     }
-    if (!productData) return
+    if (!productData) return;
 
     try {
-      setChatLoading(true)
-      const sid = getSellerId(productData)
+      setChatLoading(true);
+      const sid = getSellerId(productData);
       const room = sid
         ? await findOrCreateUserSellerRoom(sid)
-        : await findOrCreateRoomByProduct(Number(productId)) // ✅ sellerId가 없으면 상품ID로 매칭
-      navigate(`/user/chat/rooms/${room.roomId}`)
+        : await findOrCreateRoomByProduct(Number(productId));
+      navigate(`/user/chat/rooms/${room.roomId}`);
     } catch (e) {
-      const msg = e?.response?.data?.message || e?.message || '채팅방 생성 중 오류가 발생했습니다.'
-      alert(msg)
+      const msg = e?.response?.data?.message || e?.message || '채팅방 생성 중 오류가 발생했습니다.';
+      alert(msg);
     } finally {
-      setChatLoading(false)
+      setChatLoading(false);
     }
-  }
+  };
 
-  if (loading) return <div>상품 정보를 불러오는 중...</div>
-  if (error) return <div>오류: {error}</div>
-  if (!productData) return <div>상품 정보가 없습니다.</div>
+  if (loading) return <div>상품 정보를 불러오는 중...</div>;
+  if (error) return <div>오류: {error}</div>;
+  if (!productData) return <div>상품 정보가 없습니다.</div>;
 
-  const { product, variants } = productData
+  const { product, variants } = productData;
 
+  // ✅ 올바른 총 금액 계산 로직
   const totalPrice = selectedItems.reduce((total, currentItem) => {
-    const variant = variants.find(v => v.id === parseInt(currentItem.variantId))
-    const itemPrice = (product.salePrice + (variant?.addPrice || 0)) * currentItem.quantity
-    return total + itemPrice + deliverFee
-  }, 0)
+    const variant = variants.find(v => v.id === parseInt(currentItem.variantId));
+    const itemPrice = (product.salePrice + (variant?.addPrice || 0)) * currentItem.quantity;
+    return total + itemPrice;
+  }, 0) + (selectedItems.length > 0 ? deliverFee : 0);
 
   return (
     <div className='flex items-start'>
@@ -163,6 +175,43 @@ const ProductDetailPage = () => {
           <Button variant="signUp" onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className='w-full'>
             {isDescriptionExpanded ? '접기' : '더보기'}
           </Button>
+        </div>
+
+        {/* ✅ 피드백 모음 섹션 추가 */}
+        <hr className="my-8 border-t border-gray-300" />
+        <div className="feedback-section">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-2xl font-bold">피드백 모음 ({feedbacks.length})</h3>
+          </div>
+          <div className="space-y-6">
+            {feedbacks.length > 0 ? (
+              feedbacks.slice(0, 2).map((fb, index) => (
+                <div key={index} className="border-b border-gray-200 pb-6 last:border-b-0">
+                  <div className="flex items-center mb-3">
+                    <p className="font-semibold text-lg mr-2">{fb.author || '익명'}</p>
+                    <p className="text-sm text-gray-500">{new Date(fb.createdAt).toLocaleDateString('ko-KR')}</p>
+                  </div>
+                  {fb.imagesJson && JSON.parse(fb.imagesJson).length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {JSON.parse(fb.imagesJson).slice(0, 4).map((imgSrc, imgIndex) => (
+                        <div key={imgIndex} className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden">
+                          <img src={imgSrc} alt={`피드백 이미지 ${imgIndex + 1}`} className="object-cover w-full h-full" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-gray-800 leading-relaxed mb-3">{fb.content}</p>
+                  {index === 1 && feedbacks.length > 2 && (
+                    <div className="text-center mt-4">
+                      <Button variant="whiteBlack">... 더보기</Button>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-8">아직 작성된 피드백이 없습니다.</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -202,9 +251,9 @@ const ProductDetailPage = () => {
 
         <div className='space-y-3 pr-2'>
           {selectedItems.map(item => {
-            const variant = variants.find(v => v.id === parseInt(item.variantId))
-            if (!variant) return null
-            const itemPrice = (product.salePrice + (variant.addPrice || 0)) * item.quantity
+            const variant = variants.find(v => v.id === parseInt(item.variantId));
+            if (!variant) return null;
+            const itemPrice = (product.salePrice + (variant.addPrice || 0)) * item.quantity;
 
             return (
               <div key={item.variantId} className='rounded-md bg-gray-100 p-3'>
@@ -221,7 +270,7 @@ const ProductDetailPage = () => {
                   <span className='text-base font-bold'>{itemPrice.toLocaleString()}원</span>
                 </div>
               </div>
-            )
+            );
           })}
         </div>
 
@@ -256,7 +305,7 @@ const ProductDetailPage = () => {
         <p className="text-sm text-gray-700">선택한 상품이 장바구니에 담겼습니다.</p>
       </Modal>
     </div>
-  )
-}
+  );
+};
 
-export default ProductDetailPage
+export default ProductDetailPage;

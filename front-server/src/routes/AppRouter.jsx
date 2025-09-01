@@ -15,6 +15,7 @@ import ProductDetailPage from '../pages/ProductDetailPage'
 import PaySuccess from '../pages/PaySuccess'
 import PayFail from '../pages/PayFail'
 import SellerRouter from './SellerRouter'
+// import FindAuthPage from '../pages/authPage/FindAuthPage'
 
 
 const AppRouter = () => {
@@ -25,7 +26,7 @@ const AppRouter = () => {
       <Route element={<MainLayout />}>
 
         <Route path="/" element={<MainPage />} />
-        <Route path='/product' element={<ProductPage />} />
+        <Route path='/products' element={<ProductPage />} />
         {/* ✅ :productId를 사용해 동적 경로로 변경 */}
         <Route path="/product/:productId" element={<ProductDetailPage />} />
 
@@ -36,6 +37,9 @@ const AppRouter = () => {
         {/* 휴대폰 인증 관련 */}
         <Route path="/phone-verified" element={<PhoneVerifiedHandler />} />
         <Route path="/oauth-success" element={<OAuthSuccess />} />
+
+        {/* 👇 아이디/비밀번호 찾기 페이지 라우트 추가 */}
+        {/* <Route path="/find-auth" element={<FindAuthPage />} /> */}
 
         {/* 비회원 전용 페이지들 */}
         {!isLoggedIn && <Route path="/public/*" element={<PublicRouter />} />}
