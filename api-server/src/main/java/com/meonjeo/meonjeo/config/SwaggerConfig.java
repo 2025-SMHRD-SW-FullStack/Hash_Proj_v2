@@ -22,7 +22,7 @@ public class SwaggerConfig {
                                 .scheme("bearer")
                                 .bearerFormat("JWT")))
                 .info(new Info()
-                        .title("ReSsol")
+                        .title("먼저써봄")
                         .description("API 명세서")
                         .version("1.0.0"));
     }
