@@ -2,24 +2,36 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Button from '/src/components/common/Button'
 import LineBase from './LineBase'
-import { fetchSalesStats } from '/src/service/statsService'
+import { fetchSellerMainStats } from '/src/service/statsService'
+
+// 'YYYY-MM-DD' -> 'MM/DD'
+const toMMDD = (ymd) => {
+  const s = String(ymd || '').replace(/[^0-9]/g, '')
+  return s.length >= 8 ? `${s.slice(4, 6)}/${s.slice(6, 8)}` : (ymd || '')
+}
 
 /**
- * 스토어 매출 통계 카드 (Button 사용 + 백엔드 연동, 더미 없음)
+ * 스토어 매출 통계 카드 (정산 요약 API 사용)
  * props:
  *  - from?: 'YYYY-MM-DD'
  *  - to?:   'YYYY-MM-DD'
- *  - data?: [{ date, amount, orders, payers }]  // 외부 주입 시 fetch 생략
  *  - className?: string
  */
-export default function StoreSalesStats({ from, to, data, className = '' }) {
-  const [metric, setMetric] = useState('amount') // amount | orders | payers
+export default function StoreSalesStats({ from, to, className = '' }) {
+  // 선택 가능한 지표: 정산 요약 스키마 기준
+  const METRICS = [
+    { key: 'itemTotal',   label: '판매금액' },
+    { key: 'ordersCount', label: '결제건수' },
+    { key: 'payoutTotal', label: '정산금액' },
+  ]
+
+  const [metric, setMetric] = useState(METRICS[0].key) // 기본: 판매금액
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState(null)
-  const [rows, setRows] = useState([])
+  const [rows, setRows] = useState([]) // [{date:'YYYY-MM-DD', itemTotal, ordersCount, payoutTotal}]
 
-  const unitOf = { amount: '원', orders: '건', payers: '명' }
-  const keyOf  = { amount: 'amount', orders: 'orders', payers: 'payers' }
+  const unitOf = useMemo(() => Object.fromEntries(METRICS.map(m => [m.key, m.unit])), [])
+  const labelOf = useMemo(() => Object.fromEntries(METRICS.map(m => [m.key, m.label])), [])
 
   // 기본 14일 구간
   const { fromDef, toDef } = useMemo(() => {
@@ -34,19 +46,16 @@ export default function StoreSalesStats({ from, to, data, className = '' }) {
     return { fromDef: ymd(start), toDef: ymd(end) }
   }, [])
 
-  const useData = data?.length ? data : rows
-
   useEffect(() => {
-    if (data?.length) return // 외부 주입 데이터 우선 사용
     const run = async () => {
       setLoading(true)
       setErr(null)
       try {
-        const result = await fetchSalesStats({
+        const { rows } = await fetchSellerMainStats({
           from: from || fromDef,
-          to: to   || toDef,
+          to:   to   || toDef,
         })
-        setRows(Array.isArray(result) ? result : [])
+        setRows(Array.isArray(rows) ? rows : [])
       } catch (e) {
         setErr(e)
       } finally {
@@ -54,34 +63,30 @@ export default function StoreSalesStats({ from, to, data, className = '' }) {
       }
     }
     run()
-  }, [from, to, data, fromDef, toDef])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [from, to, fromDef, toDef])
 
   return (
     <section className={`rounded-xl border bg-white p-4 shadow-sm ${className}`}>
       <div className="mb-2 flex items-center justify-between">
         <h4 className="text-[13px] font-semibold">스토어 매출 통계</h4>
-        <span className="text-xs text-gray-500">Y축 단위: {unitOf[metric]}</span>
+        <span className="text-xs text-gray-500">
+          Y축 단위: {unitOf[metric]}
+        </span>
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        {[
-          { key: 'amount', label: '결제금액' },
-          { key: 'orders', label: '결제건수' },
-          { key: 'payers', label: '결제자수' },
-        ].map((t) => {
-          const active = metric === t.key
-          return (
-            <Button
-              key={t.key}
-              variant="admin"
-              size="sm"
-              className="rounded-full px-3"
-              onClick={() => setMetric(t.key)}
-            >
-              {t.label}
-            </Button>
-          )
-        })}
+        {METRICS.map((m) => (
+          <Button
+            key={m.key}
+            variant="admin" // 프로젝트 'admin' 톤 재사용
+            size="sm"
+            className="rounded-full px-3"
+            onClick={() => setMetric(m.key)}
+          >
+            {m.label}
+          </Button>
+        ))}
       </div>
 
       {/* 로딩/에러/빈 상태/차트 */}
@@ -93,20 +98,21 @@ export default function StoreSalesStats({ from, to, data, className = '' }) {
         <div className="flex h-[260px] items-center justify-center rounded-md border border-red-300 bg-red-50 text-sm text-red-500">
           통계 조회 실패: {err?.response?.data?.message || err.message}
         </div>
-      ) : useData.length === 0 ? (
+      ) : rows.length === 0 ? (
         <div className="flex h-[260px] items-center justify-center rounded-md border text-sm text-gray-400">
           데이터가 없습니다
         </div>
       ) : (
         <div className="h-[260px]">
           <LineBase
-            data={useData.map((d) => ({
-              date: d.date,
-              value: d[keyOf[metric]],
+            data={rows.map((d) => ({
+              date: toMMDD(d.date),        // X축: MM/DD
+              value: Number(d[metric] ?? 0),
             }))}
             xKey="date"
             yKey="value"
             unit={unitOf[metric]}
+            title={labelOf[metric]}
           />
         </div>
       )}

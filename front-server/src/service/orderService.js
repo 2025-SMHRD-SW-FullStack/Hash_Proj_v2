@@ -177,3 +177,32 @@ export const exportSellerOrdersCSV = async (params = {}) => {
 
 /** 배송 추적(주문ID 기준) — 기존 getTracking 재사용 */
 export const fetchTracking = (orderId) => getTracking(orderId)
+
+
+// 프론트 키 → 서버 enum
+export const ORDER_STATUS_MAP = {
+  ALL: null,
+  READY: 'READY',
+  SHIPPING: 'IN_TRANSIT',   // 🔴 기존 SHIPPING -> IN_TRANSIT 로 교체
+  DELIVERED: 'DELIVERED',
+  CONFIRMED: 'CONFIRMED',
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+}
+
+// 그리드 조회 래퍼
+export async function fetchSellerOrdersGrid({ statusKey='ALL', page=0, size=20, q, from, to } = {}) {
+  const params = { page, size }
+  const mapped = ORDER_STATUS_MAP[statusKey] ?? null
+  if (mapped) params.status = mapped       // ALL이면 status 생략
+  if (q) params.q = q
+  if (from) params.from = from
+  if (to) params.to = to
+
+  const res = await api.get('/api/seller/orders/grid', {
+    params,
+    validateStatus: () => true,            // 4xx/5xx throw 금지
+  })
+  if (res.status < 200 || res.status >= 300) throw new Error(`orders/grid ${res.status}`)
+  return res.data
+}
