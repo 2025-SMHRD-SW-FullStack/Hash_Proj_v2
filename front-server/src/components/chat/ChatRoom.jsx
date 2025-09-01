@@ -3,7 +3,7 @@ import { listMessages, markRead } from '../../service/chatService'
 import chatSocket from '../../service/chatSocket'
 import useAuthStore from '../../stores/authStore'
 
-export default function ChatRoom({ roomId, onClose }) {
+const ChatRoom = ({ roomId, onClose }) => {
   const me = useAuthStore(s => s.user)
   const [msgs, setMsgs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -153,3 +153,6 @@ function PanelHeader({ onClose }) {
     </div>
   )
 }
+
+
+export default ChatRoom

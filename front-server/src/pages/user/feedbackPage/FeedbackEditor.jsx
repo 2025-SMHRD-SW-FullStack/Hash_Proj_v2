@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { submitFeedback } from "../../../service/feedbackService";
 import { getMyPointBalance } from "../../../service/pointService"; // 포인트 조회 서비스 import
 import Button from "../../../components/common/Button";
-import ChatRoom from "../../../components/chatPage/ChatRoom";
+import ChatRoom from "../../../components/chat/ChatRoom";
 import Icon from "../../../components/common/Icon";
 import deleteIcon from "../../../assets/icons/ic_delete.svg";
 import useFeedbackStore from "../../../stores/feedbackStore";
