@@ -38,6 +38,7 @@ public class Feedback {
 
     /** 자유 후기 본문 */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String content;
 
     /** 업로드 완료된 이미지 URL 리스트 JSON */
