@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import Logo from '../../assets/images/ReSsol_Logo1.png'
+import Logo from '../../assets/images/Meonjeo_Logo.png'
 import User from '../../assets/icons/ic_user.svg'
 import Notification from '../../assets/icons/ic_notification.svg'
 import Message from '../../assets/icons/ic_message.svg'

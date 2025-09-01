@@ -7,6 +7,7 @@ import Icon from '../components/common/Icon'
 import useWindowWidth from '../hooks/useWindowWidth'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../stores/authStore'
+import { getMyPointBalance } from '../service/pointService' // Import the point service
 
 const MainPage = () => {
   const testNumber = [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -17,6 +18,9 @@ const MainPage = () => {
   const intervalRef = useRef(null)
   const navigate = useNavigate()
   const { isLoggedIn, user, logout } = useAuthStore()
+  const [points, setPoints] = useState(0);
+  const [loading, setLoading] = useState(false); // Changed initial state to false
+  const [error, setError] = useState(null);
 
   const isMobile = width < 640
   const itemsPerPage = isMobile ? 1 : 3
@@ -47,6 +51,25 @@ const MainPage = () => {
     })
     return () => cancelAnimationFrame(id)
   }, [itemsPerPage])
+
+  // Fetch points when user is logged in
+  useEffect(() => {
+    const fetchPoints = async () => {
+      if (isLoggedIn) {
+        try {
+          setLoading(true);
+          const balance = await getMyPointBalance();
+          setPoints(balance);
+        } catch (err) {
+          setError('포인트 조회 실패');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchPoints();
+  }, [isLoggedIn]);
+
 
   const handlePrev = () => { if (!isTransitioning) { setIsTransitioning(true); setCurrentIndex(prev => prev - 1) } }
   const handleNext = () => { if (!isTransitioning) { setIsTransitioning(true); setCurrentIndex(prev => prev + 1) } }
@@ -117,7 +140,7 @@ const MainPage = () => {
 
         {/* 푸터 */}
         <footer className="mt-20 bg-gray-900 text-white py-6 text-center text-sm rounded-lg">
-          ⓒ 2025 우리팀 프로젝트. All rights reserved.
+          ⓒ 2025 Hash 프로젝트. All rights reserved.
         </footer>
       </section>
 
@@ -126,12 +149,40 @@ const MainPage = () => {
         <div className="border-[#CCC] border-solid border-[1px]  mb-12 flex h-[250px] flex-col items-center justify-center rounded-lg px-4 text-center">
           {isLoggedIn ? (
             <>
-              <p className="mb-4 font-bold">{user?.nickname}님 환영합니다!</p>
+              <p className="mb-4 font-bold">{user?.nickname}님<br /> 오늘도 소중한 피드백 부탁드릴게요!</p>
+              <div className='flex items-center'>
+                <div className="flex items-center justify-center w-full p-3 rounded-lg text-center">
+                  <span className="text-base text-gray-600">내 포인트 &ensp;</span>
+                  {loading ? (
+                    <p>조회 중...</p>
+                  ) : error ? (
+                    <p className="text-red-500">{error}</p>
+                  ) : (
+                    <div className="flextext-xl font-bold ">
+                      {points.toLocaleString()}
+                      <span className="text-[#35A6CF]">P</span>
+                    </div>
+                  )}
+                </div>
+                <Button
+                  className="w-full h-10 text-base mb-2"
+                  variant="whiteBlack"
+                  onClick={() => navigate("/user/mypage/point-exchange")}
+                >
+                  포인트 교환하기
+                </Button>
+              </div>
               <Button size="lg" className="w-full" onClick={logout}>로그아웃</Button>
             </>
           ) : (
             <>
-              <p>로그인 문구</p>
+              <div className='my-4'>
+                <span className='text-[#2A5FF2] font-semibold'>혁신이 시작되는 곳! </span>
+                <br />
+                 <span>아직 세상에 없는 신제품을 가장 먼저 써보고
+                  <br />
+                  당신의 솔직한 피드백으로 완성하세요.</span>
+              </div>
               <Button size="lg" className="w-full" onClick={() => navigate('/login')}>로그인하기</Button>
             </>
           )}

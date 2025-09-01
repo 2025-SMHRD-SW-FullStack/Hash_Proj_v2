@@ -9,9 +9,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-[#9DD5E9] text-white',
+        primary: 'bg-[#5882F6] text-white',
         signUp:
-          'border-solid border-[1px] border-[#C3C3C3] bg-white text-[#4CBDE6]',
+          'border-solid border-[1px] border-[#C3C3C3] bg-white text-[#5882F6]',
         admin: 'bg-[#ADD973] text-white',
         unselected: 'bg-white border-[#C3C3C3] border-solid border-[1px] text-[#C3C3C3]',
         whiteBlack: 'bg-white text-[#222] border-[#CCCCCC] border-solid border-[1px] ',

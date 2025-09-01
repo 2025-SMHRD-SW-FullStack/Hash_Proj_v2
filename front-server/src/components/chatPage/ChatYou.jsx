@@ -8,7 +8,7 @@ const ChatYou = ({ message }) => {
   return (
     <div className="flex flex-col items-start self-start">
       <span className="text-sm font-semibold mb-1">상대방</span>
-      <div className="mt-1 rounded-lg bg-[#9DD5E9] px-4 py-2 text-gray-800">
+      <div className="mt-1 rounded-lg bg-[#5882F6] px-4 py-2 text-gray-100">
         {/* 텍스트가 있으면 표시 */}
         {text && <p className="m-0">{text}</p>}
         {/* 이미지가 있으면 표시 */}
