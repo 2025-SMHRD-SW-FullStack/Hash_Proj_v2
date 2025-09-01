@@ -1,10 +1,14 @@
 package com.meonjeo.meonjeo.address;
 
-import org.springframework.data.jpa.repository.*;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+
 
 public interface UserAddressRepository extends JpaRepository<UserAddress, Long> {
 
@@ -31,4 +35,9 @@ public interface UserAddressRepository extends JpaRepository<UserAddress, Long> 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update UserAddress a set a.primaryAddress=false where a.userId=:uid and a.id<>:keepId")
     int clearPrimaryExcept(@Param("uid") Long userId, @Param("keepId") Long keepId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
+    @Query("delete from UserAddress a where a.userId = :uid")
+    int deleteByUserId(@Param("uid") Long userId);
 }

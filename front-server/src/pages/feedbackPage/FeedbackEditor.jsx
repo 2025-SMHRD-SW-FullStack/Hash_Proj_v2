@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { submitFeedback } from "../../service/feedbackService";
 import Button from "../../components/common/Button";
-import ChatRoom from "../../components/chatPage/ChatRoom";
 import Icon from "../../components/common/Icon";
 import deleteIcon from "../../assets/icons/ic_delete.svg";
+import ChatRoom from "../../components/chat/ChatRoom";
 
 const FeedbackEditor = () => {
   const [searchParams] = useSearchParams();

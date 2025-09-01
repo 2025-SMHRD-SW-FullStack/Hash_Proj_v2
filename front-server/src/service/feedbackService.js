@@ -16,10 +16,6 @@ export const getSurveyTemplate = (category) =>
 export const submitSurvey = (orderItemId, payload) =>
   api.post(`/api/surveys/answers`, { orderItemId, ...payload }).then(r => r.data);
 
-// 피드백 본문 저장(수기/AI 공통) — 저장되면 서버가 포인트 지급까지 처리
-export const submitFeedback = (orderItemId, payload) =>
-  api.post(`/api/feedbacks`, { orderItemId, ...payload }).then(r => r.data);
-
 
 // 셀러 피드백
 
@@ -215,3 +211,20 @@ export const ReportFeedback = async ({ feedbackId, reason }) => {
   }
   throw lastErr
 }
+export const submitFeedback = (payload) =>
+  api.post(`/api/feedbacks`, payload).then(r => r.data);
+
+/**
+ * (신규) 현재 로그인된 사용자가 작성한 모든 피드백 목록을 가져옵니다.
+ * @returns {Promise<Array>} 피드백 목록
+ */
+export const getMyFeedbacks = () => 
+  api.get('/api/me/feedbacks').then(r => r.data);
+
+/**
+ * (신규) 특정 피드백의 상세 정보를 ID로 조회합니다.
+ * @param {number | string} feedbackId 피드백 ID
+ * @returns {Promise<object>} 피드백 상세 정보
+ */
+export const getFeedbackDetail = (feedbackId) =>
+  api.get(`/api/feedbacks/${feedbackId}`).then(r => r.data);

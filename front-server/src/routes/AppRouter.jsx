@@ -5,6 +5,7 @@ import PublicRouter from './PublicRouter'
 import UserRouter from './UserRouter'
 import AdminRouter from './AdminRouter'
 import SellerRouter from './SellerRouter'
+// import FindAuthPage from '../pages/authPage/FindAuthPage'
 
 import MainLayout from '../components/layouts/MainLayout'
 import MainPage from '../pages/MainPage'
@@ -30,7 +31,12 @@ const AppRouter = () => {
       <Route element={<MainLayout />}>
         {/* 메인/상품 */}
         <Route path="/" element={<MainPage />} />
+<<<<<<< HEAD
         <Route path="/product" element={<ProductPage />} />
+=======
+        <Route path='/products' element={<ProductPage />} />
+        {/* ✅ :productId를 사용해 동적 경로로 변경 */}
+>>>>>>> 4bcd383b5ec71bb817dea8c62b3994ccc88f5bc9
         <Route path="/product/:productId" element={<ProductDetailPage />} />
 
         {/* 인증 */}
@@ -39,7 +45,22 @@ const AppRouter = () => {
         <Route path="/phone-verified" element={<PhoneVerifiedHandler />} />
         <Route path="/oauth-success" element={<OAuthSuccess />} />
 
+<<<<<<< HEAD
         {/* 결제 결과 */}
+=======
+        {/* 👇 아이디/비밀번호 찾기 페이지 라우트 추가 */}
+        {/* <Route path="/find-auth" element={<FindAuthPage />} /> */}
+
+        {/* 비회원 전용 페이지들 */}
+        {!isLoggedIn && <Route path="/public/*" element={<PublicRouter />} />}
+
+        {/* 로그인한 사용자 전용 페이지들 */}
+        {/* TODO: 유저 구분 */}
+        {isLoggedIn && <Route path="/user/*" element={<UserRouter />} />}
+
+
+        {/* 주문결제 관련 */}
+>>>>>>> 4bcd383b5ec71bb817dea8c62b3994ccc88f5bc9
         <Route path="/pay/success" element={<PaySuccess />} />
         <Route path="/pay/fail" element={<PayFail />} />
 

@@ -4,6 +4,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
 
@@ -32,4 +36,9 @@ public interface SellerProfileRepository extends JpaRepository<SellerProfile, Lo
     Page<SellerProfile> searchForAdmin(@Param("status") SellerStatus status,
                                        @Param("q") String q,
                                        Pageable pageable);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
+    @Query("delete from SellerProfile sp where sp.userId = :uid")
+    int deleteByUserId(@Param("uid") Long userId);
 }

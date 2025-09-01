@@ -1,17 +1,28 @@
 // /src/pages/seller/SellerMain.jsx
+<<<<<<< HEAD
 import React, { useEffect, useMemo, useState } from 'react'
+=======
+import React, { useMemo, useState, useEffect, Suspense } from 'react'
+>>>>>>> 4bcd383b5ec71bb817dea8c62b3994ccc88f5bc9
 import { useNavigate } from 'react-router-dom'
 import Button from '/src/components/common/Button'
 import StoreSalesStats from '/src/components/seller/charts/StoreSalesStats'
+<<<<<<< HEAD
 import { fetchSellerOrders } from '/src/service/orderService'
 import { getAmount as _getAmount } from '/src/util/orderUtils'
 import api from '/src/config/axiosInstance'
 import { fetchDailySettlementSummary } from '/src/service/settlementService'
 import { div } from 'framer-motion/client'
+=======
+import ChatList from '../../components/chat/ChatList'
+const ChatRoom = React.lazy(() => import('../../components/chat/ChatRoom'))
+import useAppModeStore from '../../stores/appModeStore'
+>>>>>>> 4bcd383b5ec71bb817dea8c62b3994ccc88f5bc9
 
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 const kpi = 'flex items-center justify-between py-2 text-sm'
 
+<<<<<<< HEAD
 // 금액 추출 유틸 (orderUtils.getAmount 우선, 폴백 마련)
 const getAmount = (row) => {
   try { return Number(_getAmount?.(row) ?? 0) } catch { /* noop */ }
@@ -49,8 +60,13 @@ const ymd = (d) => {
 const fmt = (n) => (typeof n === 'number' ? n.toLocaleString() : (n ?? '0'))
 
 export default function SellerMain() {
+=======
+const SellerMain = () => {
+>>>>>>> 4bcd383b5ec71bb817dea8c62b3994ccc88f5bc9
   const navigate = useNavigate()
+  const { setMode } = useAppModeStore()
 
+<<<<<<< HEAD
   // 주문 리스트 (최근 14일만 당겨서 집계)
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
@@ -85,6 +101,46 @@ export default function SellerMain() {
       } finally {
         setLoading(false)
       }
+=======
+  // ✅ 이 페이지는 항상 셀러 모드
+  useEffect(() => { setMode('seller') }, [setMode])
+
+  // ─ 채팅 패널 상태 ─
+  const [selectedRoomId, setSelectedRoomId] = useState(null)
+  const openRoom = (roomId) => {
+    const rid = Number(roomId)
+    if (Number.isFinite(rid) && rid > 0) setSelectedRoomId(rid)
+  }
+  const closeRoom = () => setSelectedRoomId(null)
+
+  // ✅ ESC 눌러 닫기
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') closeRoom() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // --- (목업 데이터) ---
+  const orders = [
+    { id: 'O-001', status: '발송대기', price: 39000, exchangeRequested: false, returnRequested: false, cancelRequested: false, deliveredAt: null, purchaseConfirmed: false, feedbackSubmitted: false, feedbackReviewed: false },
+    { id: 'O-002', status: '배송중',   price: 59000, exchangeRequested: false, returnRequested: false, cancelRequested: false, deliveredAt: null, purchaseConfirmed: false, feedbackSubmitted: false, feedbackReviewed: false },
+    { id: 'O-003', status: '배송완료', price: 42000, exchangeRequested: true,  returnRequested: false, cancelRequested: false, deliveredAt: '2025-08-22', purchaseConfirmed: false, feedbackSubmitted: true,  feedbackReviewed: false },
+    { id: 'O-004', status: '배송완료', price: 29000, exchangeRequested: false, returnRequested: true,  cancelRequested: false, deliveredAt: '2025-08-21', purchaseConfirmed: true,  feedbackSubmitted: true,  feedbackReviewed: true  },
+  ]
+
+  const counts = useMemo(() => {
+    const by = (fn) => orders.filter(fn).length
+    return {
+      newOrders: by(o => o.status === '발송대기'),
+      shipReady: by(o => o.status === '발송대기'),
+      shipping:  by(o => o.status === '배송중'),
+      shipped:   by(o => o.status === '배송완료'),
+      exchange:  by(o => o.exchangeRequested),
+      returns:   by(o => o.returnRequested),
+      cancels:   by(o => o.cancelRequested),
+      newFeedbacks: by(o => o.feedbackSubmitted && !o.feedbackReviewed),
+      purchaseConfirmed: by(o => o.purchaseConfirmed),
+>>>>>>> 4bcd383b5ec71bb817dea8c62b3994ccc88f5bc9
     }
     run()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -212,7 +268,7 @@ export default function SellerMain() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      {/* 상단 요약: 주문 / 배송 / 정산 */}
+      {/* 상단 요약 */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* 주문 */}
         <section className={box}>
@@ -326,8 +382,9 @@ export default function SellerMain() {
         {/* 그래프 */}
         <StoreSalesStats className="md:col-span-2" from={ymd(start)} to={ymd(today)} />
 
-        {/* 상품문의/톡톡 */}
+        {/* 상품문의/채팅(셀러) */}
         <section className={box}>
+<<<<<<< HEAD
           <h2 className="mb-2 text-base font-semibold">상품문의</h2>
 
           {inqLoading ? (
@@ -382,10 +439,52 @@ export default function SellerMain() {
           >
             채팅 페이지로 이동
           </Button>
+=======
+          <h2 className="mb-2 text-base font-semibold">상품문의 (셀러 채팅)</h2>
+          <div className="rounded-lg border p-3">
+            <ChatList onOpenRoom={openRoom} />
+          </div>
+          <button
+            className="mt-3 w-full rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
+            onClick={() => navigate('/seller/chat')}
+          >
+            채팅 전체 페이지로 이동
+          </button>
+>>>>>>> 4bcd383b5ec71bb817dea8c62b3994ccc88f5bc9
         </section>
       </div>
 
-      {/* 하단 여백 */}
+      {/* ✅ 오버레이 (배경 클릭으로 닫힘) */}
+      {selectedRoomId && (
+        <div
+          className="fixed inset-0 z-30 bg-black/30 backdrop-blur-[1px]"
+          onClick={closeRoom}
+        />
+      )}
+
+      {/* ✅ 슬라이드 채팅 패널 + 닫기 버튼 */}
+      <div
+        className={`fixed top-0 right-0 z-40 h-full w-full max-w-md transform bg-white shadow-xl transition-transform duration-300 ease-in-out ${
+          selectedRoomId ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        aria-hidden={!selectedRoomId}
+      >
+        {/* Close(X) */}
+        <button
+          aria-label="채팅 닫기"
+          onClick={closeRoom}
+          className="absolute right-3 top-3 rounded-full border px-2 py-1 text-sm hover:bg-gray-100"
+        >
+          ×
+        </button>
+
+        {selectedRoomId && (
+          <Suspense fallback={<div className="p-4">채팅방 불러오는 중…</div>}>
+            <ChatRoom roomId={selectedRoomId} onClose={closeRoom} />
+          </Suspense>
+        )}
+      </div>
+
       <div className="h-8" />
     </div>
   )

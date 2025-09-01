@@ -1,8 +1,9 @@
+// src/pages/user/myPage/MyOrders.jsx
 import { useEffect, useState } from "react";
 import { getMyOrders } from "../../../service/orderService";
 import OrderCard from "./OrderCard";
 
-export default function MyOrders() {
+const MyOrders = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,3 +34,5 @@ export default function MyOrders() {
     </div>
   );
 }
+
+export default MyOrders

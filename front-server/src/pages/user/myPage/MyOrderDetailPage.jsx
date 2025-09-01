@@ -24,33 +24,34 @@ const MyOrderDetailPage = () => {
   const [openConfirm, setOpenConfirm] = useState(false);
   const [feedbackDoneStatus, setFeedbackDoneStatus] = useState({});
 
-  useEffect(() => {
-    const fetchOrderDetail = async () => {
-      try {
-        setLoading(true);
-        const data = await getMyOrderDetail(orderId);
-        setOrder(data);
+  const fetchOrderDetail = async () => {
+    try {
+      setLoading(true);
+      const data = await getMyOrderDetail(orderId);
+      setOrder(data);
 
-        const doneStatus = {};
-        if (data && data.items) {
-          for (const item of data.items) {
-            try {
-              const isDone = await checkFeedbackDone(item.id);
-              doneStatus[item.id] = isDone;
-            } catch (feedbackError) {
-              console.warn(`피드백 상태 확인 실패 (item ID: ${item.id}):`, feedbackError);
-              doneStatus[item.id] = false;
-            }
+      const doneStatus = {};
+      if (data && data.items) {
+        for (const item of data.items) {
+          try {
+            const isDone = await checkFeedbackDone(item.id);
+            doneStatus[item.id] = isDone;
+          } catch (feedbackError) {
+            console.warn(`피드백 상태 확인 실패 (item ID: ${item.id}):`, feedbackError);
+            doneStatus[item.id] = false;
           }
         }
-        setFeedbackDoneStatus(doneStatus);
-      } catch (err) {
-        setError('주문 상세 정보를 불러오는 데 실패했습니다.');
-        console.error(err);
-      } finally {
-        setLoading(false);
       }
-    };
+      setFeedbackDoneStatus(doneStatus);
+    } catch (err) {
+      setError('주문 상세 정보를 불러오는 데 실패했습니다.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchOrderDetail();
   }, [orderId]);
 
@@ -61,15 +62,16 @@ const MyOrderDetailPage = () => {
     } catch (e) { return '옵션 정보 없음'; }
   };
 
-  // [수정] item 객체를 받아 item.id 와 item.productId 를 정확히 사용합니다.
   const handleWriteFeedback = (item) => {
-    if (order.status === 'CONFIRMED') {
-      navigate(`/user/survey?orderItemId=${item.id}&productId=${item.productId}`);
-    } else {
+    // ✅ 'DELIVERED' 상태에서도 바로 구매 확정 모달을 띄우도록 수정
+    if (order.status === 'DELIVERED') {
       setOpenConfirm(true);
+    } else if (order.status === 'CONFIRMED') {
+      // 'CONFIRMED' 상태인 경우에만 피드백 작성 페이지로 바로 이동
+      navigate(`/user/survey?orderItemId=${item.id}&productId=${item.productId}`);
     }
   };
-  
+
   const handleConfirmAndFeedback = async () => {
     try {
       await confirmPurchase(orderId);
@@ -81,6 +83,8 @@ const MyOrderDetailPage = () => {
       alert("구매 확정 중 오류가 발생했습니다.");
     } finally {
       setOpenConfirm(false);
+      // ✅ 구매 확정 후 페이지를 새로고침하여 상태를 업데이트합니다.
+      fetchOrderDetail();
     }
   };
 

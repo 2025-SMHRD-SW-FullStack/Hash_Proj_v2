@@ -1,113 +1,138 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from "../../../components/common/Button";
-import {
-  getCart, updateCartItemQty, removeCartItem, clearCart
-} from "../../../service/cartService";
+import Icon from '../../../components/common/Icon';
+import Minus from '../../../assets/icons/ic_minus.svg';
+import Plus from '../../../assets/icons/ic_plus.svg';
+import Delete from '../../../assets/icons/ic_delete.svg';
+import TestImg from '../../../assets/images/ReSsol_TestImg.png';
+// ✅ 서버 API 서비스를 사용하도록 수정
+import { getCart, updateCartItemQty, removeCartItem, clearCart } from '../../../service/cartService';
 
-const SHIPPING_FEE_PER_SELLER = 3000;
+const SHIPPING_FEE = 3000;
 
 export default function MyCartPage() {
   const navi = useNavigate();
-
-  const [cart, setCart] = useState({ items: [], totalPrice: 0, shippingFee: 0, payableBase: 0 });
+  
+  // ✅ 로컬 스토어 대신 서버 상태를 사용하도록 변경
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [cartData, setCartData] = useState({ items: [], totalPrice: 0, shippingFee: 0 });
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
-  const reload = async () => {
-    setLoading(true);
+  // ✅ 서버에서 장바구니 데이터를 불러오는 함수
+  const fetchCart = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const data = await getCart();
-      setCart(data || { items: [], totalPrice: 0, shippingFee: 0, payableBase: 0 });
-      return data;
+      setCartData(data || { items: [], totalPrice: 0, shippingFee: 0 });
+      // 불러온 모든 상품을 기본으로 선택
+      setSelectedIds(new Set((data?.items || []).map(it => it.cartItemId)));
+    } catch (err) {
+      setError("장바구니 정보를 불러오는 데 실패했습니다.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { reload(); }, []);
+  // ✅ 페이지 로드 시 장바구니 데이터 불러오기
+  useEffect(() => {
+    fetchCart();
+  }, []);
 
-  /** 장바구니 내 서로 다른 셀러 수 */
-  const distinctSellerCount = useMemo(() => {
-    const items = cart?.items ?? [];
-    if (items.length === 0) return 0;
+  const items = cartData.items || [];
 
-    // 백엔드 응답에서 어떤 키를 쓰는지 상황 방어 (sellerId 우선)
-    const ids = new Set(
-      items
-        .map(r =>
-          r?.sellerId ??
-          r?.sellerID ??
-          r?.seller ??
-          r?.ownerId ??
-          null
-        )
-        .filter(v => v !== null && v !== undefined)
-    );
-    // 만약 키가 아예 없으면 "한 셀러"로 간주
-    return ids.size > 0 ? ids.size : 1;
-  }, [cart]);
+  /** 선택된 아이템 목록 */
+  const selectedItems = useMemo(() => {
+    return items.filter(item => selectedIds.has(item.cartItemId));
+  }, [items, selectedIds]);
 
-  /** 합계(아이템) — 서버 subtotal이 있으면 사용, 없으면 unitPrice*qty로 계산 */
+  /** 합계(아이템) */
   const itemsTotal = useMemo(() => {
-    const items = cart?.items ?? [];
-    if (items.length === 0) return 0;
-    return items.reduce((sum, r) => {
-      if (typeof r?.subtotal === "number") return sum + r.subtotal;
-      const unit = Number(r?.unitPrice ?? 0);
-      const qty  = Number(r?.qty ?? 0);
-      return sum + unit * qty;
-    }, 0);
-  }, [cart]);
-
-  /** 요구된 로직: 셀러가 다르면 배송비 3,000원씩 합산, 같으면 1회만 */
+    return selectedItems.reduce((sum, r) => sum + r.subtotal, 0);
+  }, [selectedItems]);
+  
+  /** 배송비 계산 */
   const computedShippingFee = useMemo(() => {
-    if ((cart?.items?.length ?? 0) === 0) return 0;
-    return SHIPPING_FEE_PER_SELLER * Math.max(1, distinctSellerCount);
-  }, [cart, distinctSellerCount]);
-
+    if (selectedItems.length === 0) return 0;
+    // (셀러별 배송비 로직은 서버에서 계산된 값을 그대로 사용)
+    return cartData.shippingFee || SHIPPING_FEE;
+  }, [selectedItems, cartData.shippingFee]);
+  
+  /** 최종 결제 예정 금액 */
   const computedPayableBase = useMemo(() => {
     return itemsTotal + computedShippingFee;
   }, [itemsTotal, computedShippingFee]);
 
-  const canCheckout = useMemo(() => {
-    return (cart?.items?.length ?? 0) > 0;
-  }, [cart]);
+  const canCheckout = useMemo(() => selectedItems.length > 0, [selectedItems]);
 
-  const onQtyChange = async (row, next) => {
-    if (next < 1) return;
-    await updateCartItemQty(row.cartItemId, next);
-    await reload();
+  // --- 이벤트 핸들러 (서버 API 호출로 변경) ---
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(new Set(items.map(it => it.cartItemId)));
+    } else {
+      setSelectedIds(new Set());
+    }
   };
 
-  const onRemove = async (row) => {
+  const handleSelectItem = (cartItemId) => {
+    const newIds = new Set(selectedIds);
+    if (newIds.has(cartItemId)) {
+      newIds.delete(cartItemId);
+    } else {
+      newIds.add(cartItemId);
+    }
+    setSelectedIds(newIds);
+  };
+  
+  const onQtyChange = async (cartItemId, newQuantity) => {
+    if (newQuantity < 1) return;
+    try {
+      await updateCartItemQty(cartItemId, newQuantity);
+      await fetchCart(); // 변경 후 목록 새로고침
+    } catch (error) {
+      alert("수량 변경에 실패했습니다.");
+    }
+  };
+  
+  const onRemove = async (cartItemId) => {
     if (!confirm("이 항목을 삭제할까요?")) return;
-    await removeCartItem(row.cartItemId);
-    await reload();
+    try {
+        await removeCartItem(cartItemId);
+        await fetchCart(); // 삭제 후 목록 새로고침
+    } catch (error) {
+        alert("상품 삭제에 실패했습니다.");
+    }
   };
 
   const onClear = async () => {
     if (!confirm("장바구니를 모두 비울까요?")) return;
-    await clearCart();
-    await reload();
+    try {
+        await clearCart();
+        await fetchCart(); // 비운 후 목록 새로고침
+    } catch (error) {
+        alert("장바구니 비우기에 실패했습니다.");
+    }
+  };
+  
+  // ✅ 주문하기 페이지로 이동 (서버 데이터를 기반으로)
+  const onCheckout = () => {
+    if (!canCheckout) return;
+    // 장바구니 전체를 주문하는 것이므로, 별도 파라미터 없이 이동
+    navi('/user/order?mode=cart');
   };
 
-  // 주문/결제 페이지로 이동 (배송지/포인트는 주문페이지에서 처리)
-  const onCheckout = async () => {
-    // 결제 직전 재검증(품절/부족 차단)
-    const latest = await reload();
-    const invalid = (latest?.items ?? []).filter(it => !it.inStock);
-    if (invalid.length > 0) {
-      alert("장바구니에 품절/재고 부족 항목이 있습니다. 수정/삭제 후 다시 시도해 주세요.");
-      return;
-    }
-    navi(`/user/order?mode=cart`);
-  };
+  if (loading) return <div className="p-4">장바구니를 불러오는 중...</div>;
+  if (error) return <div className="p-4 text-red-500">{error}</div>;
 
   return (
     <div className="p-4">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">장바구니</h1>
-        {cart.items.length > 0 && (
+        {items.length > 0 && (
           <button onClick={onClear} className="h-9 px-3 rounded-lg border hover:bg-gray-50 text-sm">모두 비우기</button>
         )}
       </div>
@@ -115,36 +140,56 @@ export default function MyCartPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
         {/* 리스트 */}
         <div className="rounded-2xl border bg-white">
-          {loading ? (
-            <div className="p-6 text-sm text-gray-500">불러오는 중…</div>
-          ) : cart.items.length === 0 ? (
+          {items.length === 0 ? (
             <div className="p-6 text-sm text-gray-600">장바구니가 비어 있습니다.</div>
           ) : (
-            <ul className="divide-y">
-              {cart.items.map(row => (
-                <li
-                  key={row.cartItemId}
-                  className={`p-4 flex items-center justify-between ${!row.inStock ? 'bg-red-50' : ''}`}
-                >
-                  <div>
-                    <div className="font-medium">{row.productName}</div>
-                    <div className="text-xs text-gray-500 break-words">{row.optionsJson}</div>
-                    {!row.inStock && (
-                      <div className="text-xs text-red-600 mt-1">품절 또는 재고 부족</div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center border rounded-md">
-                      <button className="px-2 py-1" onClick={() => onQtyChange(row, row.qty - 1)}>-</button>
-                      <span className="px-3 text-sm">{row.qty}</span>
-                      <button className="px-2 py-1" onClick={() => onQtyChange(row, row.qty + 1)}>+</button>
+            <>
+              <div className="flex items-center p-4 border-b">
+                <input
+                  type="checkbox"
+                  id="selectAll"
+                  className="mr-4"
+                  checked={items.length > 0 && selectedIds.size === items.length}
+                  onChange={handleSelectAll}
+                />
+                <label htmlFor="selectAll">전체 선택 ({selectedIds.size}/{items.length})</label>
+              </div>
+              <ul className="divide-y">
+                {items.map(row => (
+                  <li key={row.cartItemId} className="p-4 flex items-center justify-between">
+                    <div className="flex items-center">
+                        <input 
+                            type="checkbox" 
+                            className="mr-4" 
+                            checked={selectedIds.has(row.cartItemId)} 
+                            onChange={() => handleSelectItem(row.cartItemId)}
+                        />
+                        <img src={row.thumbnailUrl || TestImg} alt={row.productName} className="w-20 h-20 rounded-lg object-cover" />
+                        <div className="ml-4">
+                            <div className="font-medium">{row.productName}</div>
+                            <div className="text-xs text-gray-500 break-words">
+                                {row.optionsJson}
+                            </div>
+                             {!row.inStock && (
+                                <div className="text-xs text-red-600 mt-1">품절 또는 재고 부족</div>
+                             )}
+                        </div>
                     </div>
-                    <div className="w-28 text-right text-sm font-semibold">{(row.subtotal ?? (row.unitPrice ?? 0) * (row.qty ?? 0)).toLocaleString()}원</div>
-                    <button className="h-8 px-3 rounded-lg border hover:bg-gray-50 text-sm" onClick={() => onRemove(row)}>삭제</button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center border rounded-md">
+                        <button className="px-2 py-1" onClick={() => onQtyChange(row.cartItemId, row.qty - 1)}>-</button>
+                        <span className="px-3 text-sm">{row.qty}</span>
+                        <button className="px-2 py-1" onClick={() => onQtyChange(row.cartItemId, row.qty + 1)}>+</button>
+                      </div>
+                      <div className="w-28 text-right text-sm font-semibold">
+                        {(row.subtotal).toLocaleString()}원
+                      </div>
+                      <button className="h-8 px-3 rounded-lg border hover:bg-gray-50 text-sm" onClick={() => onRemove(row.cartItemId)}>삭제</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </div>
 
@@ -156,14 +201,7 @@ export default function MyCartPage() {
               <span>{itemsTotal.toLocaleString()}원</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span>
-                배송비
-                {distinctSellerCount > 1 && (
-                  <em className="ml-1 text-xs text-gray-500">
-                    (셀러 {distinctSellerCount}곳 × 3,000원)
-                  </em>
-                )}
-              </span>
+              <span>배송비</span>
               <span>{computedShippingFee.toLocaleString()}원</span>
             </div>
             <div className="mt-2 border-t pt-2 flex items-center justify-between font-semibold">
@@ -172,11 +210,7 @@ export default function MyCartPage() {
             </div>
           </div>
 
-          <p className="mb-3 text-xs text-gray-500">
-            * 같은 셀러의 다른 상품들은 배송비 1회(3,000원)만 부과됩니다. 셀러가 다르면 배송비가 합산됩니다.
-          </p>
-
-          <Button className="w-full" disabled={!canCheckout || loading} onClick={onCheckout}>
+          <Button className="w-full" disabled={!canCheckout} onClick={onCheckout}>
             결제하기
           </Button>
         </div>
