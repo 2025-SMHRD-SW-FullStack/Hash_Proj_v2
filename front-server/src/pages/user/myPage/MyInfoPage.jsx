@@ -3,21 +3,21 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../stores/authStore';
 import { updateUserInfo, phoneSend, phoneVerify } from '../../../service/authService';
-import { uploadProfileImage } from '../../../service/uploadService';
+import { uploadImages } from '../../../service/uploadService';
 import Button from '../../../components/common/Button';
 import AddressBookModal from '../../../components/address/AddressBookModal';
 import { getAddresses } from '../../../service/addressService';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
-
+import AccountDeletionModal from '../../../components/modals/AccountDeletionModal';
+import PersonIcon from '../../../assets/icons/ic_person.svg';
 
 // 소셜 아이콘
 import GoogleIcon from '../../../assets/images/google.png';
 import NaverIcon from '../../../assets/images/naver.png';
 import KakaoIcon from '../../../assets/images/kakao.png';
-import AccountDeletionModal from '../../../components/modals/AccountDeletionModal';
 
-/** 각 정보 섹션을 감싸는 컨테이너 스타일 */
+/** 각 정보 섹션을 감싸는 컨테이너 스타일 (버튼 로직 제거) */
 export const SectionContainer = ({ title, children }) => (
   <div className="border rounded-lg p-6 shadow-sm bg-white">
     <div className="flex justify-between items-center mb-6 pb-4 border-b">
@@ -194,7 +194,22 @@ const MyInfoPage = () => {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  };
+
+    // [수정] user 객체가 변경될 때마다 컴포넌트의 상태를 다시 설정하는 useEffect 추가
+    useEffect(() => {
+      if (user) {
+        setProfileImageUrl(user.profileImageUrl || '');
+        setNickname(user.nickname || '');
+        setGender(user.gender || '');
+        setBirthDate(user.birthDate || '');
+        setPhoneParts({
+          part1: user.phoneNumber?.substring(0, 3) || '010',
+          part2: user.phoneNumber?.substring(3, 7) || '',
+          part3: user.phoneNumber?.substring(7, 11) || '',
+        });
+      }
+    }, [user]); // user 객체를 의존성 배열에 추가
+    };
 
   const handleSave = async () => {
     const payload = { nickname, profileImageUrl };
@@ -255,203 +270,203 @@ const MyInfoPage = () => {
     <div className="space-y-8 max-w-3xl mx-auto">
         <h2 className="text-2xl font-bold text-gray-800">내 정보 수정</h2>
         <SectionContainer title="기본 정보">
-        <FormRow label="프로필 사진">
-        <div className="flex items-center space-x-4">
-            <img
-                src={profileImageUrl || 'https://via.placeholder.com/120'}
-                alt="프로필"
-                className="w-24 h-24 rounded-full object-cover border-4 border-gray-100"
-            />
-             {isEditing && (
-            <div className="relative">
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                    accept="image/*"
-                    className="hidden"
-                />
-                <Button variant="blackWhite" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                    {uploading ? '업로드중...' : '이미지 변경'}
-                </Button>
-            </div>
-             )}
-        </div>
-      </FormRow>
-        <FormRow label="아이디(이메일)">
-          <input type="text" value={user?.email || ''} readOnly disabled className={readOnlyInputStyle} />
-        </FormRow>
-        <FormRow label="닉네임">
-            {isEditing ? (
-                 <input id="nickname" type="text" value={nickname}
-                 onChange={(e) => setNickname(e.target.value)} className={inputStyle} />
-            ) : (
-                <p className="py-2">{nickname}</p>
-            )}
-        </FormRow>
-        <FormRow label="전화번호">
-          <div className="flex items-center gap-2">
-            <input type="tel" maxLength="3" value={phoneParts.part1}
-                   onChange={handlePhonePartChange('part1', 3, phoneInput2)}
-                   readOnly={!isPhoneEditable || !isEditing}
-                   className={`${inputStyle} text-center ${!isPhoneEditable || !isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`} />
-            <span>-</span>
-            <input type="tel" maxLength="4" ref={phoneInput2} value={phoneParts.part2}
-                   onChange={handlePhonePartChange('part2', 4, phoneInput3)}
-                   readOnly={!isPhoneEditable || !isEditing}
-                   className={`${inputStyle} text-center ${!isPhoneEditable || !isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`} />
-            <span>-</span>
-            <input type="tel" maxLength="4" ref={phoneInput3} value={phoneParts.part3}
-                   onChange={handlePhonePartChange('part3', 4, null)}
-                   readOnly={!isPhoneEditable || !isEditing}
-                   className={`${inputStyle} text-center ${!isPhoneEditable || !isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`} />
-            {isEditing && !phoneVerifyToken && (
-              <Button variant="blackWhite" onClick={() => setIsPhoneEditable(true)} disabled={isPhoneEditable} className="flex-shrink-0">
-                변경
-              </Button>
-            )}
-          </div>
-        </FormRow>
-        {isEditing && isPhoneEditable && (
-          <FormRow label="인증번호">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="relative w-full">
-                  <input type="text" placeholder="인증번호 6자리" value={otp}
-                         onChange={(e) => setOtp(e.target.value)} className={inputStyle} maxLength="6" />
-                  {leftSec > 0 && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-blue-500 font-semibold">
-                      {`${Math.floor(leftSec / 60)}:${(leftSec % 60).toString().padStart(2, '0')}`}
-                    </span>
-                  )}
+            <FormRow label="프로필 사진">
+                <div className="flex items-center space-x-4">
+                    <img
+                        src={profileImageUrl || PersonIcon }
+                        alt="프로필"
+                        className="w-24 h-24 rounded-full object-cover border-4 border-gray-100"
+                    />
+                    {isEditing && (
+                    <div className="relative">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleImageChange}
+                            accept="image/*"
+                            className="hidden"
+                        />
+                        <Button variant="blackWhite" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                            {uploading ? '업로드중...' : '이미지 변경'}
+                        </Button>
+                    </div>
+                    )}
                 </div>
-                <Button onClick={handleSendCode} disabled={isSending || leftSec > 0} className="flex-shrink-0">
-                  {isSending ? '전송 중...' : '인증번호 받기'}
+            </FormRow>
+            <FormRow label="아이디(이메일)">
+            <input type="text" value={user?.email || ''} readOnly disabled className={readOnlyInputStyle} />
+            </FormRow>
+            <FormRow label="닉네임">
+                {isEditing ? (
+                    <input id="nickname" type="text" value={nickname}
+                    onChange={(e) => setNickname(e.target.value)} className={inputStyle} />
+                ) : (
+                    <div className="h-11 flex items-center px-3">{nickname}</div>
+                )}
+            </FormRow>
+            <FormRow label="전화번호">
+            <div className="flex items-center gap-2">
+                <input type="tel" maxLength="3" value={phoneParts.part1}
+                    onChange={handlePhonePartChange('part1', 3, phoneInput2)}
+                    readOnly={!isPhoneEditable || !isEditing}
+                    className={`${inputStyle} text-center ${!isPhoneEditable || !isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`} />
+                <span>-</span>
+                <input type="tel" maxLength="4" ref={phoneInput2} value={phoneParts.part2}
+                    onChange={handlePhonePartChange('part2', 4, phoneInput3)}
+                    readOnly={!isPhoneEditable || !isEditing}
+                    className={`${inputStyle} text-center ${!isPhoneEditable || !isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`} />
+                <span>-</span>
+                <input type="tel" maxLength="4" ref={phoneInput3} value={phoneParts.part3}
+                    onChange={handlePhonePartChange('part3', 4, null)}
+                    readOnly={!isPhoneEditable || !isEditing}
+                    className={`${inputStyle} text-center ${!isPhoneEditable || !isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`} />
+                {isEditing && !phoneVerifyToken && (
+                <Button variant="blackWhite" onClick={() => setIsPhoneEditable(true)} disabled={isPhoneEditable} className="flex-shrink-0">
+                    변경
                 </Button>
-              </div>
-              <Button onClick={handleVerifyCode} disabled={isVerifying || !otp} className="w-full">
-                {isVerifying ? '확인 중...' : '인증번호 확인'}
-              </Button>
-              {(infoMsg || phoneError) && (
-                <p className={`text-xs mt-1 ${phoneError ? 'text-red-500' : 'text-green-600'}`}>
-                  {phoneError || infoMsg}
-                </p>
-              )}
+                )}
             </div>
-          </FormRow>
-        )}
-        <FormRow label="성별">
-        {isEditing && isProfileEditable ? (
-            <div className="flex items-center gap-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                        type="radio"
-                        name="gender"
-                        value="M"
-                        checked={gender === 'M'}
-                        onChange={(e) => setGender(e.target.value)}
-                        className="w-5 h-5"
-                    />
-                    남성
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                        type="radio"
-                        name="gender"
-                        value="F"
-                        checked={gender === 'F'}
-                        onChange={(e) => setGender(e.target.value)}
-                        className="w-5 h-5"
-                    />
-                    여성
-                </label>
-            </div>
-        ) : (
-            <p className="py-2">{user?.gender === 'M' ? '남성' : user?.gender === 'F' ? '여성' : '선택 안함'}</p>
-        )}
-        </FormRow>
-        <FormRow label="생년월일">
-        {isEditing && isProfileEditable ? (
-             <div className="relative" ref={datePickerRef}>
-             <input 
-                 type="text" 
-                 value={birthDate} 
-                 readOnly 
-                 onClick={() => setIsDatePickerOpen(prev => !prev)}
-                 className={`${inputStyle} cursor-pointer`}
-                 placeholder="YYYY-MM-DD"
-             />
-             {isDatePickerOpen && (
-                 <div className="absolute top-full mt-2 z-10 bg-white border rounded-lg shadow-lg">
-                     <DayPicker
-                         mode="single"
-                         selected={birthDate ? new Date(birthDate) : undefined}
-                         onSelect={(date) => {
-                             if (date) {
-                                 setBirthDate(ymd(date));
-                             }
-                             setIsDatePickerOpen(false);
-                         }}
-                         captionLayout="dropdown"
-                         fromYear={1950}
-                         toYear={new Date().getFullYear()}
-                     />
-                 </div>
-             )}
-         </div>
-        ) : (
-            <p className="py-2">{user?.birthDate || '입력 안함'}</p>
-        )}
-        </FormRow>
-        <div className="flex justify-end gap-2 pt-4">
-            {!isEditing ? (
-                <Button onClick={() => setIsEditing(true)}>수정하기</Button>
-            ) : (
-                <>
-                    <Button variant="blackWhite" onClick={handleCancel}>취소</Button>
-                    <Button onClick={handleSave}>저장하기</Button>
-                </>
-            )}
-        </div>
-      </SectionContainer>
-      <SectionContainer title="보안">
-        <FormRow label="비밀번호">
-            <Button variant="whiteBlack" onClick={handlePasswordReset}>비밀번호 재설정</Button>
-        </FormRow>
-        <FormRow label="연결된 계정">
-            {user?.provider && user.provider !== 'LOCAL' ? (
+            </FormRow>
+            {isEditing && isPhoneEditable && (
+            <FormRow label="인증번호">
+                <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                    <img src={user.provider === 'GOOGLE' ? GoogleIcon : user.provider === 'NAVER' ? NaverIcon : KakaoIcon} alt={user.provider} className="w-8 h-8"/>
-                    <span className="font-semibold">{user.provider.charAt(0) + user.provider.slice(1).toLowerCase()}</span>
+                    <div className="relative w-full">
+                    <input type="text" placeholder="인증번호 6자리" value={otp}
+                            onChange={(e) => setOtp(e.target.value)} className={inputStyle} maxLength="6" />
+                    {leftSec > 0 && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-blue-500 font-semibold">
+                        {`${Math.floor(leftSec / 60)}:${(leftSec % 60).toString().padStart(2, '0')}`}
+                        </span>
+                    )}
+                    </div>
+                    <Button onClick={handleSendCode} disabled={isSending || leftSec > 0} className="flex-shrink-0">
+                    {isSending ? '전송 중...' : '인증번호 받기'}
+                    </Button>
                 </div>
-            ) : (<span>연결된 소셜 계정이 없습니다.</span>)}
-        </FormRow>
-      </SectionContainer>
-      <SectionContainer title="주소록">
-        <div className="flex justify-between items-center mb-4">
-          <p className="text-sm text-gray-600">기본 배송지</p>
-          <Button variant="whiteBlack" onClick={() => setIsAddrModalOpen(true)}>+ 배송지 관리</Button>
+                <Button onClick={handleVerifyCode} disabled={isVerifying || !otp} className="w-full">
+                    {isVerifying ? '확인 중...' : '인증번호 확인'}
+                </Button>
+                {(infoMsg || phoneError) && (
+                    <p className={`text-xs mt-1 ${phoneError ? 'text-red-500' : 'text-green-600'}`}>
+                    {phoneError || infoMsg}
+                    </p>
+                )}
+                </div>
+            </FormRow>
+            )}
+            <FormRow label="성별">
+            {isEditing && isProfileEditable ? (
+                <div className="flex items-center gap-6 h-11">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="gender"
+                            value="M"
+                            checked={gender === 'M'}
+                            onChange={(e) => setGender(e.target.value)}
+                            className="w-5 h-5"
+                        />
+                        남성
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="gender"
+                            value="F"
+                            checked={gender === 'F'}
+                            onChange={(e) => setGender(e.target.value)}
+                            className="w-5 h-5"
+                        />
+                        여성
+                    </label>
+                </div>
+            ) : (
+                <div className="h-11 flex items-center px-3">{user?.gender === 'M' ? '남성' : user?.gender === 'F' ? '여성' : '선택 안함'}</div>
+            )}
+            </FormRow>
+            <FormRow label="생년월일">
+            {isEditing && isProfileEditable ? (
+                <div className="relative" ref={datePickerRef}>
+                <input 
+                    type="text" 
+                    value={birthDate} 
+                    readOnly 
+                    onClick={() => setIsDatePickerOpen(prev => !prev)}
+                    className={`${inputStyle} cursor-pointer`}
+                    placeholder="YYYY-MM-DD"
+                />
+                {isDatePickerOpen && (
+                    <div className="absolute top-full mt-2 z-10 bg-white border rounded-lg shadow-lg">
+                        <DayPicker
+                            mode="single"
+                            selected={birthDate ? new Date(birthDate) : undefined}
+                            onSelect={(date) => {
+                                if (date) {
+                                    setBirthDate(ymd(date));
+                                }
+                                setIsDatePickerOpen(false);
+                            }}
+                            captionLayout="dropdown"
+                            fromYear={1950}
+                            toYear={new Date().getFullYear()}
+                        />
+                    </div>
+                )}
+            </div>
+            ) : (
+                <div className="h-11 flex items-center px-3">{user?.birthDate || '입력 안함'}</div>
+            )}
+            </FormRow>
+             <div className="flex justify-end gap-2 pt-4 border-t mt-6">
+                {!isEditing ? (
+                    <Button onClick={() => setIsEditing(true)}>수정하기</Button>
+                ) : (
+                    <>
+                        <Button variant="blackWhite" onClick={handleCancel}>취소</Button>
+                        <Button onClick={handleSave}>저장하기</Button>
+                    </>
+                )}
+            </div>
+        </SectionContainer>
+        <SectionContainer title="보안">
+            <FormRow label="비밀번호">
+                <Button variant="blackWhite" onClick={handlePasswordReset}>비밀번호 재설정</Button>
+            </FormRow>
+            <FormRow label="연결된 계정">
+                {user?.provider && user.provider !== 'LOCAL' ? (
+                    <div className="flex items-center gap-2">
+                        <img src={user.provider === 'GOOGLE' ? GoogleIcon : user.provider === 'NAVER' ? NaverIcon : KakaoIcon} alt={user.provider} className="w-8 h-8"/>
+                        <span className="font-semibold">{user.provider.charAt(0) + user.provider.slice(1).toLowerCase()}</span>
+                    </div>
+                ) : (<span>연결된 소셜 계정이 없습니다.</span>)}
+            </FormRow>
+        </SectionContainer>
+        <SectionContainer title="주소록">
+            <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-gray-600">기본 배송지</p>
+            <Button variant="blackWhite" onClick={() => setIsAddrModalOpen(true)}>+ 배송지 관리</Button>
+            </div>
+            {primaryAddress ? (
+            <div>
+                <p className="font-semibold">
+                {primaryAddress.receiver} <span className="text-gray-500 font-normal">({primaryAddress.phone})</span>
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                ({primaryAddress.zipcode}) {primaryAddress.addr1} {primaryAddress.addr2}
+                </p>
+            </div>
+            ) : (
+            <p className="text-gray-500 text-center py-4">등록된 배송지가 없습니다.</p>
+            )}
+        </SectionContainer>
+        <div className="flex justify-start pt-4">
+            <button onClick={() => setIsDeletionModalOpen(true)} className="text-sm text-gray-500 hover:text-red-500 underline border-none">
+            회원 탈퇴
+            </button>
         </div>
-        {primaryAddress ? (
-          <div>
-            <p className="font-semibold">
-              {primaryAddress.receiver} <span className="text-gray-500 font-normal">({primaryAddress.phone})</span>
-            </p>
-            <p className="text-sm text-gray-600 mt-1">
-              ({primaryAddress.zipcode}) {primaryAddress.addr1} {primaryAddress.addr2}
-            </p>
-          </div>
-        ) : (
-          <p className="text-gray-500 text-center py-4">등록된 배송지가 없습니다.</p>
-        )}
-      </SectionContainer>
-      <div className="flex justify-between items-center pt-4">
-        <button onClick={() => setIsDeletionModalOpen(true)} className="text-sm text-gray-500 hover:text-red-500 underline border-none">
-          회원 탈퇴
-        </button>
-      </div>
-      <AddressBookModal open={isAddrModalOpen} onClose={() => { setIsAddrModalOpen(false); reloadAddresses(); }} onSelected={() => {}} />
-      <AccountDeletionModal isOpen={isDeletionModalOpen} onClose={() => setIsDeletionModalOpen(false)} />
+        <AddressBookModal open={isAddrModalOpen} onClose={() => { setIsAddrModalOpen(false); reloadAddresses(); }} onSelected={() => {}} />
+        <AccountDeletionModal isOpen={isDeletionModalOpen} onClose={() => setIsDeletionModalOpen(false)} />
     </div>
   );
 };

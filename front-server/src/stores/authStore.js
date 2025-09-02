@@ -39,6 +39,28 @@ const useAuthStore = create(
 
       setUser: (user) => set({ user }),
 
+      // --- 여기부터 수정 ---
+
+      /**
+       * 사용자의 포인트 정보만 업데이트합니다.
+       * @param {number} points - 새로운 포인트 잔액
+       */
+      setPoints: (points) => {
+        const currentUser = get().user;
+        if (currentUser) {
+          set({
+            user: {
+              ...currentUser,
+              // 백엔드 UserResponse DTO에 'points' 필드가 있다고 가정
+              // 만약 필드명이 다르다면 (예: pointBalance) 그에 맞게 수정해야 합니다.
+              points: points 
+            }
+          });
+        }
+      },
+      
+      // --- 여기까지 수정 ---
+
       ensureMe: async () => {
         if (!get().isLoggedIn) return
         try {

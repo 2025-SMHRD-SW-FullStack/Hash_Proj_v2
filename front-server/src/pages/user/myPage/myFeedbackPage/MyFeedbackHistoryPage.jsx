@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getMyFeedbacks } from '../../../../service/feedbackService';
-import FeedbackCard from './FeedbackCard';
+import MyFeedbackCard from './MyFeedbackCard';
 
 const MyFeedbackHistoryPage = () => {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -37,7 +37,7 @@ const MyFeedbackHistoryPage = () => {
       ) : (
         <div>
           {/* 3. 분리된 컴포넌트 사용 */}
-          {feedbacks.map(fb => <FeedbackCard key={fb.id} feedback={fb} />)}
+          {feedbacks.map(fb => <MyFeedbackCard key={fb.id} feedback={fb} />)}
         </div>
       )}
     </div>

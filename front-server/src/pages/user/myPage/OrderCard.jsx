@@ -66,8 +66,25 @@ const OrderCard = ({ order, onChanged }) => {
   const [existingExchangeIds, setExistingExchangeIds] = useState(new Set());
 
   useEffect(() => {
-    (async () => { try { setDetail(await getMyOrderDetail(order.id)); } catch (e) { console.error(e); }})();
-  }, [order.id]);
+    // detail 정보, 특히 items 배열이 로드된 후에 실행합니다.
+    if (detail?.items && detail.items.length > 0 && ["DELIVERED", "CONFIRMED"].includes(order.status)) {
+      // 주문의 첫 번째 아이템 ID를 기준으로 피드백 작성 여부를 체크합니다.
+      const firstItemId = detail.items[0].id;
+      if (firstItemId) {
+        (async () => {
+          try {
+            const isDone = await checkFeedbackDone(firstItemId);
+            setFeedbackDone(isDone);
+          } catch (e) {
+            console.error(e);
+            setFeedbackDone(false); // 에러 발생 시 기본값 false로 설정
+          }
+        })();
+      }
+    } else {
+      setFeedbackDone(false);
+    }
+  }, [order.status, detail]); // detail을 의존성 배열에 추가합니다.
 
   useEffect(() => {
     if (["IN_TRANSIT", "DELIVERED", "CONFIRMED"].includes(order.status)) {

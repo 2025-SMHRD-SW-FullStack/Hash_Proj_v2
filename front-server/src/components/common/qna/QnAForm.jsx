@@ -5,7 +5,13 @@ import Button from '../Button';
 const QnAForm = ({ onSubmit, onCancel }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [images, setImages] = useState([]); // 첨부 이미지 상태
   const [error, setError] = useState('');
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    setImages(files);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -13,12 +19,22 @@ const QnAForm = ({ onSubmit, onCancel }) => {
       setError('제목과 내용을 모두 입력해주세요.');
       return;
     }
-    // TODO: 실제 API 호출 시 데이터 전달
-    console.log('제출 데이터:', { title, content });
+
+    // 실제 API 전송 시에는 FormData 사용
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('content', content);
+    images.forEach((file, idx) => formData.append(`images[${idx}]`, file));
+
+    console.log('제출 데이터:', { title, content, images });
+
+    // 초기화
     setTitle('');
     setContent('');
+    setImages([]);
     setError('');
-    onSubmit();
+
+    onSubmit(formData);
   };
 
   return (
@@ -30,6 +46,7 @@ const QnAForm = ({ onSubmit, onCancel }) => {
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
 
+      {/* 제목 */}
       <div className="flex flex-col">
         <label htmlFor="qna-title" className="text-sm font-medium mb-1">
           제목
@@ -46,6 +63,7 @@ const QnAForm = ({ onSubmit, onCancel }) => {
         <p className="text-xs text-gray-400 mt-1">최대 100자</p>
       </div>
 
+      {/* 내용 */}
       <div className="flex flex-col">
         <label htmlFor="qna-content" className="text-sm font-medium mb-1">
           내용
@@ -60,6 +78,34 @@ const QnAForm = ({ onSubmit, onCancel }) => {
         <p className="text-xs text-gray-400 mt-1">상세 내용을 입력해주세요.</p>
       </div>
 
+      {/* 사진 첨부 */}
+      <div className="flex flex-col">
+        <label className="text-sm font-medium mb-1">사진 첨부</label>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFileChange}
+          className="text-sm"
+        />
+        {images.length > 0 && (
+          <div className="mt-3 flex gap-2 flex-wrap">
+            {images.map((file, idx) => (
+              <img
+                key={idx}
+                src={URL.createObjectURL(file)}
+                alt="첨부 미리보기"
+                className="w-20 h-20 object-cover rounded-lg border"
+              />
+            ))}
+          </div>
+        )}
+        <p className="text-xs text-gray-400 mt-1">
+          최대 5MB, 여러 장 첨부 가능
+        </p>
+      </div>
+
+      {/* 버튼 */}
       <div className="flex justify-end gap-2 mt-4">
         <Button
           type="button"

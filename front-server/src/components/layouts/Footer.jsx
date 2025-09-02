@@ -43,9 +43,9 @@ const Footer = () => {
             </p>
             <p>
               문의:{" "}
-              <a href="mailto:rhoth123@naver.com" className="hover:underline">
-                rhoth123@naver.com
-              </a>
+              {/* <a href="mailto:문의메일" className="hover:underline">
+                나중에 추가하기
+              </a> */}
             </p>
           </div>
           <p className="text-center md:text-right text-gray-400">

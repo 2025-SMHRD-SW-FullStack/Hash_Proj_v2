@@ -51,3 +51,18 @@ export const getMyFeedbacks = () =>
  */
 export const getFeedbackDetail = (feedbackId) =>
   api.get(`/api/feedbacks/${feedbackId}`).then(r => r.data);
+
+/**
+ * (신규) 특정 상품에 대한 피드백 목록을 페이지네이션으로 가져옵니다.
+ * @param {number | string} productId 상품 ID
+ * @param {object} params - { page, size }
+ * @returns {Promise<object>} 페이지네이션된 피드백 데이터
+ */
+export const getProductFeedbacks = (productId, { page = 0, size = 5 } = {}) =>
+  api.get(`/api/feedbacks/products/${productId}`, { params: { page, size } }).then(r => r.data);
+
+/**
+ * (신규) 관리자가 피드백을 삭제합니다.
+ */
+export const adminDeleteFeedback = (feedbackId) =>
+  api.delete(`/api/admin/feedbacks/${feedbackId}`);

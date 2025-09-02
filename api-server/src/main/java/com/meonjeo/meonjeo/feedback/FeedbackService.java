@@ -8,8 +8,11 @@ import com.meonjeo.meonjeo.feedback.dto.FeedbackResponse;
 import com.meonjeo.meonjeo.feedback.dto.FeedbackUpdateRequest;
 import com.meonjeo.meonjeo.order.*;
 import com.meonjeo.meonjeo.security.AuthSupport;
+import com.meonjeo.meonjeo.user.User;
+import com.meonjeo.meonjeo.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,8 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,9 +37,19 @@ public class FeedbackService {
     private final OrderWindowService windowService;
     // JSON 파싱을 위해 ObjectMapper를 추가합니다.
     private final ObjectMapper objectMapper = new ObjectMapper();
+    // User 정보를 가져오기 위해 UserRepository를 주입받습니다.
+    private final UserRepository userRepo;
 
-    // toResponse 메서드를 아래 코드로 수정(덮어쓰기)해주세요.
+    /**
+     * Feedback 엔티티를 FeedbackResponse DTO로 변환합니다. (단건 처리용)
+     * 이 메서드는 사용자 정보를 포함하여 DTO를 생성합니다.
+     */
     private FeedbackResponse toResponse(Feedback fb) {
+        // User 정보를 찾아서 닉네임과 프로필 이미지를 가져옵니다.
+        User author = userRepo.findById(fb.getUserId()).orElse(null);
+        String nickname = (author != null) ? author.getNickname() : "알 수 없는 사용자";
+        String profileImg = (author != null) ? author.getProfileImageUrl() : null;
+
         OrderItem item = orderItemRepo.findById(fb.getOrderItemId()).orElse(null);
         String productName = (item != null) ? item.getProductNameSnapshot() : "상품 정보 없음";
 
@@ -53,18 +68,69 @@ public class FeedbackService {
         return new FeedbackResponse(
                 fb.getId(),
                 fb.getOrderItemId(),
+                fb.getProductId(),
                 productName,
                 fb.getCreatedAt(),
-                optionName, // 생성자에 optionName을 추가합니다.
+                optionName,
                 fb.getOverallScore(),
                 fb.getContent(),
                 fb.getImagesJson(),
                 fb.getAwardedPoint(),
-                fb.getAwardedAt()
+                fb.getAwardedAt(),
+                fb.getScoresJson(), // ✅ 신버전 추가 필드 반영
+                nickname,           // ✅ 작성자 닉네임 추가
+                profileImg          // ✅ 작성자 프로필 이미지 URL 추가
         );
     }
 
-    // ... (create, update, listMyFeedbacks 등 다른 메서드들은 그대로 유지) ...
+    /**
+     * Feedback 엔티티 목록을 FeedbackResponse DTO 목록으로 변환합니다. (N+1 문제 방지 최적화)
+     * 여러 개의 피드백을 한 번에 처리할 때 사용합니다.
+     */
+    private List<FeedbackResponse> toResponseList(List<Feedback> feedbacks) {
+        if (feedbacks.isEmpty()) {
+            return List.of();
+        }
+
+        // 1. 필요한 ID들을 한 번에 추출합니다.
+        List<Long> userIds = feedbacks.stream().map(Feedback::getUserId).distinct().toList();
+        List<Long> itemIds = feedbacks.stream().map(Feedback::getOrderItemId).distinct().toList();
+
+        // 2. ID 목록으로 User와 OrderItem 정보를 한 번의 쿼리로 가져옵니다.
+        Map<Long, User> userMap = userRepo.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+        Map<Long, OrderItem> itemMap = orderItemRepo.findAllById(itemIds).stream()
+                .collect(Collectors.toMap(OrderItem::getId, i -> i));
+
+        // 3. 가져온 정보들을 조합하여 DTO를 만듭니다.
+        return feedbacks.stream().map(fb -> {
+            User author = userMap.get(fb.getUserId());
+            String nickname = (author != null) ? author.getNickname() : "알 수 없는 사용자";
+            String profileImg = (author != null) ? author.getProfileImageUrl() : null;
+
+            OrderItem item = itemMap.get(fb.getOrderItemId());
+            String productName = (item != null) ? item.getProductNameSnapshot() : "상품 정보 없음";
+
+            String optionName = null;
+            if (item != null && item.getOptionSnapshotJson() != null && !item.getOptionSnapshotJson().isBlank()) {
+                try {
+                    Map<String, String> options = objectMapper.readValue(item.getOptionSnapshotJson(), new TypeReference<>() {});
+                    optionName = String.join(" / ", options.values());
+                } catch (Exception e) {
+                    optionName = "옵션 정보 오류";
+                }
+            }
+
+            return new FeedbackResponse(
+                    fb.getId(), fb.getOrderItemId(), fb.getProductId(), productName,
+                    fb.getCreatedAt(), optionName, fb.getOverallScore(), fb.getContent(),
+                    fb.getImagesJson(), fb.getAwardedPoint(), fb.getAwardedAt(),
+                    fb.getScoresJson(), // ✅ 신버전 추가 필드 반영
+                    nickname,
+                    profileImg
+            );
+        }).collect(Collectors.toList());
+    }
 
     @Transactional
     public FeedbackResponse create(FeedbackCreateRequest req) {
@@ -171,15 +237,17 @@ public class FeedbackService {
     @Transactional(readOnly = true)
     public Page<FeedbackResponse> listMyFeedbacks(Pageable pageable) {
         Long uid = auth.currentUserId();
-        return feedbackRepo.findByUserIdAndRemovedFalseOrderByIdDesc(uid, pageable)
-                .map(this::toResponse);
+        Page<Feedback> feedbackPage = feedbackRepo.findByUserIdAndRemovedFalseOrderByIdDesc(uid, pageable);
+        List<FeedbackResponse> dtoList = toResponseList(feedbackPage.getContent());
+        return new PageImpl<>(dtoList, pageable, feedbackPage.getTotalElements());
     }
 
     // === 목록: 상품 피드백 ===
     @Transactional(readOnly = true)
     public Page<FeedbackResponse> listByProduct(Long productId, Pageable pageable) {
-        return feedbackRepo.pageByProduct(productId, pageable)
-                .map(this::toResponse);
+        Page<Feedback> feedbackPage = feedbackRepo.pageByProduct(productId, pageable);
+        List<FeedbackResponse> dtoList = toResponseList(feedbackPage.getContent());
+        return new PageImpl<>(dtoList, pageable, feedbackPage.getTotalElements());
     }
 
     // === 관리자 삭제: 하드딜리트 ===
@@ -196,20 +264,12 @@ public class FeedbackService {
      */
     @Transactional(readOnly = true)
     public FeedbackResponse findByIdForUser(Long feedbackId) {
-        // 1. 현재 로그인한 사용자의 ID를 가져옵니다.
         Long uid = auth.currentUserId();
-
-        // 2. 피드백 ID로 데이터베이스에서 피드백을 찾습니다. 없으면 404 에러를 발생시킵니다.
         Feedback fb = feedbackRepo.findById(feedbackId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "FEEDBACK_NOT_FOUND"));
-
-        // 3. 피드백 작성자와 현재 로그인한 사용자가 동일한지 확인합니다.
-        //    다르면 권한 없음(403) 에러를 발생시킵니다.
         if (!Objects.equals(fb.getUserId(), uid)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
         }
-
-        // 4. 이전에 수정했던 toResponse 메서드를 사용해 프론트엔드로 보낼 데이터를 만듭니다.
         return toResponse(fb);
     }
 }

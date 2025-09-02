@@ -68,23 +68,21 @@ export const getTracking = async (orderId) => {
 };
 
 /** 피드백 완료 여부(있으면 true) */
-export const checkFeedbackDone = async (orderId) => {
-  const urls = [
-    `/api/me/orders/${orderId}/feedback/done`,
-    `/api/feedbacks/done?orderId=${orderId}`,
-    `/api/feedbacks/by-order/${orderId}/done`,
-  ];
-  for (const url of urls) {
-    try {
-      const { data } = await api.get(url);
-      return Boolean(data?.done ?? data);
-    } catch (e) {
-      const st = e?.response?.status;
-      if (st === 404 || st === 405) continue;
-      throw e;
-    }
+export const checkFeedbackDone = async (orderItemId) => {
+  // orderId가 아닌 orderItemId를 사용하도록 수정합니다.
+  if (!orderItemId) return false;
+  try {
+    // API 경로를 백엔드 컨트롤러에 정의된 '/api/feedbacks/order-item/{id}/done'으로 명확히 지정합니다.
+    const { data } = await api.get(`/api/feedbacks/order-item/${orderItemId}/done`);
+    return Boolean(data?.done ?? data);
+  } catch (e) {
+    const st = e?.response?.status;
+    // 404 에러는 피드백이 없는 경우일 수 있으므로 false를 반환합니다.
+    if (st === 404) return false;
+    // 그 외 에러는 로그만 남기고 false 처리하여 UI가 멈추지 않도록 합니다.
+    console.error(`Feedback check failed for orderItemId ${orderItemId}:`, e);
+    return false;
   }
-  return false;
 };
 
 // (신규) 구매확정/피드백 가능 윈도우 조회

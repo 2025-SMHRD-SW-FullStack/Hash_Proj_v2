@@ -3,7 +3,7 @@ import { requestExchange } from '../../service/exchangeService';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import Icon from '../common/Icon';
-import deleteIcon from '../../assets/icons/ic_delete.svg';
+import CloseIcon from '../../assets/icons/ic_close.svg';
 import TestImg from '../../assets/images/ReSsol_TestImg.png';
 
 const formatOptions = (jsonString) => {
@@ -162,7 +162,7 @@ const ExchangeRequestModal = ({ open, onClose, orderItems, onComplete, existingE
             <div key={i} className="relative w-24 h-24">
               <img src={preview} alt={`preview ${i}`} className="w-full h-full object-cover rounded-lg" />
               <button onClick={() => handleRemoveImage(i)} className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-0.5 shadow">
-                <Icon src={deleteIcon} alt="삭제" className="w-4 h-4" />
+                <Icon src={CloseIcon} alt="삭제" className="w-4 h-4" />
               </button>
             </div>
           ))}

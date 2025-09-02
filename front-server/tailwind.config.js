@@ -6,7 +6,7 @@ export default {
   ],
   theme: {
     extend: {
-       colors: {
+      colors: {
         'primary': '#5882F6',
         'sub': '#D29EEA',
         'error': '#ff8787',
@@ -30,9 +30,12 @@ export default {
       }
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/forms'),
+    require('@tailwindcss/typography'),
+    require('tailwind-scrollbar-hide'),
+  ],
   corePlugins: {
     preflight: false,
   },
 }
-

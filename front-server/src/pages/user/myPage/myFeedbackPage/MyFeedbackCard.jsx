@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TestImg from '../../../../assets/images/ReSsol_TestImg.png';
 
-const FeedbackCard = ({ feedback }) => {
+const MyFeedbackCard = ({ feedback }) => {
   const navigate = useNavigate();
 
   const imageUrls = useMemo(() => {
@@ -17,7 +17,7 @@ const FeedbackCard = ({ feedback }) => {
     <div
       className="w-44 border rounded-lg p-2 shadow-sm cursor-pointer 
                  hover:shadow-md hover:-translate-y-1 transition-all"
-      onClick={() => navigate(`/user/feedback/${feedback.id}`)}
+      onClick={() => navigate(`/user/mypage/feedback/${feedback.id}`)}
     >
       {/* 이미지 */}
       <img
@@ -48,4 +48,4 @@ const FeedbackCard = ({ feedback }) => {
   );
 };
 
-export default FeedbackCard;
+export default MyFeedbackCard;

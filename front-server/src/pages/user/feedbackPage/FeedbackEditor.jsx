@@ -5,7 +5,7 @@ import { getMyPointBalance } from "../../../service/pointService"; // 포인트 
 import Button from "../../../components/common/Button";
 import ChatRoom from "../../../components/chat/ChatRoom";
 import Icon from "../../../components/common/Icon";
-import deleteIcon from "../../../assets/icons/ic_delete.svg";
+import CloseIcon from "../../../assets/icons/ic_close.svg";
 import useFeedbackStore from "../../../stores/feedbackStore";
 import FeedbackSuccessModal from "../../../components/feedback/FeedbackSuccessModal"; // 새로 만든 모달 import
 import useAuthStore from "../../../stores/authStore"; // ✅ authStore import 추가
@@ -259,7 +259,7 @@ const FeedbackEditor = () => {
                       onClick={() => handleRemoveImage(index)}
                       className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-0.5"
                     >
-                      <Icon src={deleteIcon} alt="삭제" className="w-4 h-4" />
+                      <Icon src={CloseIcon} alt="삭제" className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
