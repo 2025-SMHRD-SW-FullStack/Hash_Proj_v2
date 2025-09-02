@@ -9,13 +9,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-primary text-white',
+        primary: 'bg-[#5882F6] text-white',
         signUp:
-          'border-solid border-[1px] border-[#C3C3C3] bg-white text-primary',
-        admin: 'bg-sub text-white',
+          'border-solid border-[1px] border-[#C3C3C3] bg-white text-[#5882F6]',
+        admin: 'bg-[#ADD973] text-white',
         unselected: 'bg-white border-[#C3C3C3] border-solid border-[1px] text-[#C3C3C3]',
-        blackWhite: 'bg-white text-[#222] border-[#CCCCCC] border-solid border-[1px] ',
-        outline: 'bg-white text-primary border border-solid border-gray-300 hover:bg-gray-50',
+        whiteBlack: 'bg-white text-[#222] border-[#CCCCCC] border-solid border-[1px] ',
+        // [추가] 시안과 유사한 회색 테두리 버튼 스타일
+        outline: 'bg-white text-gray-800 border border-solid border-gray-300 hover:bg-gray-50',
       },
       size: {
         sm: 'px-3 py-1.5 text-xs',

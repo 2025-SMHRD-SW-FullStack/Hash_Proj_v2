@@ -14,8 +14,8 @@ import SellerApplyPage from '../pages/user/support/SellerApplyPage'
 import ChatPage from '../pages/user/ChatPage'
 import ChatRoomPage from '../pages/user/ChatRoomPage'
 import OrderCompletePage from '../pages/user/orderPage/OrderCompletePage'
-import FeedbackDetailPage from '../pages/user/myPage/myFeedbackPage/MyFeedbackDetailPage'
 import MyFeedbackHistoryPage from '../pages/user/myPage/myFeedbackPage/MyFeedbackHistoryPage'
+import MyFeedbackDetailPage from '../pages/user/myPage/myFeedbackPage/MyFeedbackDetailPage'
 
 const UserRouter = () => {
   return (
@@ -42,7 +42,7 @@ const UserRouter = () => {
         <Route path="orders" element={<MyOrders />} />
         <Route path="orders/:orderId" element={<MyOrderDetailPage />} />
         <Route path="feedback-history" element={<MyFeedbackHistoryPage />} />
-        <Route path="feedback/:feedbackId" element={<FeedbackDetailPage />} />
+        <Route path="feedback/:feedbackId" element={<MyFeedbackDetailPage />} />
         <Route path="edit" element={<MyInfoPage />} />
         <Route path='cart' element={<MyCartpage/>}/>
         <Route path='point-exchange' element={<PointExchangePage/>}/>
