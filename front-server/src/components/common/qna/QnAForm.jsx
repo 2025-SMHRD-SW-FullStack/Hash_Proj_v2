@@ -63,7 +63,7 @@ const QnAForm = ({ onSubmit, onCancel }) => {
       <div className="flex justify-end gap-2 mt-4">
         <Button
           type="button"
-          variant="whiteBlack"
+          variant="blackWhite"
           onClick={onCancel}
           className="h-10 px-4 text-sm"
         >

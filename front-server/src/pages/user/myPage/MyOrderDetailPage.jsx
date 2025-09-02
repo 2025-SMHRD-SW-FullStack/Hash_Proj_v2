@@ -144,7 +144,7 @@ const MyOrderDetailPage = () => {
           <p className="font-bold"><strong>총 결제금액:</strong> {order.payAmount.toLocaleString()}원</p>
         </div>
         <div className="text-center pt-4">
-          <Button variant="whiteBlack" onClick={() => navigate(-1)}>목록으로 돌아가기</Button>
+          <Button variant="blackWhite" onClick={() => navigate(-1)}>목록으로 돌아가기</Button>
         </div>
       </div>
       <ConfirmPurchaseModal

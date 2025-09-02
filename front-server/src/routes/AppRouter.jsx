@@ -12,8 +12,6 @@ import useAuthStore from '../stores/authStore'
 import MainLayout from '../components/layouts/MainLayout'
 import ProductPage from '../pages/ProductPage'
 import ProductDetailPage from '../pages/ProductDetailPage'
-import PaySuccess from '../pages/PaySuccess'
-import PayFail from '../pages/PayFail'
 import SellerRouter from './SellerRouter'
 import FindAuthPage from '../pages/authPage/FindAuthPage'
 import FAQPage from '../pages/user/support/FAQPage'
@@ -54,10 +52,6 @@ const AppRouter = () => {
         {/* TODO: 유저 구분 */}
         {isLoggedIn && <Route path="/user/*" element={<UserRouter />} />}
 
-
-        {/* 주문결제 관련 */}
-        <Route path="/pay/success" element={<PaySuccess />} />
-        <Route path="/pay/fail" element={<PayFail />} />
 
       </Route>
         {/* 공통 페이지 - 모든 사용자가 접근 가능 */}

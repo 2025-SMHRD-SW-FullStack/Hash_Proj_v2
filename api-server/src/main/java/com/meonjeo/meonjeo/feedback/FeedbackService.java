@@ -1,5 +1,8 @@
 package com.meonjeo.meonjeo.feedback;
 
+// 필요한 import 구문들을 추가합니다.
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meonjeo.meonjeo.feedback.dto.FeedbackCreateRequest;
 import com.meonjeo.meonjeo.feedback.dto.FeedbackResponse;
 import com.meonjeo.meonjeo.feedback.dto.FeedbackUpdateRequest;
@@ -14,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -26,11 +30,32 @@ public class FeedbackService {
     private final PointLedgerPort pointLedger;
     private final AuthSupport auth;
     private final OrderWindowService windowService;
+    // JSON 파싱을 위해 ObjectMapper를 추가합니다.
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
+    // toResponse 메서드를 아래 코드로 수정(덮어쓰기)해주세요.
     private FeedbackResponse toResponse(Feedback fb) {
+        OrderItem item = orderItemRepo.findById(fb.getOrderItemId()).orElse(null);
+        String productName = (item != null) ? item.getProductNameSnapshot() : "상품 정보 없음";
+
+        // 옵션 정보를 JSON에서 읽어와 문자열로 만드는 로직
+        String optionName = null;
+        if (item != null && item.getOptionSnapshotJson() != null && !item.getOptionSnapshotJson().isBlank()) {
+            try {
+                Map<String, String> options = objectMapper.readValue(item.getOptionSnapshotJson(), new TypeReference<>() {});
+                // 옵션이 여러 개일 경우 " / "로 이어붙입니다.
+                optionName = String.join(" / ", options.values());
+            } catch (Exception e) {
+                optionName = "옵션 정보 오류"; // 파싱 실패 시
+            }
+        }
+
         return new FeedbackResponse(
                 fb.getId(),
                 fb.getOrderItemId(),
+                productName,
+                fb.getCreatedAt(),
+                optionName, // 생성자에 optionName을 추가합니다.
                 fb.getOverallScore(),
                 fb.getContent(),
                 fb.getImagesJson(),
@@ -38,6 +63,8 @@ public class FeedbackService {
                 fb.getAwardedAt()
         );
     }
+
+    // ... (create, update, listMyFeedbacks 등 다른 메서드들은 그대로 유지) ...
 
     @Transactional
     public FeedbackResponse create(FeedbackCreateRequest req) {
@@ -79,6 +106,7 @@ public class FeedbackService {
         Feedback fb = feedbackRepo.save(Feedback.builder()
                 .orderItemId(orderItemId)
                 .userId(uid)
+                .productId(item.getProductId()) // productId도 함께 저장
                 .type(req.type())
                 .overallScore(req.overallScore())
                 .scoresJson(req.scoresJson())
@@ -161,5 +189,27 @@ public class FeedbackService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "FEEDBACK_NOT_FOUND");
         }
         feedbackRepo.deleteById(feedbackId);
+    }
+
+    /**
+     * 내 피드백 상세 조회 (본인 확인 포함)
+     */
+    @Transactional(readOnly = true)
+    public FeedbackResponse findByIdForUser(Long feedbackId) {
+        // 1. 현재 로그인한 사용자의 ID를 가져옵니다.
+        Long uid = auth.currentUserId();
+
+        // 2. 피드백 ID로 데이터베이스에서 피드백을 찾습니다. 없으면 404 에러를 발생시킵니다.
+        Feedback fb = feedbackRepo.findById(feedbackId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "FEEDBACK_NOT_FOUND"));
+
+        // 3. 피드백 작성자와 현재 로그인한 사용자가 동일한지 확인합니다.
+        //    다르면 권한 없음(403) 에러를 발생시킵니다.
+        if (!Objects.equals(fb.getUserId(), uid)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
+        }
+
+        // 4. 이전에 수정했던 toResponse 메서드를 사용해 프론트엔드로 보낼 데이터를 만듭니다.
+        return toResponse(fb);
     }
 }

@@ -8,7 +8,7 @@ import Button from '/src/components/common/Button'
  * onChange: (key) => void
  * size: 'sm' | 'md' | 'lg'  → Button 사이즈와 동일
  * variant:        선택된 칩에 적용할 Button variant (예: 'primary' | 'admin' | 'blueLine' ...)
- * idleVariant:    비선택 칩에 적용할 Button variant (예: 'signUp' | 'whiteBlack' | 'unselected' ...)
+ * idleVariant:    비선택 칩에 적용할 Button variant (예: 'signUp' | 'blackWhite' | 'unselected' ...)
  */
 export default function StatusChips({
   items = [],

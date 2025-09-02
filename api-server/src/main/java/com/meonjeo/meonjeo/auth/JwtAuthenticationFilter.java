@@ -57,7 +57,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 "/webjars/**",
                 "/actuator/health",
                 "/oauth2/**",
-                "/login/oauth2/**"
+                "/login/oauth2/**",
+                "/api/uploads/**"
         );
         for (String p : excludedPaths) {
             if (pathMatcher.match(p, path)) return true;

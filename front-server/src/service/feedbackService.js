@@ -38,14 +38,14 @@ export const submitFeedback = (payload) =>
   api.post(`/api/feedbacks`, payload).then(r => r.data);
 
 /**
- * (신규) 현재 로그인된 사용자가 작성한 모든 피드백 목록을 가져옵니다.
+ * 현재 로그인된 사용자가 작성한 모든 피드백 목록을 가져옵니다.
  * @returns {Promise<Array>} 피드백 목록
  */
 export const getMyFeedbacks = () => 
-  api.get('/api/me/feedbacks').then(r => r.data);
+  api.get('/api/feedbacks/me').then(r => r.data); // '/api/me/feedbacks' -> '/api/feedbacks/me'로 수정
 
 /**
- * (신규) 특정 피드백의 상세 정보를 ID로 조회합니다.
+ * 특정 피드백의 상세 정보를 ID로 조회합니다.
  * @param {number | string} feedbackId 피드백 ID
  * @returns {Promise<object>} 피드백 상세 정보
  */

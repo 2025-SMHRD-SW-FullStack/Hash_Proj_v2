@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../config/axiosInstance";
+import api from "../../../config/axiosInstance";
 
-export default function PaySuccess() {
+const PaySuccess = ()=> {
   const navi = useNavigate();
   const [phase, setPhase] = useState("processing"); // 'processing' | 'success' | 'error'
   const [msg, setMsg] = useState("처리중…");
@@ -106,3 +106,5 @@ export default function PaySuccess() {
     </div>
   );
 }
+
+export default PaySuccess

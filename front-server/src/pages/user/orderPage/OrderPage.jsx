@@ -2,21 +2,21 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { loadTossPayments } from '@tosspayments/payment-sdk';
 
-import { getProductDetail } from '../../service/productService';
-import { getAddresses } from '../../service/addressService';
-import { checkout } from '../../service/orderService';
-import { confirmTossPayment } from '../../service/paymentService';
-import { getMyPointBalance } from '../../service/pointService';
-import { getCart, checkoutCart } from '../../service/cartService';
+import { getProductDetail } from '../../../service/productService';
+import { getAddresses } from '../../../service/addressService';
+import { checkout } from '../../../service/orderService';
+import { confirmTossPayment } from '../../../service/paymentService';
+import { getMyPointBalance } from '../../../service/pointService';
+import { getCart, checkoutCart } from '../../../service/cartService';
 
-import AddressBookModal from '../../components/address/AddressBookModal';
-import RequestMemoField from '../../components/order/RequestMemoField';
-import Button from '../../components/common/Button';
-import api from '../../config/axiosInstance';
+import AddressBookModal from '../../../components/address/AddressBookModal';
+import RequestMemoField from '../../../components/order/RequestMemoField';
+import Button from '../../../components/common/Button';
+import api from '../../../config/axiosInstance';
 
 const SHIPPING_FEE = 3000;
 
-export default function OrderPage() {
+const OrderPage = () => {
   const [sp] = useSearchParams();
 
   const mode = (sp.get('mode') || sp.get('source') || '').toLowerCase();
@@ -165,12 +165,13 @@ export default function OrderPage() {
     const clientKey = (import.meta.env.VITE_TOSS_CLIENT_KEY || '').trim();
     if (!clientKey) throw new Error('VITE_TOSS_CLIENT_KEY가 비어 있습니다.');
     const toss = await loadTossPayments(clientKey);
+
     await toss.requestPayment('카드', {
       orderId,
       orderName: orderName || '주문 결제',
       amount: Number(amount),
-      successUrl: `${window.location.origin}/pay/success`,
-      failUrl: `${window.location.origin}/pay/fail`,
+      successUrl: `${window.location.origin}/user/pay/complete?status=success`,
+      failUrl: `${window.location.origin}/user/pay/complete?status=fail`,
       customerName,
       customerMobilePhone: (customerMobilePhone || '').replace(/[^0-9]/g, ''),
     });
@@ -474,3 +475,5 @@ export default function OrderPage() {
     </div>
   );
 }
+
+export default OrderPage

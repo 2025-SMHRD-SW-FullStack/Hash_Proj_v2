@@ -162,7 +162,7 @@ const MainPage = () => {
                 </div>
                 <Button
                   className="w-full h-10 text-base mb-2"
-                  variant="whiteBlack"
+                  variant="blackWhite"
                   onClick={() => navigate("/user/mypage/point-exchange")}
                 >
                   포인트 교환하기

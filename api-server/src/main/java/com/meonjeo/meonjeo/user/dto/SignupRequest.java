@@ -10,7 +10,6 @@ import lombok.Setter;
 public class SignupRequest {
 
     @Schema(description = "프로필 이미지 URL", example = "https://.../me.png", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotBlank @Size(max = 500)
     private String profileImageUrl;
 
     @Schema(description = "아이디(이메일)", example = "me@example.com", requiredMode = Schema.RequiredMode.REQUIRED)

@@ -34,10 +34,10 @@ const MyPageLayout = () => {
   // 🔽 NavLink 스타일 정의
   const baseLinkStyle =
     "block w-full p-4 text-left text-base text-gray-600 rounded-lg hover:bg-gray-100 transition-colors no-underline";
-  const selectedLinkStyle = "bg-gray-700 text-white font-bold";
+  const selectedLinkStyle = "bg-[#9FC5FB] text-white font-semibold";
 
   return (
-    <div className="flex p-8 gap-8">
+    <div className="flex p-8 gap-8 ">
       {/* 왼쪽 사이드바 */}
       <aside className="w-1/5 flex-shrink-0">
         <div className="flex flex-col items-center p-4 border rounded-lg shadow">
@@ -64,7 +64,7 @@ const MyPageLayout = () => {
 
           <Button
             className="w-full h-14 text-base"
-            variant="whiteBlack"
+            variant="blackWhite"
             onClick={() => navigate("/user/mypage/point-exchange")}
           >
             포인트 교환하기

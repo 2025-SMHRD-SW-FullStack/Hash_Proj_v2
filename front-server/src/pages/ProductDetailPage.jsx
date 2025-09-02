@@ -210,7 +210,7 @@ const ProductDetailPage = () => {
                   <p className="text-gray-800 leading-relaxed mb-3">{fb.content}</p>
                   {index === 1 && feedbacks.length > 2 && (
                     <div className="text-center mt-4">
-                      <Button variant="whiteBlack">... 더보기</Button>
+                      <Button variant="blackWhite">... 더보기</Button>
                     </div>
                   )}
                 </div>
@@ -323,7 +323,7 @@ const ProductDetailPage = () => {
             <Button variant="signUp" onClick={() => navigate('/login', { state: { redirectTo: location.pathname } })}>
               로그인
             </Button>
-            <Button onClick={() => navigate('/signup')}>회원가입</Button>
+            <Button onClick={() => navigate('/email_signup')}>회원가입</Button>
           </>
         }
       >

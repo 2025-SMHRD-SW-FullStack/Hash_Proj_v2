@@ -6,6 +6,7 @@ const TextField = ({
   id,
   value = '',
   onChange = () => {},
+  inputRef,
   ...rest
 }) => {
   return (
@@ -15,7 +16,7 @@ const TextField = ({
         type={type}
         value={value}
         onChange={onChange}
-        // placeholder를 공백으로 주어야 CSS의 :placeholder-shown 선택자가 동작합니다.
+        ref={inputRef}
         placeholder=" "
         className="peer h-full w-full rounded-lg border border-gray-300 bg-transparent px-4 text-base text-gray-800 placeholder-transparent transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         {...rest}
