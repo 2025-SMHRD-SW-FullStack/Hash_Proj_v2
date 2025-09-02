@@ -88,14 +88,26 @@ export const updateUserInfo = async (payload) => {
   return res.data; // 수정된 UserResponse 반환
 };
 
-// /** 비밀번호 재설정 */
-// export const resetPassword = async ({ email, newPassword }) => {
-//   const res = await axiosInstance.post('/api/auth/reset-password', {
-//     email: String(email || '').trim(),
-//     newPassword,
-//   });
-//   return res.data;
-// };
+/** 아이디(이메일) 찾기 */
+export const findId = async ({ phoneNumber, phoneVerifyToken }) => {
+  const res = await axiosInstance.post('/api/auth/recovery/id', {
+    phoneNumber,
+    phoneVerifyToken,
+  });
+  return res.data; // { emails: [...], count: ... }
+};
+
+/** 비밀번호 재설정 */
+export const resetPassword = async ({ loginId, phoneNumber, phoneVerifyToken, newPassword, newPasswordConfirm }) => {
+  const res = await axiosInstance.post('/api/auth/recovery/password', {
+    loginId,
+    phoneNumber,
+    phoneVerifyToken,
+    newPassword,
+    newPasswordConfirm,
+  });
+  return res.data; // 성공 시 void
+};
 
 
 /** 로그아웃 */
@@ -126,3 +138,10 @@ export const phoneVerify = ({ phoneNumber, code }) =>
       phoneNumber: onlyDigits(phoneNumber),
     })
     .then((r) => r.data)
+
+/** 회원 탈퇴 */
+export const deleteAccount = async (payload) => {
+  // payload: { password } 또는 { confirmText: '탈퇴합니다' }
+  const { data } = await axiosInstance.post('/api/users/me/delete', payload);
+  return data;
+};

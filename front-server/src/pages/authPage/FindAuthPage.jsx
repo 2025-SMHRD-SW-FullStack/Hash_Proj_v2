@@ -1,312 +1,224 @@
-// // src/pages/authPage/FindAuthPage.jsx
-// import React, { useState, useEffect, useRef } from "react";
-// import { useSearchParams, useNavigate } from "react-router-dom";
-// import { phoneSend, phoneVerify, resetPassword } from "../../service/authService";
-// import Button from "../../components/common/Button";
+import React, { useState, useEffect, useRef } from "react";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import { phoneSend, phoneVerify, findId, resetPassword } from "../../service/authService";
+import useAuthStore from "../../stores/authStore";
+import Button from "../../components/common/Button";
 
-// // ✅ 공통: OTP 입력 UI
-// const OtpInput = ({ length = 6, value, setValue }) => {
-//   const inputs = useRef([]);
+// 타이머 포맷 유틸
+const formatTime = (seconds) => {
+  const m = Math.floor(seconds / 60);
+  const s = String(seconds % 60).padStart(2, "0");
+  return `${m}:${s}`;
+};
 
-//   const handleChange = (e, idx) => {
-//     const val = e.target.value.replace(/[^0-9]/g, "");
-//     if (!val) return;
-//     const newValue = value.split("");
-//     newValue[idx] = val[val.length - 1]; // 마지막 숫자만 반영
-//     setValue(newValue.join(""));
+const FindAuthPage = () => {
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isLoggedIn } = useAuthStore(); // 로그인 상태 확인
+  const { defaultTab, email: emailFromState, phone: phoneFromState } = location.state || {};
+  
+  const [activeTab, setActiveTab] = useState(defaultTab || searchParams.get("tab") || "findId");
+  
+  // --- 상태 관리 ---
+  const [step, setStep] = useState(1);
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [phoneVerifyToken, setPhoneVerifyToken] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const timerRef = useRef(null);
+  const [foundEmails, setFoundEmails] = useState([]); // 찾은 이메일을 저장할 상태
+  const [email, setEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-//     if (idx < length - 1 && inputs.current[idx + 1]) {
-//       inputs.current[idx + 1].focus();
-//     }
-//   };
+  // 비정상 접근 차단 로직
+  useEffect(() => {
+    if (isLoggedIn && !location.state) {
+      alert('비정상적인 접근입니다.');
+      navigate('/', { replace: true });
+    } else {
+        setPhone(phoneFromState || "");
+        setEmail(emailFromState || "");
+    }
+  }, [isLoggedIn, location.state, navigate, phoneFromState, emailFromState]);
 
-//   const handleKeyDown = (e, idx) => {
-//     if (e.key === "Backspace" && !value[idx] && idx > 0) {
-//       inputs.current[idx - 1].focus();
-//     }
-//   };
+  // 타이머
+  useEffect(() => {
+    if (timeLeft > 0) {
+      timerRef.current = setInterval(() => setTimeLeft(t => Math.max(0, t - 1)), 1000);
+    } else {
+      clearInterval(timerRef.current);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [timeLeft]);
+  
+  // 탭 변경 시 상태 초기화
+  useEffect(() => {
+    setStep(1);
+    setOtp("");
+    setPhoneVerifyToken(null);
+    setTimeLeft(0);
+    setLoading(false);
+    setError("");
+    setFoundEmails([]);
+    setNewPassword("");
+    setConfirmPassword("");
+    setPhone(phoneFromState || "");
+    setEmail(emailFromState || "");
+  }, [activeTab, phoneFromState, emailFromState]);
 
-//   return (
-//     <div className="flex gap-2 justify-center">
-//       {Array(length)
-//         .fill(0)
-//         .map((_, i) => (
-//           <input
-//             key={i}
-//             ref={(el) => (inputs.current[i] = el)}
-//             maxLength={1}
-//             value={value[i] || ""}
-//             onChange={(e) => handleChange(e, i)}
-//             onKeyDown={(e) => handleKeyDown(e, i)}
-//             className="w-10 h-12 text-center border rounded-lg"
-//           />
-//         ))}
-//     </div>
-//   );
-// };
+  const handleSendCode = async () => {
+    if (activeTab === 'findPw' && !email.trim()) {
+      return setError("아이디(이메일)를 입력해주세요.");
+    }
+    if (phone.length < 10) {
+      return setError("휴대폰 번호를 정확히 입력해주세요.");
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await phoneSend(phone);
+      setStep(2);
+      setTimeLeft(180);
+    } catch (e) {
+      setError(e?.response?.data?.message || "인증번호 발송에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-// // ✅ 아이디 찾기 폼
-// const FindIdForm = () => {
-//   const [step, setStep] = useState(1);
-//   const [phone, setPhone] = useState("");
-//   const [otp, setOtp] = useState("");
-//   const [timeLeft, setTimeLeft] = useState(0);
-//   const [foundEmail, setFoundEmail] = useState(null);
-//   const [error, setError] = useState("");
+  const handleVerify = async () => {
+    if (otp.length < 4) return setError("인증번호를 정확히 입력해주세요.");
+    setLoading(true);
+    setError("");
+    try {
+      const res = await phoneVerify({ phoneNumber: phone, code: otp });
+      if (res.phoneVerifyToken) {
+        setPhoneVerifyToken(res.phoneVerifyToken);
+        if (activeTab === 'findId') {
+          // 아이디 찾기 API 호출
+          const findResult = await findId({ phoneNumber: phone, phoneVerifyToken: res.phoneVerifyToken });
+          setFoundEmails(findResult.emails || []); // 결과 저장
+          setStep(3); // 결과 표시 단계로 이동
+        } else {
+          setStep(3); // 비밀번호 재설정 단계로 이동
+        }
+      } else {
+        throw new Error("인증 토큰이 없습니다.");
+      }
+    } catch (e) {
+      setError(e?.response?.data?.message || "인증번호가 올바르지 않거나 만료되었습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-//   // 타이머
-//   useEffect(() => {
-//     if (timeLeft <= 0) return;
-//     const timer = setInterval(() => setTimeLeft((t) => t - 1), 1000);
-//     return () => clearInterval(timer);
-//   }, [timeLeft]);
+  const handleResetPassword = async () => {
+    if (newPassword.length < 8) return setError("비밀번호는 8자 이상이어야 합니다.");
+    if (newPassword !== confirmPassword) return setError("새 비밀번호가 일치하지 않습니다.");
+    setLoading(true);
+    setError("");
+    try {
+      await resetPassword({
+        loginId: email,
+        phoneNumber: phone,
+        phoneVerifyToken,
+        newPassword,
+        newPasswordConfirm: confirmPassword,
+      });
+      alert("비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.");
+      navigate("/login");
+    } catch (e) {
+      setError(e?.response?.data?.message || "비밀번호 재설정에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-//   const handleSendCode = async () => {
-//     if (phone.length < 10) return setError("휴대폰 번호를 정확히 입력해주세요.");
-//     try {
-//       await phoneSend(phone);
-//       setStep(2);
-//       setTimeLeft(180); // 3분 카운트다운
-//       setError("");
-//     } catch {
-//       setError("인증번호 발송에 실패했습니다.");
-//     }
-//   };
+  // --- 아이디 찾기 탭 렌더링 ---
+  const renderFindId = () => (
+    <div className="space-y-6">
+      {step === 1 && (
+        <>
+          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="전화번호 ('-' 제외)" className="w-full h-12 border rounded-lg px-4" />
+          <Button onClick={handleSendCode} className="w-full" disabled={loading}>{loading ? "전송 중..." : "인증번호 받기"}</Button>
+        </>
+      )}
+      {step === 2 && (
+        <>
+          <input type="text" value={otp} onChange={e => setOtp(e.target.value)} placeholder="인증번호 6자리" className="w-full h-12 border rounded-lg px-4 text-center tracking-[.5em]" maxLength="6"/>
+          <p className="text-sm text-gray-500 text-center">남은 시간 {formatTime(timeLeft)}</p>
+          <Button onClick={handleVerify} className="w-full" disabled={loading}>{loading ? "확인 중..." : "인증 확인"}</Button>
+        </>
+      )}
+      {/* --- 아이디 찾기 결과 표시 (step 3) --- */}
+      {step === 3 && (
+        <div className="p-6 rounded-lg bg-gray-50 text-center">
+          <h3 className="text-lg font-semibold mb-2">아이디 찾기 결과</h3>
+          {foundEmails.length > 0 ? (
+              <>
+              <p className="text-gray-700">회원님의 아이디입니다.</p>
+              {foundEmails.map(e => <p key={e} className="text-lg font-bold text-[#5075D9] mt-2">{e}</p>)}
+              </>
+          ) : <p>가입된 아이디가 없습니다.</p>}
+          <Button onClick={() => navigate('/login')} className="w-full mt-4">로그인하기</Button>
+        </div>
+      )}
+    </div>
+  );
+  
+  // --- 비밀번호 재설정 탭 렌더링 ---
+  const renderFindPw = () => (
+    <div className="space-y-6">
+        {step === 1 && (
+        <>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="아이디(이메일)" className="w-full h-12 border rounded-lg px-4"/>
+            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="전화번호 ('-' 제외)" className="w-full h-12 border rounded-lg px-4"/>
+            <Button onClick={handleSendCode} className="w-full" disabled={loading}>{loading ? "전송 중..." : "인증번호 받기"}</Button>
+        </>
+        )}
+        {step === 2 && (
+        <>
+            <input type="text" value={otp} onChange={e => setOtp(e.target.value)} placeholder="인증번호 6자리" className="w-full h-12 border rounded-lg px-4 text-center tracking-[.5em]" maxLength="6"/>
+            <p className="text-sm text-gray-500 text-center">남은 시간 {formatTime(timeLeft)}</p>
+            <Button onClick={handleVerify} className="w-full" disabled={loading}>{loading ? "확인 중..." : "인증 확인"}</Button>
+        </>
+        )}
+        {step === 3 && (
+        <>
+            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="새 비밀번호" className="w-full h-12 border rounded-lg px-4"/>
+            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="새 비밀번호 확인" className="w-full h-12 border rounded-lg px-4"/>
+            <Button onClick={handleResetPassword} className="w-full" disabled={loading}>{loading ? "변경 중..." : "비밀번호 재설정"}</Button>
+        </>
+        )}
+    </div>
+  );
 
-//   const handleVerify = async () => {
-//     try {
-//       const result = await phoneVerify({ phone, otp });
-//       if (result.success) {
-//         // 실제 서비스에서는 마스킹 처리 권장 (예: te***@gmail.com)
-//         setFoundEmail(result.email || "test@example.com");
-//         setStep(3);
-//       } else {
-//         setError("인증번호가 올바르지 않습니다.");
-//       }
-//     } catch {
-//       setError("인증번호 확인 중 오류가 발생했습니다.");
-//     }
-//   };
+  return (
+    <div className="max-w-md mx-auto my-10 p-8 border rounded-lg shadow-lg bg-white">
+      <div className="flex border-b mb-6">
+        <button
+          onClick={() => setActiveTab("findId")}
+          className={`flex-1 py-3 text-center font-semibold transition-colors ${activeTab === "findId" ? "border-b-2 border-gray-800 text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
+        >
+          아이디 찾기
+        </button>
+        <button
+          onClick={() => setActiveTab("findPw")}
+          className={`flex-1 py-3 text-center font-semibold transition-colors ${activeTab === "findPw" ? "border-b-2 border-gray-800 text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
+        >
+          비밀번호 재설정
+        </button>
+      </div>
+      
+      {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
+      
+      {activeTab === "findId" ? renderFindId() : renderFindPw()}
+    </div>
+  );
+};
 
-//   const maskEmail = (email) => {
-//     const [id, domain] = email.split("@");
-//     return id.slice(0, 3) + "***@" + domain;
-//   };
-
-//   return (
-//     <div className="space-y-6">
-//       {/* Step 표시 */}
-//       <div className="flex items-center justify-center gap-2 text-sm">
-//         <span className={step >= 1 ? "text-gray-800 font-semibold" : "text-gray-400"}>① 본인확인</span>
-//         <span>›</span>
-//         <span className={step >= 2 ? "text-gray-800 font-semibold" : "text-gray-400"}>② 인증번호 입력</span>
-//         <span>›</span>
-//         <span className={step >= 3 ? "text-gray-800 font-semibold" : "text-gray-400"}>③ 결과 확인</span>
-//       </div>
-
-//       {step === 1 && (
-//         <>
-//           <input
-//             type="tel"
-//             value={phone}
-//             onChange={(e) => setPhone(e.target.value)}
-//             placeholder="전화번호 ('-' 제외)"
-//             className="w-full h-12 border rounded-lg px-4"
-//           />
-//           {error && <p className="text-red-500 text-sm">{error}</p>}
-//           <Button onClick={handleSendCode} className="w-full bg-gray-800 text-white">
-//             인증번호 받기
-//           </Button>
-//         </>
-//       )}
-
-//       {step === 2 && (
-//         <>
-//           <OtpInput value={otp} setValue={setOtp} />
-//           <p className="text-sm text-gray-500 text-center">
-//             남은 시간 {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
-//           </p>
-//           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-//           <Button onClick={handleVerify} className="w-full bg-gray-800 text-white">
-//             인증 확인
-//           </Button>
-//         </>
-//       )}
-
-//       {step === 3 && foundEmail && (
-//         <div className="p-6 rounded-lg bg-gray-100 text-center">
-//           <h3 className="text-lg font-semibold mb-2">아이디 찾기 결과</h3>
-//           <p className="text-gray-700">회원님의 아이디는</p>
-//           <p className="text-lg font-bold text-gray-900 mt-2">{maskEmail(foundEmail)}</p>
-//           <p className="mt-2">입니다.</p>
-//           <Button onClick={() => window.location.reload()} className="w-full mt-4">
-//             다시 찾기
-//           </Button>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// // ✅ 비밀번호 찾기 폼
-// const FindPasswordForm = () => {
-//   const navigate = useNavigate();
-//   const [step, setStep] = useState(1);
-//   const [email, setEmail] = useState("");
-//   const [phone, setPhone] = useState("");
-//   const [otp, setOtp] = useState("");
-//   const [newPassword, setNewPassword] = useState("");
-//   const [confirmPassword, setConfirmPassword] = useState("");
-//   const [error, setError] = useState("");
-//   const [timeLeft, setTimeLeft] = useState(0);
-
-//   useEffect(() => {
-//     if (timeLeft <= 0) return;
-//     const timer = setInterval(() => setTimeLeft((t) => t - 1), 1000);
-//     return () => clearInterval(timer);
-//   }, [timeLeft]);
-
-//   const handleSendCode = async () => {
-//     try {
-//       await phoneSend(phone);
-//       setStep(2);
-//       setTimeLeft(180);
-//       setError("");
-//     } catch {
-//       setError("인증번호 발송에 실패했습니다.");
-//     }
-//   };
-
-//   const handleVerify = async () => {
-//     try {
-//       const result = await phoneVerify({ phone, otp });
-//       if (result.success) {
-//         setStep(3);
-//         setError("");
-//       } else {
-//         setError("인증번호가 올바르지 않습니다.");
-//       }
-//     } catch {
-//       setError("인증번호 확인 중 오류가 발생했습니다.");
-//     }
-//   };
-
-//   const handleResetPassword = async () => {
-//     if (newPassword !== confirmPassword) {
-//       return setError("새 비밀번호가 일치하지 않습니다.");
-//     }
-//     try {
-//       await resetPassword({ email, newPassword });
-//       alert("비밀번호가 성공적으로 변경되었습니다.");
-//       navigate("/login");
-//     } catch {
-//       setError("비밀번호 재설정에 실패했습니다.");
-//     }
-//   };
-
-//   return (
-//     <div className="space-y-6">
-//       {/* Step 표시 */}
-//       <div className="flex items-center justify-center gap-2 text-sm">
-//         <span className={step >= 1 ? "text-gray-800 font-semibold" : "text-gray-400"}>① 본인확인</span>
-//         <span>›</span>
-//         <span className={step >= 2 ? "text-gray-800 font-semibold" : "text-gray-400"}>② 인증번호 입력</span>
-//         <span>›</span>
-//         <span className={step >= 3 ? "text-gray-800 font-semibold" : "text-gray-400"}>③ 새 비밀번호 설정</span>
-//       </div>
-
-//       {step === 1 && (
-//         <>
-//           <input
-//             type="email"
-//             value={email}
-//             onChange={(e) => setEmail(e.target.value)}
-//             placeholder="아이디(이메일)"
-//             className="w-full h-12 border rounded-lg px-4"
-//           />
-//           <input
-//             type="tel"
-//             value={phone}
-//             onChange={(e) => setPhone(e.target.value)}
-//             placeholder="전화번호 ('-' 제외)"
-//             className="w-full h-12 border rounded-lg px-4"
-//           />
-//           {error && <p className="text-red-500 text-sm">{error}</p>}
-//           <Button onClick={handleSendCode} className="w-full bg-gray-800 text-white">
-//             인증번호 받기
-//           </Button>
-//         </>
-//       )}
-
-//       {step === 2 && (
-//         <>
-//           <OtpInput value={otp} setValue={setOtp} />
-//           <p className="text-sm text-gray-500 text-center">
-//             남은 시간 {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
-//           </p>
-//           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-//           <Button onClick={handleVerify} className="w-full bg-gray-800 text-white">
-//             인증 확인
-//           </Button>
-//         </>
-//       )}
-
-//       {step === 3 && (
-//         <>
-//           <input
-//             type="password"
-//             value={newPassword}
-//             onChange={(e) => setNewPassword(e.target.value)}
-//             placeholder="새 비밀번호"
-//             className="w-full h-12 border rounded-lg px-4"
-//           />
-//           <input
-//             type="password"
-//             value={confirmPassword}
-//             onChange={(e) => setConfirmPassword(e.target.value)}
-//             placeholder="새 비밀번호 확인"
-//             className="w-full h-12 border rounded-lg px-4"
-//           />
-//           {error && <p className="text-red-500 text-sm">{error}</p>}
-//           <Button onClick={handleResetPassword} className="w-full bg-gray-800 text-white">
-//             비밀번호 재설정
-//           </Button>
-//         </>
-//       )}
-//     </div>
-//   );
-// };
-
-// // ✅ 최상위 페이지
-// const FindAuthPage = () => {
-//   const [searchParams] = useSearchParams();
-//   const initialTab = searchParams.get("tab") || "findId";
-//   const [activeTab, setActiveTab] = useState(initialTab);
-
-//   return (
-//     <div className="max-w-md mx-auto my-10 p-8 border rounded-lg shadow-lg">
-//       <div className="flex border-b mb-6">
-//         <button
-//           onClick={() => setActiveTab("findId")}
-//           className={`flex-1 py-3 text-center font-semibold ${
-//             activeTab === "findId" ? "border-b-2 border-gray-800 text-gray-800" : "text-gray-400"
-//           }`}
-//         >
-//           아이디 찾기
-//         </button>
-//         <button
-//           onClick={() => setActiveTab("findPw")}
-//           className={`flex-1 py-3 text-center font-semibold ${
-//             activeTab === "findPw" ? "border-b-2 border-gray-800 text-gray-800" : "text-gray-400"
-//           }`}
-//         >
-//           비밀번호 찾기
-//         </button>
-//       </div>
-
-//       {activeTab === "findId" ? <FindIdForm /> : <FindPasswordForm />}
-//     </div>
-//   );
-// };
-
-// export default FindAuthPage;
+export default FindAuthPage;

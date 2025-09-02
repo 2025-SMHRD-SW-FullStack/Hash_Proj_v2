@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../../../components/common/Button';
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
 import { checkFeedbackDone, getMyOrderDetail, confirmPurchase } from '../../../service/orderService';
-import ConfirmPurchaseModal from '../../../components/myPage/modals/ConfirmPurchaseModal';
+import ConfirmPurchaseModal from '../../../components/modals/ConfirmPurchaseModal';
 
 // 상태 한글 매핑
 const statusLabel = (s) => ({

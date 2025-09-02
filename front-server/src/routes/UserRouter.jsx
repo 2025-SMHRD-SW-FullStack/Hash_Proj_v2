@@ -45,11 +45,9 @@ const UserRouter = () => {
         <Route path="edit" element={<MyInfoPage />} />
         <Route path='cart' element={<MyCartpage/>}/>
         <Route path='point-exchange' element={<PointExchangePage/>}/>
-
-        {/* 고객센터 하위 메뉴 */}
-        <Route path="support/faq" element={<FAQPage />} />
         <Route path="support/qna" element={<QnAPage />} />
         <Route path="seller-apply" element={<SellerApplyPage />} />
+
         </Route>
 
     </Routes>

@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { requestExchange } from '../../../service/exchangeService';
-import Button from '../../common/Button';
-import Modal from '../../common/Modal';
-import Icon from '../../common/Icon';
-import deleteIcon from '../../../assets/icons/ic_delete.svg';
-import TestImg from '../../../assets/images/ReSsol_TestImg.png';
+import { requestExchange } from '../../service/exchangeService';
+import Button from '../common/Button';
+import Modal from '../common/Modal';
+import Icon from '../common/Icon';
+import deleteIcon from '../../assets/icons/ic_delete.svg';
+import TestImg from '../../assets/images/ReSsol_TestImg.png';
 
 const formatOptions = (jsonString) => {
   if (!jsonString) return '옵션 정보 없음';

@@ -8,12 +8,12 @@ import {
   checkFeedbackDone,
   getConfirmWindow
 } from "../../../service/orderService";
-import ConfirmPurchaseModal from "../../../components/myPage/modals/ConfirmPurchaseModal";
-import TrackingModal from "../../../components/myPage/modals/TrackingModal";
+import ConfirmPurchaseModal from "../../../components/modals/ConfirmPurchaseModal";
+import TrackingModal from "../../../components/modals/TrackingModal";
+import ExchangeRequestModal from "../../../components/modals/ExchangeRequestModal";
 import InfoModal from "../../../components/common/InfoModal";
 import Button from "../../../components/common/Button";
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
-import ExchangeRequestModal from "../../../components/myPage/modals/ExchangeRequestModal";
 import { getMyExchanges } from "../../../service/exchangeService";
 
 const statusLabel = (s) => ({

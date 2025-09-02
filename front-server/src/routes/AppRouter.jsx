@@ -15,7 +15,9 @@ import ProductDetailPage from '../pages/ProductDetailPage'
 import PaySuccess from '../pages/PaySuccess'
 import PayFail from '../pages/PayFail'
 import SellerRouter from './SellerRouter'
-// import FindAuthPage from '../pages/authPage/FindAuthPage'
+import FindAuthPage from '../pages/authPage/FindAuthPage'
+import FAQPage from '../pages/user/support/FAQPage'
+import QnAPage from '../pages/user/support/QnAPage'
 
 
 const AppRouter = () => {
@@ -39,7 +41,11 @@ const AppRouter = () => {
         <Route path="/oauth-success" element={<OAuthSuccess />} />
 
         {/* 👇 아이디/비밀번호 찾기 페이지 라우트 추가 */}
-        {/* <Route path="/find-auth" element={<FindAuthPage />} /> */}
+        <Route path="/find-auth" element={<FindAuthPage />} />
+
+        {/* 고객센터 하위 메뉴 */}
+        <Route path="support/faq" element={<FAQPage />} />
+        <Route path="support/qna" element={<QnAPage />} />
 
         {/* 비회원 전용 페이지들 */}
         {!isLoggedIn && <Route path="/public/*" element={<PublicRouter />} />}

@@ -6,8 +6,12 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        'primary': ''
+       colors: {
+        'primary': '#5882F6',
+        'sub': '#D29EEA',
+        'error': '#ff8787',
+        'success': '#10b981',
+        'warning': '#f59e0b',
       },
       keyframes: {
         fadeInUp: {

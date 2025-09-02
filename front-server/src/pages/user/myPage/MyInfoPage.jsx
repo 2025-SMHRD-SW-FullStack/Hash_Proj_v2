@@ -5,38 +5,36 @@ import { updateUserInfo, phoneSend, phoneVerify, uploadProfileImage } from '../.
 import Button from '../../../components/common/Button';
 import AddressBookModal from '../../../components/address/AddressBookModal';
 import { getAddresses } from '../../../service/addressService';
-import Modal from '../../../components/common/Modal'; // Modal 컴포넌트 추가
 
 // 소셜 아이콘 import
 import GoogleIcon from '../../../assets/images/google.png';
 import NaverIcon from '../../../assets/images/naver.png';
 import KakaoIcon from '../../../assets/images/kakao.png';
+import AccountDeletionModal from '../../../components/modals/AccountDeletionModal';
 
-// =================================================================================
-// ✨ UI/UX 개선을 위한 스타일 컴포넌트 및 상수 ✨
-// =================================================================================
-
-const SectionContainer = ({ title, children }) => (
+/** 각 정보 섹션을 감싸는 컨테이너 스타일 */
+export const SectionContainer = ({ title, children }) => (
   <div className="border rounded-lg p-6 shadow-sm bg-white">
     <h3 className="text-lg font-semibold mb-6 pb-4 border-b">{title}</h3>
     <div className="space-y-6">{children}</div>
   </div>
 );
 
-const FormRow = ({ label, children }) => (
+/** '레이블 + 입력필드' 한 줄에 대한 스타일 */
+export const FormRow = ({ label, children }) => (
   <div className="grid grid-cols-1 md:grid-cols-4 items-center">
     <label className="text-sm font-semibold text-gray-700 mb-2 md:mb-0">{label}</label>
     <div className="md:col-span-3">{children}</div>
   </div>
 );
 
-const inputStyle =
+/** 기본 입력 필드 스타일 */
+export const inputStyle =
   'w-full h-11 rounded-lg border border-gray-300 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition';
-const readOnlyInputStyle = `${inputStyle} bg-gray-100 cursor-not-allowed`;
 
-// =================================================================================
-// ✨ MyInfoPage 컴포넌트 ✨
-// =================================================================================
+/** 읽기 전용 입력 필드 스타일 */
+export const readOnlyInputStyle = `${inputStyle} bg-gray-100 cursor-not-allowed`;
+
 
 const MyInfoPage = () => {
   const { user, login } = useAuthStore();
@@ -66,12 +64,12 @@ const MyInfoPage = () => {
   const phoneInput2 = useRef(null);
   const phoneInput3 = useRef(null);
   const fileInputRef = useRef(null);
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
 
   // --- 데이터 로딩 및 생명주기 ---
   useEffect(() => {
     if (leftSec > 0) {
-      timerRef.current = setInterval(() => setLeftSec(s => s - 1), 1000);
+      timerRef.current = setInterval(() => setLeftSec(s => s > 0 ? s - 1 : 0), 1000);
     } else {
       clearInterval(timerRef.current);
     }
@@ -146,19 +144,9 @@ const MyInfoPage = () => {
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     try {
-        // 실제로는 서버에 업로드하고 URL을 받아와야 합니다.
-        // 현재는 임시로 브라우저 메모리에만 저장하여 미리보기를 구현합니다.
-        const previewUrl = URL.createObjectURL(file);
-        setProfileImageUrl(previewUrl);
-
-        // TODO: 서버에 이미지 업로드 API를 호출하고, 반환된 URL로 profileImageUrl을 최종 설정해야 합니다.
-        // const newImageUrl = await uploadProfileImage(file);
-        // setProfileImageUrl(newImageUrl);
-
-        alert("프로필 사진이 변경되었습니다. '수정하기' 버튼을 눌러 저장해주세요.");
-
+        const newImageUrl = await uploadProfileImage(file);
+        setProfileImageUrl(newImageUrl);
     } catch (error) {
         alert("이미지 업로드에 실패했습니다.");
         console.error(error);
@@ -166,16 +154,11 @@ const MyInfoPage = () => {
   };
 
   const handleSave = async () => {
-    const payload = {
-      nickname,
-      profileImageUrl,
-    };
-
+    const payload = { nickname, profileImageUrl };
     if (phoneVerifyToken) {
       payload.phoneNumber = fullPhoneNumber;
       payload.phoneVerifyToken = phoneVerifyToken;
     }
-
     try {
       const updatedUser = await updateUserInfo(payload);
       const currentAccessToken = useAuthStore.getState().accessToken;
@@ -187,11 +170,19 @@ const MyInfoPage = () => {
     }
   };
 
-  // --- 렌더링 ---
+  const handlePasswordReset = () => {
+    navigate('/find-auth', { 
+      state: { 
+        defaultTab: 'findPw',
+        email: user?.email,
+        phone: user?.phoneNumber
+      }
+    });
+  };
+
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       <h2 className="text-2xl font-bold text-gray-800">내 정보 수정</h2>
-
       <div className="flex flex-col items-center space-y-4 p-6 border rounded-lg shadow-sm bg-white">
         <div className="relative">
           <img src={profileImageUrl || 'https://via.placeholder.com/120'} alt="프로필" className="w-32 h-32 rounded-full object-cover border-4 border-gray-100" />
@@ -203,7 +194,6 @@ const MyInfoPage = () => {
           </button>
         </div>
       </div>
-
       <SectionContainer title="기본 정보">
         <FormRow label="아이디(이메일)"><input type="text" value={user?.email || ''} readOnly disabled className={readOnlyInputStyle} /></FormRow>
         <FormRow label="닉네임"><input id="nickname" type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className={inputStyle} /></FormRow>
@@ -233,14 +223,13 @@ const MyInfoPage = () => {
           </FormRow>
         )}
         <FormRow label="성별">
-            <input type="text" value={user?.gender === 'M' ? '남성' : user?.gender === 'F' ? '여성' : '알 수 없음'} readOnly className={`${inputStyle} bg-gray-100 cursor-not-allowed`} />
+            <input type="text" value={user?.gender === 'M' ? '남성' : user?.gender === 'F' ? '여성' : '알 수 없음'} readOnly className={readOnlyInputStyle} />
         </FormRow>
-        <FormRow label="생년월일"><input type="text" value={user?.birthDate} readOnly className={`${inputStyle} bg-gray-100 cursor-not-allowed`} /></FormRow>
+        <FormRow label="생년월일"><input type="text" value={user?.birthDate} readOnly className={readOnlyInputStyle} /></FormRow>
       </SectionContainer>
-      
       <SectionContainer title="보안">
         <FormRow label="비밀번호">
-            <Button variant="whiteBlack" onClick={() => setIsPasswordModalOpen(true)}>비밀번호 변경</Button>
+            <Button variant="whiteBlack" onClick={handlePasswordReset}>비밀번호 재설정</Button>
         </FormRow>
         <FormRow label="연결된 계정">
             {user?.provider && user.provider !== 'LOCAL' ? (
@@ -248,12 +237,9 @@ const MyInfoPage = () => {
                     <img src={user.provider === 'GOOGLE' ? GoogleIcon : user.provider === 'NAVER' ? NaverIcon : KakaoIcon} alt={user.provider} className="w-8 h-8"/>
                     <span className="font-semibold">{user.provider.charAt(0) + user.provider.slice(1).toLowerCase()}</span>
                 </div>
-            ) : (
-                <span>연결된 소셜 계정이 없습니다.</span>
-            )}
+            ) : (<span>연결된 소셜 계정이 없습니다.</span>)}
         </FormRow>
       </SectionContainer>
-
       <SectionContainer title="주소록">
         <div className="flex justify-between items-center mb-4">
           <p className="text-sm text-gray-600">기본 배송지</p>
@@ -266,72 +252,19 @@ const MyInfoPage = () => {
           </div>
         ) : (<p className="text-gray-500 text-center py-4">등록된 배송지가 없습니다.</p>)}
       </SectionContainer>
-
       <div className="flex justify-between items-center pt-4">
-        <Button variant="text" className="text-gray-500 hover:text-red-500">회원 탈퇴</Button>
+        <button onClick={() => setIsDeletionModalOpen(true)} className="text-sm text-gray-500 hover:text-red-500 underline">
+          회원 탈퇴
+        </button>
         <div className="flex justify-end space-x-2">
           <Button variant="unselected" onClick={() => navigate(-1)}>취소</Button>
           <Button onClick={handleSave}>수정하기</Button>
         </div>
       </div>
-
       <AddressBookModal open={isAddrModalOpen} onClose={() => { setIsAddrModalOpen(false); reloadAddresses(); }} onSelected={() => {}} />
-
-      <PasswordChangeModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} userEmail={user?.email}/>
+      <AccountDeletionModal isOpen={isDeletionModalOpen} onClose={() => setIsDeletionModalOpen(false)} />
     </div>
   );
 };
-
-const PasswordChangeModal = ({ isOpen, onClose, userEmail }) => {
-    const [oldPassword, setOldPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (newPassword !== confirmPassword) {
-            setError('새 비밀번호가 일치하지 않습니다.');
-            return;
-        }
-        if (newPassword.length < 8) {
-            setError('비밀번호는 8자 이상이어야 합니다.');
-            return;
-        }
-        setLoading(true);
-        setError('');
-        try {
-            // This is a placeholder for the actual API call
-            // Since the backend doesn't have a dedicated endpoint for this,
-            // we'll simulate a successful response.
-            // In a real application, you would call an API like:
-            // await changePassword({ oldPassword, newPassword });
-            console.log("Password change submitted for", userEmail);
-            alert("비밀번호가 성공적으로 변경되었습니다. (시뮬레이션)");
-            onClose();
-        } catch (err) {
-            setError(err.message || '비밀번호 변경에 실패했습니다.');
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} title="비밀번호 변경">
-            <form onSubmit={handleSubmit} className="space-y-4">
-                {error && <p className="text-red-500 text-sm">{error}</p>}
-                <input type="password" placeholder="현재 비밀번호" value={oldPassword} onChange={e => setOldPassword(e.target.value)} className={inputStyle} required />
-                <input type="password" placeholder="새 비밀번호" value={newPassword} onChange={e => setNewPassword(e.target.value)} className={inputStyle} required />
-                <input type="password" placeholder="새 비밀번호 확인" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={inputStyle} required />
-                <div className="flex justify-end gap-2 pt-2">
-                    <Button type="button" variant="unselected" onClick={onClose}>취소</Button>
-                    <Button type="submit" disabled={loading}>{loading ? '변경 중...' : '변경하기'}</Button>
-                </div>
-            </form>
-        </Modal>
-    );
-};
-
 
 export default MyInfoPage;

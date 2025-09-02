@@ -1,85 +1,86 @@
-import React from 'react'
-import logoImg from '../../assets/images/logo.png'
-import { Link, useNavigate } from 'react-router-dom'
-import styles from './LoginForm.module.css'
-import SocialLoginButtons from './SocialLoginButtons'
-import TextField from '../common/TextField'
-import { useLoginForm } from '../../hooks/useLoginForm'
-import { loginRequest } from '../../service/authService'
-import useGoHome from '../../hooks/useGoHome'
-import Button from '../common/Button'
-import useAuthStore from '../../stores/authStore'
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import SocialLoginButtons from './SocialLoginButtons';
+import TextField from '../common/TextField';
+import { useLoginForm } from '../../hooks/useLoginForm';
+import { loginRequest } from '../../service/authService';
+import useAuthStore from '../../stores/authStore';
+import Button from '../common/Button';
+import Logo from '../../assets/images/Meonjeo_Logo.png'; // ✅ 로고 이미지 변경
 
 const LoginForm = () => {
-  const navigate = useNavigate()
-  const goHome = useGoHome()
+  const navigate = useNavigate();
+  const { email, setEmail, password, setPassword, isValid } = useLoginForm();
+  const { login } = useAuthStore();
 
-  const { email, setEmail, password, setPassword, isValid } = useLoginForm()
-  const login = useAuthStore((state) => state.login)
-
-  /** [ 로그인 처리 함수 ] */
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+    if (!isValid) return;
 
     try {
-      // loginRequest는 백엔드의 LoginResponse 객체를 반환합니다.
-      const loginData = await loginRequest({ email, password })
-
-      // 스토어의 login 액션에 응답 데이터 전체를 전달합니다.
-      login(loginData)
-
-      alert('로그인에 성공했습니다.')
-      navigate('/')
+      const loginData = await loginRequest({ email, password });
+      login(loginData);
+      alert('로그인에 성공했습니다.');
+      navigate('/');
     } catch (error) {
-      if (error.response && error.response.status === 401) {
-        alert('비밀번호가 일치하지 않습니다.')
-      } else if (error.response && error.response.status === 404) {
-        alert('해당 이메일로 등록된 계정이 없습니다.')
-      } else {
-        alert('로그인에 실패했습니다. 다시 시도해주세요.')
-      }
-
-      console.log('로그인 실패: ', error)
+      alert('아이디 또는 비밀번호가 일치하지 않습니다.');
+      console.error('로그인 실패: ', error);
     }
-  }
+  };
 
   return (
-    <div className={styles.wrapper}>
-      <img
-        className={styles.logo}
-        src={logoImg}
-        alt="로고이미지"
-        onClick={goHome}
-      />
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <TextField
-          id="email"
-          label="이메일"
-          type="email"
-          required
-          singleFirst
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <TextField
-          id="password"
-          label="비밀번호"
-          type="password"
-          required
-          singleLast
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <Button type="submit" disabled={!isValid}>
-          로그인
-        </Button>
-        <Button variant="signUp" onClick={() => navigate('/email_signup')}>
-          이메일로 회원가입
-        </Button>
-      </form>
-      <SocialLoginButtons title={'간편 로그인'} />
-    </div>
-  )
-}
+    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
+      <div className="mx-auto w-full max-w-sm">
 
-export default LoginForm
+        {/* 로그인 타이틀 */}
+        <h2 className="mt-8 text-center text-2xl font-bold tracking-tight text-gray-900">
+          로그인
+        </h2>
+
+        {/* 로그인 폼 */}
+        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+          <TextField
+            id="email"
+            label="아이디(이메일)"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <TextField
+            id="password"
+            label="비밀번호"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <div className="pt-4">
+            <Button type="submit" size="lg" disabled={!isValid} className="w-full">
+              로그인하기
+            </Button>
+          </div>
+        </form>
+
+        {/* 아이디/비밀번호 찾기 */}
+        <div className="mt-6 text-center text-sm">
+          <Link to="/find-auth" className="font-medium text-gray-600 hover:text-primary">
+            아이디/비밀번호 찾기
+          </Link>
+        </div>
+
+        {/* SNS 계정으로 로그인 */}
+        <SocialLoginButtons title="SNS 계정으로 로그인" />
+
+        {/* 회원가입 버튼 */}
+        <div className="mt-6">
+          <Button variant="outline" size="lg" onClick={() => navigate('/email_signup')} className="w-full">
+            회원가입
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginForm;
