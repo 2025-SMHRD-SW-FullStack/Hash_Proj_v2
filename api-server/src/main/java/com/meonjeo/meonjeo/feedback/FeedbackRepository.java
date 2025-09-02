@@ -1,7 +1,8 @@
 package com.meonjeo.meonjeo.feedback;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
@@ -9,10 +10,44 @@ import java.util.List;
 import java.util.Optional;
 
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
+
     Optional<Feedback> findByOrderItemIdAndUserId(Long orderItemId, Long userId);
     boolean existsByOrderItemIdAndUserId(Long orderItemId, Long userId);
 
-    // 셀러 통계용: productId + 기간으로 피드백 조회 (삭제된 건 제외)
+    // ✅ 상품 기준 1회 제한 (스키마 변경 없이 조인으로 검사)
+    @Query("""
+        select (count(f) > 0) from Feedback f
+          join OrderItem oi on oi.id = f.orderItemId
+        where f.userId = :userId
+          and oi.productId = :productId
+          and (f.removed = false or f.removed is null)
+    """)
+    boolean existsForUserAndProduct(@Param("userId") Long userId,
+                                    @Param("productId") Long productId);
+
+    // ✅ 내 피드백 목록
+    Page<Feedback> findByUserIdAndRemovedFalseOrderByIdDesc(Long userId, Pageable pageable);
+
+    // ✅ 상품 피드백 목록 (조인 + 페이지네이션)
+    @Query(
+            value = """
+        select f from Feedback f
+          join OrderItem oi on oi.id = f.orderItemId
+        where oi.productId = :productId
+          and (f.removed = false or f.removed is null)
+        order by f.id desc
+      """,
+            countQuery = """
+        select count(f) from Feedback f
+          join OrderItem oi on oi.id = f.orderItemId
+        where oi.productId = :productId
+          and (f.removed = false or f.removed is null)
+      """
+    )
+    Page<Feedback> pageByProduct(@Param("productId") Long productId, Pageable pageable);
+
+    // ===== (네가 주신 기존 메서드들 유지) =====
+
     @Query("""
         select f from Feedback f, OrderItem oi
         where oi.id = f.orderItemId
@@ -27,7 +62,6 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
             @Param("to") LocalDateTime toExclusive
     );
 
-    // ✅ 주문 단위: 이 주문에서 피드백이 작성된 '주문아이템 id' 목록만 뽑기(삭제 제외)
     @Query("""
         select distinct f.orderItemId
         from Feedback f, OrderItem oi
@@ -37,7 +71,6 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     """)
     List<Long> findItemIdsWithFeedbackByOrderId(@Param("orderId") Long orderId);
 
-    // (선택) 주문 단위: 피드백 존재 여부만 빠르게 확인하고 싶을 때
     @Query("""
         select (count(f) > 0)
         from Feedback f, OrderItem oi

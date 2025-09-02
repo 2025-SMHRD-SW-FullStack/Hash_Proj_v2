@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import api from "../config/axiosInstance";
+import api from "../../../config/axiosInstance";
 
 export default function PayFail() {
   const [sp] = useSearchParams();

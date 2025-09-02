@@ -138,10 +138,6 @@ const MainPage = () => {
         </div>
 
 
-        {/* 푸터 */}
-        <footer className="mt-20 bg-gray-900 text-white py-6 text-center text-sm rounded-lg">
-          ⓒ 2025 Hash 프로젝트. All rights reserved.
-        </footer>
       </section>
 
       {/* 사이드 영역 */}
@@ -166,7 +162,7 @@ const MainPage = () => {
                 </div>
                 <Button
                   className="w-full h-10 text-base mb-2"
-                  variant="whiteBlack"
+                  variant="blackWhite"
                   onClick={() => navigate("/user/mypage/point-exchange")}
                 >
                   포인트 교환하기

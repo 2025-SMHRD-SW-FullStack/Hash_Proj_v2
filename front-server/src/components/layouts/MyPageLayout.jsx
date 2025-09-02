@@ -1,11 +1,10 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import useAuthStore from '../../stores/authStore';
-import { useState, useEffect } from 'react';
-import Button from '../common/Button';
-import { getMyPointBalance } from '../../service/pointService';
-import PersonIcon from '../../assets/icons/ic_person.svg'
-import Icon from '../common/Icon';
-import arrowDown from '../../assets/icons/ic_arrow_down.svg';
+// src/components/layouts/MyPageLayout.jsx
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import useAuthStore from "../../stores/authStore";
+import { useState, useEffect } from "react";
+import Button from "../common/Button";
+import { getMyPointBalance } from "../../service/pointService";
+import PersonIcon from "../../assets/icons/ic_person.svg";
 
 const MyPageLayout = () => {
   const { user } = useAuthStore();
@@ -13,7 +12,6 @@ const MyPageLayout = () => {
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isSupportMenuOpen, setIsSupportMenuOpen] = useState(false);
 
   // 🔽 포인트 조회 로직
   useEffect(() => {
@@ -24,7 +22,7 @@ const MyPageLayout = () => {
         const balance = await getMyPointBalance(user.accessToken);
         setPoints(balance);
       } catch (err) {
-        setError('포인트 조회 실패');
+        setError("포인트 조회 실패");
         console.error(err);
       } finally {
         setLoading(false);
@@ -33,15 +31,13 @@ const MyPageLayout = () => {
     fetchPoints();
   }, [user]);
 
-  // 🔽 NavLink 스타일 정의 (변수명 개선)
+  // 🔽 NavLink 스타일 정의
   const baseLinkStyle =
-  'block w-full p-4 text-left text-base text-gray-600 rounded-lg hover:bg-gray-100 transition-colors';
-  const selectedLinkStyle = 'bg-[#A2BAFA] text-white font-bold';
-  const subLinkStyle =
-    'block w-full py-2 px-8 text-left text-sm text-gray-500 rounded-lg hover:bg-gray-100 transition-colors';
+    "block w-full p-4 text-left text-base text-gray-600 rounded-lg hover:bg-gray-100 transition-colors no-underline";
+  const selectedLinkStyle = "bg-[#9FC5FB] text-white font-semibold";
 
   return (
-    <div className="flex p-8 gap-8">
+    <div className="flex p-8 gap-8 ">
       {/* 왼쪽 사이드바 */}
       <aside className="w-1/5 flex-shrink-0">
         <div className="flex flex-col items-center p-4 border rounded-lg shadow">
@@ -50,9 +46,7 @@ const MyPageLayout = () => {
             alt="프로필 사진"
             className="w-24 h-24 rounded-full object-cover mb-4"
           />
-          <strong className="text-xl font-bold mb-4">
-            {user?.nickname}님
-          </strong>
+          <strong className="text-xl font-bold mb-4">{user?.nickname}님</strong>
 
           <div className="flex items-center justify-center w-full p-3 rounded-lg text-center">
             <h4 className="text-sm text-gray-600">내 포인트 &ensp;</h4>
@@ -61,7 +55,7 @@ const MyPageLayout = () => {
             ) : error ? (
               <p className="text-red-500">{error}</p>
             ) : (
-              <div className="text-2xl font-bold ">
+              <div className="text-2xl font-bold">
                 {points.toLocaleString()}
                 <span className="text-[#35A6CF]">P</span>
               </div>
@@ -70,12 +64,11 @@ const MyPageLayout = () => {
 
           <Button
             className="w-full h-14 text-base"
-            variant="whiteBlack"
+            variant="blackWhite"
             onClick={() => navigate("/user/mypage/point-exchange")}
           >
             포인트 교환하기
           </Button>
-
         </div>
 
         {/* --- 내비게이션 메뉴 --- */}
@@ -86,9 +79,7 @@ const MyPageLayout = () => {
                 to="/user/mypage/orders"
                 end
                 className={({ isActive }) =>
-                  `${baseLinkStyle} ${
-                    isActive ? selectedLinkStyle : ''
-                  } no-underline`
+                  `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
                 }
               >
                 주문/배송 내역
@@ -96,12 +87,10 @@ const MyPageLayout = () => {
             </li>
             <li>
               <NavLink
-                to="/user/mypage/feedback-history" 
+                to="/user/mypage/feedback-history"
                 end
                 className={({ isActive }) =>
-                  `${baseLinkStyle} ${
-                    isActive ? selectedLinkStyle : ''
-                  } no-underline`
+                  `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
                 }
               >
                 작성한 피드백
@@ -112,9 +101,7 @@ const MyPageLayout = () => {
                 to="/user/mypage/edit"
                 end
                 className={({ isActive }) =>
-                  `${baseLinkStyle} ${
-                    isActive ? selectedLinkStyle : ''
-                  } no-underline`
+                  `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
                 }
               >
                 내 정보 수정
@@ -125,73 +112,33 @@ const MyPageLayout = () => {
                 to="/user/mypage/cart"
                 end
                 className={({ isActive }) =>
-                  `${baseLinkStyle} ${
-                    isActive ? selectedLinkStyle : ''
-                  } no-underline`
+                  `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
                 }
               >
                 장바구니
               </NavLink>
             </li>
             <li>
-              <button
-                onClick={() => setIsSupportMenuOpen(!isSupportMenuOpen)}
-                className={`
-                  ${baseLinkStyle} no-underline bg-white border-none 
-                  ${isSupportMenuOpen ? selectedLinkStyle : ''}
-                `}
+              <NavLink
+                to="/user/mypage/support/qna"
+                end
+                className={({ isActive }) =>
+                  `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
+                }
               >
-                고객센터
-              </button>
-
-              {/* ▼ 서브메뉴 */}
-              <div
-                className={`
-                overflow-hidden transition-all duration-300 ease-in-out
-                ${isSupportMenuOpen ? 'max-h-40 opacity-100 mt-1' : 'max-h-0 opacity-0'}
-              `}
+                문의내역
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/user/mypage/seller-apply"
+                end
+                className={({ isActive }) =>
+                  `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
+                }
               >
-                <div className="pl-4 pt-1">
-                  <ul className="space-y-1 list-none p-0">
-                    <li>
-                      <NavLink
-                        to="/user/mypage/support/faq"
-                        className={({ isActive }) =>
-                          `${subLinkStyle} ${
-                            isActive ? selectedLinkStyle : ''
-                          } no-underline`
-                        }
-                      >
-                        FAQ
-                      </NavLink>
-                    </li>
-                    <li>
-                      <NavLink
-                        to="/user/mypage/support/qna"
-                        className={({ isActive }) =>
-                          `${subLinkStyle} ${
-                            isActive ? selectedLinkStyle : ''
-                          } no-underline`
-                        }
-                      >
-                        Q&A
-                      </NavLink>
-                    </li>
-                    <li>
-                      <NavLink
-                        to="/user/mypage/seller-apply"
-                        className={({ isActive }) =>
-                          `${subLinkStyle} ${
-                            isActive ? selectedLinkStyle : ''
-                          } no-underline`
-                        }
-                      >
-                        셀러 신청하기
-                      </NavLink>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+                셀러 등록하기
+              </NavLink>
             </li>
           </ul>
         </nav>

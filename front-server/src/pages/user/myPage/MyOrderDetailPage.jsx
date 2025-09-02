@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../../../components/common/Button';
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
 import { checkFeedbackDone, getMyOrderDetail, confirmPurchase } from '../../../service/orderService';
-import ConfirmPurchaseModal from '../../../components/myPage/modals/ConfirmPurchaseModal';
+import ConfirmPurchaseModal from '../../../components/modals/ConfirmPurchaseModal';
 
 // 상태 한글 매핑
 const statusLabel = (s) => ({
@@ -144,7 +144,7 @@ const MyOrderDetailPage = () => {
           <p className="font-bold"><strong>총 결제금액:</strong> {order.payAmount.toLocaleString()}원</p>
         </div>
         <div className="text-center pt-4">
-          <Button variant="whiteBlack" onClick={() => navigate(-1)}>목록으로 돌아가기</Button>
+          <Button variant="blackWhite" onClick={() => navigate(-1)}>목록으로 돌아가기</Button>
         </div>
       </div>
       <ConfirmPurchaseModal

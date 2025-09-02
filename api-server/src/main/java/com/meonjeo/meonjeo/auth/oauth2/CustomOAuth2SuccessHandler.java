@@ -30,7 +30,7 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
     @Value("${spring.security.oauth2.success.web-url:http://localhost:5173/oauth-success}")
     private String webSuccessUrl;
-    @Value("${spring.security.oauth2.success.app-url:ressol://oauth-success}")
+    @Value("${spring.security.oauth2.success.app-url:meonjeo://oauth-success}")
     private String appSuccessUrl;
 
     @Override

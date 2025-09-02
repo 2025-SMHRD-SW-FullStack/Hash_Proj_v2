@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { requestExchange } from '../../../service/exchangeService';
-import Button from '../../common/Button';
-import Modal from '../../common/Modal';
-import Icon from '../../common/Icon';
-import deleteIcon from '../../../assets/icons/ic_delete.svg';
-import TestImg from '../../../assets/images/ReSsol_TestImg.png';
+import { requestExchange } from '../../service/exchangeService';
+import Button from '../common/Button';
+import Modal from '../common/Modal';
+import Icon from '../common/Icon';
+import deleteIcon from '../../assets/icons/ic_delete.svg';
+import TestImg from '../../assets/images/ReSsol_TestImg.png';
 
 const formatOptions = (jsonString) => {
   if (!jsonString) return '옵션 정보 없음';
@@ -155,7 +155,7 @@ const ExchangeRequestModal = ({ open, onClose, orderItems, onComplete, existingE
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">사진 첨부 (선택, 최대 5장)</label>
-        <Button variant="whiteBlack" onClick={() => fileInputRef.current?.click()} disabled={images.length >= 5}>사진 선택</Button>
+        <Button variant="blackWhite" onClick={() => fileInputRef.current?.click()} disabled={images.length >= 5}>사진 선택</Button>
         <input type="file" multiple accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
         <div className="flex flex-wrap gap-3 mt-3">
           {previews.map((preview, i) => (

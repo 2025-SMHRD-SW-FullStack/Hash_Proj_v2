@@ -62,40 +62,32 @@ export async function signupRequest({
   return res.data
 }
 
-/** * ✅ [신규] 프로필 이미지 업로드
- * 파일을 받아 FormData로 감싸 서버에 전송하고, 저장된 URL을 반환합니다.
- * @param {File} file - 사용자가 선택한 이미지 파일
- * @returns {Promise<string>} 서버에 저장된 새 프로필 이미지 URL
- */
-export const uploadProfileImage = async (file) => {
-  const formData = new FormData();
-  // 'imageFile'은 서버와 약속된 key 이름이어야 합니다.
-  formData.append('imageFile', file); 
-
-  const { data } = await axiosInstance.post('/api/users/me/profile-image', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  // 서버 응답이 { imageUrl: '...' } 형태라고 가정합니다.
-  return data.imageUrl;  
-};
-
-
 /** [추가] 내 정보 수정 */
 export const updateUserInfo = async (payload) => {
   const res = await axiosInstance.put('/api/users/me', payload);
   return res.data; // 수정된 UserResponse 반환
 };
 
-// /** 비밀번호 재설정 */
-// export const resetPassword = async ({ email, newPassword }) => {
-//   const res = await axiosInstance.post('/api/auth/reset-password', {
-//     email: String(email || '').trim(),
-//     newPassword,
-//   });
-//   return res.data;
-// };
+/** 아이디(이메일) 찾기 */
+export const findId = async ({ phoneNumber, phoneVerifyToken }) => {
+  const res = await axiosInstance.post('/api/auth/recovery/id', {
+    phoneNumber,
+    phoneVerifyToken,
+  });
+  return res.data; // { emails: [...], count: ... }
+};
+
+/** 비밀번호 재설정 */
+export const resetPassword = async ({ loginId, phoneNumber, phoneVerifyToken, newPassword, newPasswordConfirm }) => {
+  const res = await axiosInstance.post('/api/auth/recovery/password', {
+    loginId,
+    phoneNumber,
+    phoneVerifyToken,
+    newPassword,
+    newPasswordConfirm,
+  });
+  return res.data; // 성공 시 void
+};
 
 
 /** 로그아웃 */
@@ -126,3 +118,10 @@ export const phoneVerify = ({ phoneNumber, code }) =>
       phoneNumber: onlyDigits(phoneNumber),
     })
     .then((r) => r.data)
+
+/** 회원 탈퇴 */
+export const deleteAccount = async (payload) => {
+  // payload: { password } 또는 { confirmText: '탈퇴합니다' }
+  const { data } = await axiosInstance.post('/api/users/me/delete', payload);
+  return data;
+};

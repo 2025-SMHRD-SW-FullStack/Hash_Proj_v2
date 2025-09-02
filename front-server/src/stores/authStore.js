@@ -63,10 +63,26 @@ const useAuthStore = create(
         }
       },
 
-      logout: () => set({
-        isLoggedIn: false, user: null, accessToken: null,
-        roles: [], isSeller: false, isAdmin: false
-      }),
+      /**
+       * 로그아웃 시 모든 브라우저 저장소의 데이터를 삭제합니다.
+       */
+      logout: () => {
+        // 1. Zustand 상태 초기화
+        set({
+          isLoggedIn: false,
+          user: null,
+          accessToken: null,
+          roles: [],
+          isSeller: false,
+          isAdmin: false
+        });
+
+        // 2. localStorage와 sessionStorage의 모든 데이터 삭제
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        console.log('로그아웃 및 모든 브라우저 저장소 데이터 삭제 완료');
+      },
 
       setAccessToken: (t) => set({ accessToken: t }),
     }),

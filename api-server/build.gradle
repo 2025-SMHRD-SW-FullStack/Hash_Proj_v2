@@ -72,6 +72,9 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework:spring-messaging'
+
+    implementation platform("software.amazon.awssdk:bom:2.25.57")
+    implementation "software.amazon.awssdk:s3"
 }
 
 tasks.named('test') {

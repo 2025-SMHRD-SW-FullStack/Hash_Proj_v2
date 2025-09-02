@@ -1,6 +1,6 @@
 // src/pages/ProductDetailPage.jsx
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
 // 필요한 서비스 및 스토어 import
@@ -8,7 +8,7 @@ import { getProductDetail } from '../service/productService.js';
 import { addCartItem } from '../service/cartService.js';
 import { findOrCreateUserSellerRoom, findOrCreateRoomByProduct } from '../service/chatService';
 import useAuthStore from '../stores/authStore';
-import useFeedbackStore from '../stores/feedbackStore.js'; // 피드백 스토어 추가
+import useFeedbackStore from '../stores/feedbackStore.js';
 
 // 컴포넌트 및 아이콘 import
 import Button from '../components/common/Button.jsx';
@@ -36,6 +36,7 @@ const ProductDetailPage = () => {
 
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
 
   useEffect(() => {
@@ -81,6 +82,10 @@ const ProductDetailPage = () => {
   };
 
   const handlePurchase = () => {
+    if (!isLoggedIn) {
+      setIsAuthModalOpen(true);
+      return;
+    }
     if (selectedItems.length === 0) {
       alert('상품 옵션을 선택해주세요.');
       return;
@@ -89,8 +94,11 @@ const ProductDetailPage = () => {
     navigate(`/user/order?productId=${productId}&items=${itemsQuery}`);
   };
 
-  // ✅ 서버 API를 호출하는 올바른 장바구니 저장 로직
   const handleAddToCart = async () => {
+    if (!isLoggedIn) {
+      setIsAuthModalOpen(true);
+      return;
+    }
     if (!productData || selectedItems.length === 0) {
       alert('상품 옵션을 선택해주세요.');
       return;
@@ -125,7 +133,7 @@ const ProductDetailPage = () => {
 
   const handleOpenChat = async () => {
     if (!isLoggedIn) {
-      navigate('/login', { state: { redirectTo: location.pathname } });
+      setIsAuthModalOpen(true);
       return;
     }
     if (!productData) return;
@@ -151,7 +159,6 @@ const ProductDetailPage = () => {
 
   const { product, variants } = productData;
 
-  // ✅ 올바른 총 금액 계산 로직
   const totalPrice = selectedItems.reduce((total, currentItem) => {
     const variant = variants.find(v => v.id === parseInt(currentItem.variantId));
     const itemPrice = (product.salePrice + (variant?.addPrice || 0)) * currentItem.quantity;
@@ -160,7 +167,7 @@ const ProductDetailPage = () => {
 
   return (
     <div className='flex items-start'>
-      {/* 왼쪽 */}
+      {/* 왼쪽 상세 내용 */}
       <div className='ml-10 w-3/4'>
         <div className='flex flex-col items-center'>
           <h2 className='my-4 text-2xl font-bold'>[{product.brand}] {product.name}</h2>
@@ -177,7 +184,7 @@ const ProductDetailPage = () => {
           </Button>
         </div>
 
-        {/* ✅ 피드백 모음 섹션 추가 */}
+        {/* 피드백 섹션 */}
         <hr className="my-8 border-t border-gray-300" />
         <div className="feedback-section">
           <div className="flex justify-between items-center mb-6">
@@ -203,7 +210,7 @@ const ProductDetailPage = () => {
                   <p className="text-gray-800 leading-relaxed mb-3">{fb.content}</p>
                   {index === 1 && feedbacks.length > 2 && (
                     <div className="text-center mt-4">
-                      <Button variant="whiteBlack">... 더보기</Button>
+                      <Button variant="blackWhite">... 더보기</Button>
                     </div>
                   )}
                 </div>
@@ -219,7 +226,7 @@ const ProductDetailPage = () => {
       <aside className='sticky top-8 flex w-1/4 flex-col p-8'>
         <div className='w-full'>
           <div>
-            <span className='text-2xl text-[#23a4d3]'>{product.salePrice.toLocaleString()}원&ensp;</span>
+            <span className='text-2xl text-[#5882F6]'>{product.salePrice.toLocaleString()}원&ensp;</span>
             <span className='text-lg text-gray-600 line-through'>{product.basePrice.toLocaleString()}원</span>
           </div>
           <div>
@@ -229,7 +236,7 @@ const ProductDetailPage = () => {
           <span className='text-2xl'>재고: {product.stockTotal.toLocaleString()}개</span>
           <div>
             <span className='text-2xl'>지급 포인트: {product.feedbackPoint.toLocaleString()}</span>
-            <span className='text-2xl text-[#23a4d3]'>P</span>
+            <span className='text-2xl text-[#5882F6]'>P</span>
           </div>
           <span className='text-2xl'>모집 기간: ~{product.saleEndAt?.slice(0, 10)}</span>
         </div>
@@ -291,6 +298,7 @@ const ProductDetailPage = () => {
         </div>
       </aside>
 
+      {/* 장바구니 안내 모달 */}
       <Modal
         isOpen={isCartModalOpen}
         onClose={() => setIsCartModalOpen(false)}
@@ -303,6 +311,25 @@ const ProductDetailPage = () => {
         }
       >
         <p className="text-sm text-gray-700">선택한 상품이 장바구니에 담겼습니다.</p>
+      </Modal>
+
+      {/* 회원 전용 안내 모달 */}
+      <Modal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        title="회원 전용 서비스"
+        footer={
+          <>
+            <Button variant="signUp" onClick={() => navigate('/login', { state: { redirectTo: location.pathname } })}>
+              로그인
+            </Button>
+            <Button onClick={() => navigate('/email_signup')}>회원가입</Button>
+          </>
+        }
+      >
+        <p className="text-base text-gray-700">
+          이 서비스는 회원 전용입니다. 로그인 후 이용해주세요.
+        </p>
       </Modal>
     </div>
   );

@@ -14,7 +14,7 @@ const StarRating = ({ score }) => (
   </div>
 );
 
-const FeedbackDetailPage = () => {
+const MyFeedbackDetailPage = () => {
   const { feedbackId } = useParams();
   const navigate = useNavigate();
   const [feedback, setFeedback] = useState(null);
@@ -89,10 +89,10 @@ const FeedbackDetailPage = () => {
       </div>
 
       <div className="text-center pt-4">
-        <Button variant="whiteBlack" onClick={() => navigate(-1)}>목록으로</Button>
+        <Button variant="blackWhite" onClick={() => navigate(-1)}>목록으로</Button>
       </div>
     </div>
   );
 };
 
-export default FeedbackDetailPage;
+export default MyFeedbackDetailPage;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getTracking } from "../../../service/orderService";
+import { getTracking } from "../../service/orderService";
 
 export default function TrackingModal({ open, onClose, orderId }) {
   const [data, setData] = useState(null);

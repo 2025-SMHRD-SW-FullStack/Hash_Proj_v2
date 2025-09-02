@@ -55,9 +55,9 @@ public class TossPaymentService {
                         .rawResponseJson("{\"zeroPay\":true}")
                         .build());
             } catch (DataIntegrityViolationException ignore) {/* 멱등 */}
-            // ✅ READY 승격 (UID 기반)
             orderService.finalizePaidByUid(o.getOrderUid(), 0);
-            return new TossConfirmResponse(o.getOrderUid(), zeroKey, "POINT_ONLY", 0, OffsetDateTime.now().toString());
+            // ✅ 수정: 0원 결제 시에도 orderDbId(o.getId())를 포함하여 반환
+            return new TossConfirmResponse(o.getId(), o.getOrderUid(), zeroKey, "POINT_ONLY", 0, OffsetDateTime.now().toString());
         }
 
         // 3) 금액 검증
@@ -69,11 +69,15 @@ public class TossPaymentService {
         Payment existed = payRepo.findByPaymentKey(req.paymentKey()).orElse(null);
         if (existed != null) {
             if (Objects.equals(existed.getOrderId(), o.getId()) && existed.getAmount() == req.amount()) {
-                // ✅ READY 멱등
                 orderService.finalizePaidByUid(req.orderId(), req.amount());
+                // ✅ 수정: 이 경우에도 orderDbId(o.getId())를 포함하여 반환
                 return new TossConfirmResponse(
-                        o.getOrderUid(), existed.getPaymentKey(), existed.getMethod(),
-                        existed.getAmount(), String.valueOf(existed.getApprovedAt())
+                        o.getId(),
+                        o.getOrderUid(),
+                        existed.getPaymentKey(),
+                        existed.getMethod(),
+                        existed.getAmount(),
+                        String.valueOf(existed.getApprovedAt())
                 );
             }
             throw new ResponseStatusException(HttpStatus.CONFLICT, "DUPLICATE_PAYMENT_KEY_FOR_DIFFERENT_ORDER");
@@ -87,10 +91,11 @@ public class TossPaymentService {
             Payment p = payRepo.findFirstByOrderIdOrderByIdDesc(o.getId()).orElse(null);
             String method = (p != null && p.getMethod() != null) ? p.getMethod() : "UNKNOWN";
             OffsetDateTime approvedAt = (p != null && p.getApprovedAt() != null) ? p.getApprovedAt() : OffsetDateTime.now();
-            return new TossConfirmResponse(o.getOrderUid(), req.paymentKey(), method, o.getPayAmount(), String.valueOf(approvedAt));
+            // ✅ 수정: 이 경우에도 orderDbId(o.getId())를 포함하여 반환
+            return new TossConfirmResponse(o.getId(), o.getOrderUid(), req.paymentKey(), method, o.getPayAmount(), String.valueOf(approvedAt));
         }
 
-        // 6) Toss 승인 호출
+        // 6) Toss 승인 호출 (이하 로직은 기존과 동일)
         Map<String,Object> res;
         try {
             res = tossWebClient.post()
@@ -153,12 +158,12 @@ public class TossPaymentService {
         // 9) ✅ 결제 승인 처리 — 재고 차감 + READY 승격 (UID 기반)
         orderService.finalizePaidByUid(req.orderId(), req.amount());
 
-        return new TossConfirmResponse(o.getOrderUid(), req.paymentKey(), methodRaw, req.amount(), String.valueOf(approvedAt));
+        // ✅ 수정: 최종 반환 시에도 orderDbId(o.getId())를 포함하여 반환
+        return new TossConfirmResponse(o.getId(), o.getOrderUid(), req.paymentKey(), methodRaw, req.amount(), String.valueOf(approvedAt));
     }
 
     @Transactional
     public void fail(TossFailRequest req){
-        // ✅ UID 기반 포인트 롤백(멱등)
         orderService.rollbackPointLockByUid(req.orderId());
     }
 

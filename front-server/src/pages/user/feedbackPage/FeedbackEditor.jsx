@@ -247,7 +247,7 @@ const FeedbackEditor = () => {
           <div className="mt-6">
             <h2 className="font-semibold mb-2">사진 첨부 (선택, 최대 5장)</h2>
             <div className="flex items-center gap-4">
-              <Button variant="whiteBlack" onClick={() => manualFileInputRef.current?.click()} disabled={selectedFiles.length >= 5}>
+              <Button variant="blackWhite" onClick={() => manualFileInputRef.current?.click()} disabled={selectedFiles.length >= 5}>
                 사진 첨부하기
               </Button>
               <input type="file" multiple accept="image/*" ref={manualFileInputRef} onChange={handleFileChange} className="hidden" />
