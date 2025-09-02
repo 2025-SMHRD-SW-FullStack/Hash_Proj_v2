@@ -1,7 +1,7 @@
 //src/components/seller/feedbacks/AiSummaryPanel.jsx
 
 import React, { useMemo, useState } from 'react'
-
+import Button from '../../common/Button'
 /**
  * props:
  *  - aiDaily: [{ date:'YYYY-MM-DD', text:'...' }, ...]
@@ -45,14 +45,15 @@ export default function AiSummaryPanel({ aiDaily = [], lastGeneratedAt }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
             className="rounded-md border px-2 py-1 text-sm"
+            variant="admin"
             onClick={goPrev}
             aria-label="이전 요약"
           >
             ←
-          </button>
+          </Button>
 
           <input
             type="date"
@@ -61,22 +62,24 @@ export default function AiSummaryPanel({ aiDaily = [], lastGeneratedAt }) {
             onChange={(e) => setSelectedDate(e.target.value)}
           />
 
-          <button
+          <Button
             type="button"
             className="rounded-md border px-2 py-1 text-sm"
+            variant="admin"
             onClick={goNext}
             aria-label="다음 요약"
           >
             →
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="admin"
             className="rounded-md border px-3 py-1 text-sm"
             onClick={goToday}
           >
             오늘
-          </button>
+          </Button>
         </div>
       </div>
 

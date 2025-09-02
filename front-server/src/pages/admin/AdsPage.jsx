@@ -1,10 +1,13 @@
-import React, { useMemo, useState } from 'react'
+// src/pages/admin/AdsPage.jsx
+import React, { useEffect, useMemo, useState } from 'react'
 import BaseTable from '/src/components/common/table/BaseTable'
 import { TableToolbar } from '/src/components/common/table/TableToolbar'
 import Button from '/src/components/common/Button'
+import { adminActivateAd, adminCancelAd, adminFetchAdBookings } from '/src/service/adminAdsService'
 
 // 날짜 포맷: YYYY.MM.DD
 const fmtDate = (d) => {
+  if (!d) return '-'
   const x = new Date(d)
   const y = x.getFullYear()
   const m = String(x.getMonth() + 1).padStart(2, '0')
@@ -20,49 +23,68 @@ const remainDays = (start) => {
   return diff > 0 ? diff : 0
 }
 
-// 위치 코드 → 라벨 (필요하면 수정)
-const posLabel = (code) => {
+// 백엔드 슬롯 타입 → 라벨
+const posLabel = (type) => {
   const map = {
-    MAIN_TOP: '메인 상단',
+    MAIN_ROLLING: '메인 롤링',
     MAIN_SIDE: '메인 사이드',
-    DETAIL_TOP: '상세 상단',
-    DETAIL_SIDE: '상세 사이드',
+    CATEGORY_TOP: '카테고리 상단',
+    ORDER_COMPLETE: '주문완료 하단',
   }
-  return map[code] || code || '-'
+  return map[type] || type || '-'
+}
+
+// 백엔드 상태 → 프론트 상태 뱃지 키
+const toUiStatus = (s) => {
+  if (s === 'ACTIVE') return 'ACTIVE'
+  if (s === 'CANCELLED') return 'CANCELED'
+  if (s === 'COMPLETED') return 'DONE'
+  // RESERVED_UNPAID | RESERVED_PAID
+  return 'PENDING'
 }
 
 export default function AdsPage() {
-  // ------ 더미 데이터 (15건) ------
-  const dummy = useMemo(
-    () =>
-      Array.from({ length: 15 }).map((_, i) => {
-        const statusPool = ['PENDING', 'ACTIVE', 'DONE', 'CANCELED']
-        const status = statusPool[i % statusPool.length]
-        const start = new Date()
-        start.setDate(start.getDate() + (i % 7) - 2) // -2~+4일
-        const end = new Date(start)
-        end.setDate(start.getDate() + 7) // 7일짜리
-
-        return {
-          id: 100 + i,
-          shopName: `상호_${(i % 6) + 1}`,
-          productName: `상품_${i + 1}`,
-          position: i % 2 ? 'MAIN_TOP' : 'DETAIL_SIDE',
-          startDate: start.toISOString(),
-          endDate: end.toISOString(),
-          status,
-        }
-      }),
-    []
-  )
-
-  const [rows, setRows] = useState(dummy)
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
+  // 서버에서 목록 로드
+  const load = async () => {
+    setLoading(true)
+    try {
+      const page = await adminFetchAdBookings({ page: 0, size: 500 })
+      // API 응답을 테이블 행으로 매핑
+      const mapped = (page?.content ?? []).map((r) => ({
+        id: r.id,
+        type: r.type,               // MAIN_ROLLING | ...
+        position: r.position,       // 숫자 포지션
+        category: r.category,       // (있으면)
+        startDate: r.startDate,
+        endDate: r.endDate,
+        status: toUiStatus(r.status),
+        // 서버가 함께 내려주는 보조 정보(없으면 fallback)
+        shopName: r.shopName ?? (r.sellerId ? `셀러#${r.sellerId}` : '-'),
+        productName: r.productName ?? (r.productId ? `상품#${r.productId}` : '-'),
+      }))
+      setRows(mapped)
+    } catch (e) {
+      console.error(e)
+      alert('광고 목록을 불러오는 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
   // 검색(상호명)
-  const filtered = rows.filter((r) =>
-    r.shopName.toLowerCase().includes(search.trim().toLowerCase())
-  )
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter((r) => (r.shopName || '').toLowerCase().includes(q))
+  }, [rows, search])
 
   // 상태 뱃지
   const StatusChip = ({ status }) => {
@@ -92,30 +114,30 @@ export default function AdsPage() {
     )
   }
 
-  // 토글 동작 (더미 상태 전환)
-  const toggleAd = (row) => {
+  // 토글: 서버 연동
+  const toggleAd = async (row) => {
     if (!row) return
-    if (row.status === 'ACTIVE') {
-      if (!window.confirm('광고를 중단 하시겠습니까?')) return
-      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: 'CANCELED' } : r)))
-      return
+    try {
+      if (row.status === 'ACTIVE') {
+        if (!window.confirm('광고를 중단 하시겠습니까?')) return
+        await adminCancelAd(row.id)
+      } else if (row.status === 'PENDING' || row.status === 'CANCELED') {
+        if (!window.confirm('광고를 노출 하시겠습니까?')) return
+        await adminActivateAd(row.id)
+      } else {
+        // DONE: 아무 동작 없음
+        return
+      }
+      await load()
+    } catch (e) {
+      console.error(e)
+      const msg = e?.response?.data?.message || e.message
+      alert(msg || '처리 중 오류가 발생했습니다.')
     }
-    if (row.status === 'PENDING' || row.status === 'CANCELED') {
-      if (!window.confirm('광고를 노출 하시겠습니까?')) return
-      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: 'ACTIVE' } : r)))
-      return
-    }
-    // DONE: 아무 동작 없음
   }
 
   const columns = [
-    {
-      header: '번호',
-      key: 'no',
-      width: 70,
-      align: 'center',
-      render: (_row, idx) => idx + 1,
-    },
+    { header: '번호', key: 'no', width: 70, align: 'center', render: (_row, idx) => idx + 1 },
     {
       header: '상태',
       key: 'status',
@@ -143,8 +165,8 @@ export default function AdsPage() {
       header: '노출 위치',
       key: 'position',
       align: 'center',
-      width: 140,
-      render: (row) => posLabel(row.position),
+      width: 180,
+      render: (row) => `${posLabel(row.type)} #${row.position}`,
     },
     {
       header: '노출 예정일자',
@@ -172,7 +194,7 @@ export default function AdsPage() {
         return (
           <div className="flex justify-center">
             <Button
-              variant="admin" // admin 계열 유지
+              variant="admin"
               size="sm"
               disabled={isDone}
               onClick={() => toggleAd(row)}
@@ -190,7 +212,6 @@ export default function AdsPage() {
     <div>
       <h2 className="mb-4 text-xl font-semibold">광고 관리</h2>
 
-      {/* 검색툴바: 상호명만 */}
       <TableToolbar
         searchPlaceholder="상호명으로 검색"
         searchValue={search}
@@ -203,8 +224,7 @@ export default function AdsPage() {
       <BaseTable
         columns={columns}
         data={filtered}
-        emptyText="광고 내역이 없습니다."
-        // BaseTable 기본 scrollY=600 적용(옵션 제한 OK)
+        emptyText={loading ? '불러오는 중…' : '광고 내역이 없습니다.'}
       />
     </div>
   )

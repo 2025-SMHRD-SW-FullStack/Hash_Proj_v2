@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react'
+// src/pages/seller/OrdersPage.jsx
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import StatusChips from '/src/components/seller/StatusChips'
 import Button from '/src/components/common/Button'
@@ -7,26 +8,15 @@ import OrderDetailContent from '/src/components/seller/OrderDetailContent'
 import { carrierOptions, carrierLabel, resolveCarrier } from '/src/constants/carriers'
 import { fetchSellerOrders, registerShipment } from '/src/service/orderService'
 import { fmtYmd, toOrderNo, getAmount, truncate10, makeAndDownloadCSV } from '/src/util/orderUtils'
+import { listPendingExchanges, approveExchange, rejectExchange, shipExchange } from '/src/service/exchangeService'
+import ExchangeShipDialog from '/src/components/seller/ExchangeShipDialog' 
+import BaseTable from '/src/components/common/table/BaseTable'
+import { TableToolbar } from '/src/components/common/table/TableToolbar'                 // ✅ 절대경로 통일
 
-// colgroup 안전 렌더(공백 텍스트 노드 방지)
-const ColGroup = React.memo(({ widths = [] }) => (
-  <colgroup>{widths.map((w, i) => <col key={i} style={{ width: w }} />)}</colgroup>
-))
-
-
-
-
-// ---- UI 토큰 (ProductsPage 스타일 맞춤)
+// ---- UI 토큰
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
-const pill = 'inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[12px] font-medium'
 
-// 목록 높이: 10행 + 헤더 기준
-const ROW_H = 48
-const HEADER_H = 44
-const MAX_ROWS = 10
-const tableMaxH = `${ROW_H * MAX_ROWS + HEADER_H}px`
-
-// 서버 enum에 맞춘 칩(ALL 제외)
+// 서버 enum에 맞춘 칩
 const STATUS_ITEMS = [
   { key: 'ALL', label: '전체' },
   { key: 'PAID', label: '신규주문' },
@@ -34,23 +24,26 @@ const STATUS_ITEMS = [
   { key: 'IN_TRANSIT', label: '배송중' },
   { key: 'DELIVERED', label: '배송완료' },
   { key: 'CONFIRMED', label: '구매확정' },
+  { key: 'EXCHANGE', label: '교환요청' },
 ]
 
-// ✅ 결제금액 컬럼 제거 → 너비 재정의(체크박스~관리, 총 10칸)
-const COL_WIDTHS = [44, 140, 180, 120, 130, 360, 260, 120, 110, 240]
+// 리스트 높이(10행 기준)
+const SCROLL_Y = 48 * 10 + 44 // rowH * 10 + headerH
 
 export default function OrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const status = searchParams.get('status') || 'ALL'
+  const status = (searchParams.get('status') || 'ALL').toUpperCase()
   const q = searchParams.get('q') || ''
   const from = searchParams.get('from') || ''
   const to = searchParams.get('to') || ''
-  const [qInput, setQInput] = useState(q);   // 입력창 내부 값
-  const [isComp, setIsComp] = useState(false); // IME 조합 중 여부
-  useEffect(() => setQInput(q), [q]); // 외부에서 q가 바뀌면 동기화
+  const isExchange = status === 'EXCHANGE'
 
+  // 검색 입력 상태(IME용)
+  const [qInput, setQInput] = useState(q)
+  const [isComp, setIsComp] = useState(false)
+  useEffect(() => setQInput(q), [q])
 
-
+  // 데이터/상태
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -59,29 +52,16 @@ export default function OrdersPage() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [detailRow, setDetailRow] = useState(null)
 
-  // 송장 입력 폼(행별)
-  const [shipForm, setShipForm] = useState({}) // { [orderId]: { carrierCode, trackingNo } }
-  // 수정 토글(행별)
-  const [editing, setEditing] = useState(new Set()) // Set<orderId>
+  // 운송장 입력/편집
+  const [shipForm, setShipForm] = useState({})     // { [orderId]: { carrierCode, trackingNo } }
+  const [editing, setEditing] = useState(new Set())// Set<orderId>
 
-  // ✅ 선택 체크박스 상태
+  // 교환 발송 모달
+  const [shipTarget, setShipTarget] = useState(null)
+
+  // 선택 체크박스
   const [selected, setSelected] = useState(new Set())
   const allVisibleIds = useMemo(() => (rows ?? []).map(r => r?.id), [rows])
-  const isAllChecked = useMemo(
-    () => allVisibleIds.length > 0 && allVisibleIds.every(id => selected.has(id)),
-    [allVisibleIds, selected]
-  )
-  const toggleAll = () => {
-    const next = new Set(selected)
-    if (isAllChecked) allVisibleIds.forEach(id => next.delete(id))
-    else allVisibleIds.forEach(id => next.add(id))
-    setSelected(next)
-  }
-  const toggleRow = (id) => {
-    const next = new Set(selected)
-    next.has(id) ? next.delete(id) : next.add(id)
-    setSelected(next)
-  }
 
   const setParam = (patch) => {
     const next = new URLSearchParams(searchParams)
@@ -109,52 +89,43 @@ export default function OrdersPage() {
     setShipForm(next)
   }
 
-  const load = async () => {
+  // 데이터 로드 (주문/교환 분기 1회)
+  const load = useCallback(async () => {
     setLoading(true); setError(null)
     try {
-      // 🔑 ALL은 서버에 보내지 않는다.
-      const st = (status === 'ALL') ? undefined : status
-      const { items } = await fetchSellerOrders({ status: st, from, to, q, page: 0, size: 200 })
-      const arr = items || []
-      setRows(arr)
-      prefillShipFormFromRows(arr)
-      // 현재 페이지에 없는 선택 id 정리
-      setSelected(prev => {
-        const visible = new Set(arr.map(r => r?.id))
-        const next = new Set()
-        prev.forEach(id => { if (visible.has(id)) next.add(id) })
-        return next
-      })
+      if (isExchange) {
+        const { content } = await listPendingExchanges({ page: 0, size: 50 })
+        const arr = content || []
+        setRows(arr)
+        setSelected(new Set(arr.map(r => r.id)))
+        // 교환 목록은 운송장 편집 폼 사용 안함
+      } else {
+        const st = status === 'ALL' ? undefined : status
+        const { items } = await fetchSellerOrders({ status: st, from, to, q, page: 0, size: 200 })
+        const arr = items || []
+        setRows(arr)
+        prefillShipFormFromRows(arr)
+        // 선택 유지(페이지에 존재하는 것만)
+        setSelected(prev => {
+          const visible = new Set(arr.map(r => r?.id))
+          const next = new Set()
+          prev.forEach(id => { if (visible.has(id)) next.add(id) })
+          return next
+        })
+      }
     } catch (e) {
       console.error(e)
-      setError(e?.response?.data?.message || e.message || '주문을 불러오지 못했습니다.')
+      setError(e?.response?.data?.message || e.message || '목록을 불러오지 못했습니다.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [isExchange, status, from, to, q])
 
-  useEffect(() => { load() }, [status, from, to, q])
+  useEffect(() => { load() }, [load])
 
-  const beginEdit = (row) => {
-    const id = row.id
-    const next = new Set(editing)
-    next.add(id)
-    setEditing(next)
-    setShipForm((s) => {
-      const cur = s[id] || {}
-      const guessed = row.courierCode || resolveCarrier(row.courierName || '')?.code || ''
-      return { ...s, [id]: { carrierCode: cur.carrierCode || guessed || '', trackingNo: cur.trackingNo || row.trackingNo || '' } }
-    })
-  }
-  const cancelEdit = (id) => {
-    const next = new Set(editing)
-    next.delete(id)
-    setEditing(next)
-  }
-
-  // 상세 모달 매핑(상세에서는 금액 있으면 사용, 없으면 '-')
+  // 상세 모달 오픈
   const openDetail = (gridRow) => {
-    const amt = getAmount(gridRow) // 없으면 null
+    const amt = getAmount(gridRow)
     const carrier =
       (gridRow.courierCode && { code: gridRow.courierCode }) ||
       resolveCarrier(gridRow.courierName || '')
@@ -181,27 +152,36 @@ export default function OrdersPage() {
     setDetailOpen(true)
   }
 
+  // 운송장 편집 토글
+  const beginEdit = (row) => {
+    const id = row.id
+    const next = new Set(editing); next.add(id)
+    setEditing(next)
+    setShipForm((s) => {
+      const cur = s[id] || {}
+      const guessed = row.courierCode || resolveCarrier(row.courierName || '')?.code || ''
+      return { ...s, [id]: { carrierCode: cur.carrierCode || guessed || '', trackingNo: cur.trackingNo || row.trackingNo || '' } }
+    })
+  }
+  const cancelEdit = (id) => {
+    const next = new Set(editing); next.delete(id)
+    setEditing(next)
+  }
+
   // 운송장 등록/수정
   const onSubmitShipment = async (row) => {
     const id = row.id
     const f = shipForm[id] || {}
     if (!f.carrierCode || !f.trackingNo) return alert('택배사와 운송장 번호를 입력하세요.')
-
     try {
       await registerShipment(id, {
         carrierCode: f.carrierCode,
         carrierName: carrierLabel(f.carrierCode) || '',
-        trackingNo: f.trackingNo, // 🔑 백엔드 필드명 일치
+        trackingNo: f.trackingNo,
       })
       setRows((prev) => prev.map(r =>
         r.id === id
-          ? {
-            ...r,
-            statusText: r.statusText || '배송준비중',
-            courierName: carrierLabel(f.carrierCode),
-            courierCode: f.carrierCode,
-            trackingNo: f.trackingNo,
-          }
+          ? { ...r, statusText: r.statusText || '배송준비중', courierName: carrierLabel(f.carrierCode), courierCode: f.carrierCode, trackingNo: f.trackingNo }
           : r
       ))
       cancelEdit(id)
@@ -211,13 +191,12 @@ export default function OrdersPage() {
     }
   }
 
-  // ✅ 엑셀(CSV): 금액 제거한 컬럼으로 내보내기
+  // 엑셀(CSV)
   const handleDownloadExcel = () => {
     const picked = (rows ?? []).filter(r => selected.has(r?.id))
     const data = picked.length ? picked : (rows ?? [])
     makeAndDownloadCSV(data, {
       filenamePrefix: 'orders',
-      // 금액을 완전히 제외하기 위해 커스텀 헤더/행 매핑 사용
       columns: ['주문번호', '상품', '주소', '연락처', '배송요청사항', '상태', '피드백마감'],
       mapRow: (r) => {
         const rawId = (r?.orderUid ?? r?.orderNo ?? r?.orderId ?? r?.id ?? '').toString().trim() || '-'
@@ -234,15 +213,147 @@ export default function OrdersPage() {
     })
   }
 
+  // 주문 컬럼
+  const orderColumns = useMemo(() => ([
+    {
+      key: 'orderNo',
+      header: '주문번호',
+      width: 140,
+      className: 'text-left',
+      render: (r) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-auto p-0 text-blue-600 hover:underline"
+          onClick={(e) => { e.stopPropagation(); openDetail(r) }}
+        >
+          {toOrderNo(r)}
+        </Button>
+      ),
+    },
+    { key: 'productName', header: '상품', width: 220, className: 'text-left',
+      render: (r) => truncate10(r?.productName ?? r?.product ?? '') },
+    { key: 'receiver', header: '받는이', width: 120, render: (r) => r.receiver || '-' },
+    { key: 'phone', header: '연락처', width: 130, render: (r) => r.phone || '-' },
+    { key: 'address', header: '주소', width: 320, className: 'text-left',
+      render: (r) => (
+        <div>
+          <div title={r?.address}>{truncate10(r?.address)}</div>
+          {(r.courierName && r.trackingNo && !editing.has(r.id)) && (
+            <div className="mt-1 text-xs text-gray-500">
+              {r.courierName} / {r.trackingNo}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    { key: 'request', header: '배송요청사항', width: 240, className: 'text-left',
+      render: (r) => truncate10(r?.requestMemo ?? r?.requestNote ?? '') || '-' },
+    { key: 'status', header: '상태', width: 110,
+      render: (r) => (
+        <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-[12px] font-medium text-gray-800">
+          {r.statusText || '-'}
+        </span>
+      )
+    },
+    { key: 'due', header: '피드백 마감', width: 120, render: (r) => fmtYmd(r.feedbackDue) },
+    {
+      key: 'ship', header: '운송장', width: 260,
+      render: (r) => {
+        const id = r.id
+        const isEditing = editing.has(id)
+        const f = shipForm[id] || {}
+        return (
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {isEditing ? (
+              <>
+                <select
+                  className="h-9 rounded-md border px-2 text-sm"
+                  value={f.carrierCode || ''}
+                  onChange={(e) => setShipForm((s) => ({ ...s, [id]: { ...s[id], carrierCode: e.target.value } }))}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <option value="">택배사</option>
+                  {carrierOptions.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+                </select>
+                <input
+                  className="h-9 w-[160px] rounded-md border px-2 text-sm"
+                  placeholder="운송장 번호"
+                  value={f.trackingNo || ''}
+                  onChange={(e) => setShipForm((s) => ({ ...s, [id]: { ...s[id], trackingNo: e.target.value } }))}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <Button size="sm" onClick={(e) => { e.stopPropagation(); onSubmitShipment(r) }}>
+                  {r.trackingNo ? '운송장 수정' : '운송장 등록'}
+                </Button>
+                <Button size="sm" variant="admin" onClick={(e) => { e.stopPropagation(); cancelEdit(id) }}>
+                  취소
+                </Button>
+              </>
+            ) : (
+              <Button size="sm" variant="admin" onClick={(e) => { e.stopPropagation(); beginEdit(r) }}>
+                {r.trackingNo ? '수정' : '운송장 등록'}
+              </Button>
+            )}
+          </div>
+        )
+      },
+    },
+  ]), [editing, shipForm])
+
+  // 교환 컬럼
+  const exchangeColumns = useMemo(() => ([
+    { key: 'id',          header: '교환ID',   width: 90 },
+    { key: 'orderId',     header: '주문번호', width: 140 },
+    { key: 'productName', header: '상품',     width: 260, className: 'text-left' },
+    { key: 'receiver',    header: '신청자',   width: 120 },
+    { key: 'reason',      header: '사유',     width: 260, className: 'text-left', render: r => r.reason || '-' },
+    { key: 'requestedAt', header: '신청일',   width: 160, render: r => (r.requestedAt || '').slice(0,16).replace('T',' ') },
+    {
+      key: 'actions',     header: '작업',     width: 240,
+      render: r => (
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="whiteBlack" onClick={(e) => { e.stopPropagation(); (async () => {
+            const reason = window.prompt('반려 사유를 입력하세요.')
+            if (!reason) return
+            await rejectExchange(r.id, reason)
+            alert('반려 처리되었습니다.')
+            load()
+          })() }}>반려</Button>
+          <Button size="sm" variant="admin" onClick={(e) => { e.stopPropagation(); (async () => {
+            await approveExchange(r.id)
+            alert('승인되었습니다. 발송 등록을 진행하세요.')
+            setShipTarget(r)
+            load()
+          })() }}>승인</Button>
+          <Button size="sm" onClick={(e) => { e.stopPropagation(); setShipTarget(r) }}>발송등록</Button>
+        </div>
+      )
+    },
+  ]), [load])
+
   return (
     <div className="mx-auto w-full max-w-7xl">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">주문관리</h1>
       </div>
 
-      {/* 필터바 (ProductsPage 스타일) */}
+      {/* 필터바 */}
       <section className={`${box} mb-4`}>
-        <div className="flex flex-wrap items-center gap-2">
+        <TableToolbar
+          searchPlaceholder="주문번호/받는이/연락처 검색"
+          searchValue={qInput}
+          onChangeSearch={(v) => { setQInput(v); if (isComp) return }}
+          onSubmitSearch={() => setParam({ q: qInput })}
+          onReset={handleReset}
+          right={
+            !isExchange && (
+              <Button size="md" className="ml-auto" variant="admin" onClick={handleDownloadExcel}>
+                엑셀 다운로드
+              </Button>
+            )
+          }
+        >
           <StatusChips
             items={STATUS_ITEMS}
             value={status}
@@ -250,190 +361,61 @@ export default function OrdersPage() {
             size="sm"
             variant="admin"
           />
-          <input
-            value={qInput}
-            onChange={(e) => {
-              setQInput(e.target.value);
-              if (isComp) return;          // 조합 중엔 URL 갱신 금지
-            }}
-            onCompositionStart={() => setIsComp(true)}
-            onCompositionEnd={(e) => {     // 조합 종료 시 한 번만 반영
-              setIsComp(false);
-              setParam({ q: e.target.value });
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') setParam({ q: qInput }); // 엔터로 즉시 검색
-            }}
-            placeholder="주문번호/받는이/연락처 검색"
-            className="w-64 rounded-lg border px-3 py-2 text-sm outline-none focus:ring"
-          />
-          <Button size="sm" onClick={handleReset} variant="admin">
-            초기화
-          </Button>
-          <Button size="sm" className="ml-auto" variant="admin" onClick={handleDownloadExcel}>
-            엑셀 다운로드
-          </Button>
-        </div>
+        </TableToolbar>
       </section>
 
-      {/* 목록 (table-fixed + 안전 colgroup + sticky header + 최대 10행 높이) */}
+      {/* 목록 */}
       <section className={box}>
-        <div className="overflow-x-auto" style={{ maxHeight: tableMaxH }}>
-          <table className="w-full table-fixed text-center text-sm">
-            <ColGroup widths={COL_WIDTHS} />
-
-            <thead className="sticky top-0 z-10 border-b bg-gray-50 text-[13px] text-gray-500">
-              <tr>
-                <th className="px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={isAllChecked}
-                    onChange={toggleAll}
-                    aria-label="전체 선택"
-                  />
-                </th>
-                <th className="px-3 py-2">주문번호</th>
-                <th className="px-3 py-2">상품</th>
-                <th className="px-3 py-2">받는이</th>
-                <th className="px-3 py-2">연락처</th>
-                <th className="px-3 py-2">주소</th>
-                <th className="px-3 py-2">배송요청사항</th>
-                <th className="px-3 py-2">상태</th>
-                <th className="px-3 py-2">피드백 마감</th>
-                <th className="px-3 py-2">운송장</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {loading && (
-                <tr>
-                  <td className="px-3 py-10 text-center" colSpan={10}>불러오는 중…</td>
-                </tr>
-              )}
-              {(!loading && rows.length === 0) && (
-                <tr>
-                  <td className="px-3 py-10 text-center text-gray-500" colSpan={10}>데이터가 없습니다.</td>
-                </tr>
-              )}
-
-              {rows.map((r) => {
-                const id = r.id
-                const isEditing = editing.has(id)
-                const f = shipForm[id] || {}
-
-                return (
-                  <tr key={id} className="border-b last:border-none">
-                    {/* 체크 */}
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(id)}
-                        onChange={() => toggleRow(id)}
-                        aria-label="행 선택"
-                      />
-                    </td>
-
-                    {/* 주문번호만 노출 */}
-                    <td className="px-3 py-2 text-left">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-auto p-0 text-blue-600 hover:underline"
-                        onClick={() => openDetail(r)}
-                      >
-                        {toOrderNo(r)}
-                      </Button>
-                    </td>
-
-                    {/* 상품 */}
-                    <td className="px-3 py-2 text-left" title={r?.productName || r?.product}>
-                      {truncate10(r?.productName ?? r?.product ?? '')}
-                    </td>
-
-                    {/* 받는이 */}
-                    <td className="px-3 py-2 whitespace-nowrap">{r.receiver || '-'}</td>
-
-                    {/* 연락처 */}
-                    <td className="px-3 py-2 whitespace-nowrap">{r.phone || '-'}</td>
-
-                    {/* 주소 */}
-                    <td className="px-3 py-2 text-left">
-                      <div title={r?.address}>{truncate10(r?.address)}</div>
-                      {r.courierName && r.trackingNo && !isEditing && (
-                        <div className="mt-1 text-xs text-gray-500">
-                          {r.courierName} / {r.trackingNo}
-                        </div>
-                      )}
-                    </td>
-
-                    {/* 배송요청사항 */}
-                    <td className="px-3 py-2 text-left" title={r?.requestMemo || r?.requestNote}>
-                      {truncate10(r?.requestMemo ?? r?.requestNote ?? '') || '-'}
-                    </td>
-
-                    {/* 상태 */}
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      <span className={`${pill} bg-gray-100 text-gray-800`}>{r.statusText || '-'}</span>
-                    </td>
-
-                    {/* 피드백 마감 */}
-                    <td className="px-3 py-2 whitespace-nowrap">{fmtYmd(r.feedbackDue)}</td>
-
-                    {/* 운송장 */}
-                    <td className="px-3 py-2">
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        {isEditing ? (
-                          <>
-                            <select
-                              className="h-9 rounded-md border px-2 text-sm"
-                              value={f.carrierCode || ''}
-                              onChange={(e) =>
-                                setShipForm((s) => ({ ...s, [id]: { ...s[id], carrierCode: e.target.value } }))
-                              }
-                            >
-                              <option value="">택배사</option>
-                              {carrierOptions.map((c) => (
-                                <option key={c.code} value={c.code}>{c.label}</option>
-                              ))}
-                            </select>
-
-                            <input
-                              className="h-9 w-[160px] rounded-md border px-2 text-sm"
-                              placeholder="운송장 번호"
-                              value={f.trackingNo || ''}
-                              onChange={(e) =>
-                                setShipForm((s) => ({ ...s, [id]: { ...s[id], trackingNo: e.target.value } }))
-                              }
-                            />
-
-                            <Button size="sm" onClick={() => onSubmitShipment(r)}>
-                              {r.trackingNo ? '운송장 수정' : '운송장 등록'}
-                            </Button>
-                            <Button size="sm" variant="admin" onClick={() => cancelEdit(id)}>
-                              취소
-                            </Button>
-                          </>
-                        ) : (
-                          <Button size="sm" variant="admin" onClick={() => beginEdit(r)}>
-                            {r.trackingNo ? '수정' : '운송장 등록'}
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section >
-
-      <div className="h-8" />
+        {isExchange ? (
+          <BaseTable
+            columns={exchangeColumns}
+            data={rows}
+            rowKey="id"
+            emptyText={loading ? '불러오는 중…' : (error || '교환 대기 건이 없습니다.')}
+            scrollY={SCROLL_Y}
+          />
+        ) : (
+          <BaseTable
+            columns={orderColumns}
+            data={rows}
+            rowKey="id"
+            withCheckbox
+            selectedRowKeys={Array.from(selected)}
+            onToggleRow={(key, checked) => {
+              setSelected(prev => {
+                const next = new Set(prev)
+                checked ? next.add(key) : next.delete(key)
+                return next
+              })
+            }}
+            onToggleAll={(checked) => {
+              const ids = rows.map(r => r.id)
+              setSelected(checked ? new Set(ids) : new Set())
+            }}
+            onRowClick={openDetail}
+            emptyText={loading ? '불러오는 중…' : (error || '데이터가 없습니다.')}
+            scrollY={SCROLL_Y}
+          />
+        )}
+      </section>
 
       {/* 상세 모달 */}
       <Modal isOpen={detailOpen} onClose={() => setDetailOpen(false)} title="주문 상세">
         {detailRow ? <OrderDetailContent row={detailRow} /> : <div className="p-4">불러오는 중…</div>}
       </Modal>
-    </div >
+
+      {/* 교환 발송 등록 모달 */}
+      <ExchangeShipDialog
+        open={!!shipTarget}
+        onClose={() => setShipTarget(null)}
+        onSubmit={async ({ courierCode, trackingNumber }) => {
+          if (!shipTarget) return
+          await shipExchange(shipTarget.id, { courierCode, trackingNumber })
+          alert('교환 발송이 등록되었습니다.')
+          setShipTarget(null)
+          load()
+        }}
+      />
+    </div>
   )
 }

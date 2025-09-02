@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.annotations.Comment;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -96,6 +97,9 @@ public class User {
     @Column(name = "enabled", nullable = false)
     @Builder.Default
     private boolean enabled = true; // 가입 완료 시 즉시 로그인 가능
+
+    @Comment("제재 만료 일시")
+    private LocalDateTime sanctionedUntil;
 
     /* 시스템 */
     @CreationTimestamp

@@ -1,8 +1,9 @@
 // src/pages/seller/product/ProductDetailPage.jsx
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { getMyProductDetail, deleteMyProduct } from '/src/service/productService'
 
-// 상품 수정
+// UI
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 const Field = ({ label, children }) => (
   <label className="mb-3 block">
@@ -11,24 +12,60 @@ const Field = ({ label, children }) => (
   </label>
 )
 
-// 임시 데이터(목록과 동일 키)
-const mock = [
-  { id: 1, name: '무선 미니 선풍기', sku: 'WF-01', status: '판매중', price: 39000, stock: 28, updatedAt: '2025-08-20' },
-  { id: 2, name: '휴대용 제습기',   sku: 'DH-11', status: '판매중', price: 59000, stock: 12, updatedAt: '2025-08-19' },
-  { id: 3, name: '자외선 살균 케이스', sku: 'UV-05', status: '품절',   price: 42000, stock: 0,  updatedAt: '2025-08-18' },
-]
-
 export default function ProductDetailPage() {
   const navigate = useNavigate()
   const { productId } = useParams()
 
-  const initial = useMemo(() => mock.find((m) => String(m.id) === String(productId)) || null, [productId])
-  const [form, setForm] = useState(
-    initial || { name: '', sku: '', price: '', stock: '', status: '판매중' }
-  )
-  const on = (k) => (e) => setForm((s) => ({ ...s, [k]: e.target.value }))
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [product, setProduct] = useState(null)
 
-  if (!initial) {
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      setLoading(true); setError(null)
+      try {
+        const { product: p } = await getMyProductDetail(productId)
+        if (!alive) return
+        setProduct(p)
+      } catch (e) {
+        if (!alive) return
+        setError(e?.response?.data?.message || e.message || '불러오기에 실패했습니다.')
+      } finally {
+        if (alive) setLoading(false)
+      }
+    })()
+    return () => { alive = false }
+  }, [productId])
+
+  const remove = async () => {
+    if (!window.confirm('정말 삭제하시겠습니까?')) return
+    try {
+      await deleteMyProduct(productId)
+      alert('삭제되었습니다.')
+      navigate('/seller/products')
+    } catch (e) {
+      alert(e?.response?.data?.message || e.message || '삭제에 실패했습니다.')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="mx-auto w-full max-w-2xl">
+        <div className={`${box} text-center`}>불러오는 중…</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-2xl">
+        <div className={`${box} text-center text-rose-600`}>{String(error)}</div>
+      </div>
+    )
+  }
+
+  if (!product) {
     return (
       <div className="mx-auto w-full max-w-2xl">
         <div className={`${box} text-center`}>해당 상품({productId})을 찾을 수 없습니다.</div>
@@ -41,41 +78,29 @@ export default function ProductDetailPage() {
     )
   }
 
-  const save = (e) => {
-    e.preventDefault()
-    console.log('update product', form)
-    alert('임시: 저장 완료 가정')
-  }
-  const remove = () => {
-    if (!confirm('정말 삭제하시겠습니까?')) return
-    console.log('delete product', productId)
-    alert('임시: 삭제 완료 가정')
-    navigate('/seller/products')
-  }
+  const price = Number(product?.salePrice || product?.basePrice || 0).toLocaleString('ko-KR')
+  const stock = Number(product?.stockTotal ?? 0).toLocaleString('ko-KR')
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <h1 className="mb-4 text-xl font-bold">상품 상세/수정</h1>
-      <form onSubmit={save} className={box}>
+      <h1 className="mb-4 text-xl font-bold">상품 상세</h1>
+      <div className={box}>
         <Field label="상품명">
-          <input value={form.name} onChange={on('name')} className="w-full rounded-lg border px-3 py-2 text-sm" />
+          <div className="rounded-lg border px-3 py-2 text-sm bg-gray-50">{product?.name || '-'}</div>
         </Field>
-        <Field label="SKU">
-          <input value={form.sku} onChange={on('sku')} className="w-full rounded-lg border px-3 py-2 text-sm" />
+        <Field label="브랜드">
+          <div className="rounded-lg border px-3 py-2 text-sm bg-gray-50">{product?.brand || '-'}</div>
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="가격(원)">
-            <input type="number" value={form.price} onChange={on('price')} className="w-full rounded-lg border px-3 py-2 text-sm" />
+            <div className="rounded-lg border px-3 py-2 text-sm bg-gray-50">{price}</div>
           </Field>
           <Field label="재고">
-            <input type="number" value={form.stock} onChange={on('stock')} className="w-full rounded-lg border px-3 py-2 text-sm" />
+            <div className="rounded-lg border px-3 py-2 text-sm bg-gray-50">{stock}</div>
           </Field>
         </div>
-        <Field label="상태">
-          <select value={form.status} onChange={on('status')} className="w-full rounded-lg border px-3 py-2 text-sm">
-            <option value="판매중">판매중</option>
-            <option value="품절">품절</option>
-          </select>
+        <Field label="카테고리">
+          <div className="rounded-lg border px-3 py-2 text-sm bg-gray-50">{product?.category || '-'}</div>
         </Field>
 
         <div className="mt-4 flex justify-between">
@@ -83,15 +108,15 @@ export default function ProductDetailPage() {
             목록
           </button>
           <div className="flex gap-2">
+            <button type="button" className="rounded-lg border px-4 py-2 text-sm" onClick={() => navigate(`/seller/products/${productId}/edit`)}>
+              수정
+            </button>
             <button type="button" className="rounded-lg border px-4 py-2 text-sm" onClick={remove}>
               삭제
             </button>
-            <button type="submit" className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50">
-              저장
-            </button>
           </div>
         </div>
-      </form>
+      </div>
     </div>
   )
 }

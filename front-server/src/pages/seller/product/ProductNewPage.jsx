@@ -8,6 +8,7 @@ import DetailComposer from '../../../components/seller/product/DetailComposer'
 import { CATEGORIES } from '../../../constants/products'
 import OptionSection from '../../../components/seller/product/options/OptionSection'
 import { createMyProduct } from '/src/service/productService'
+import { uploadImages } from '/src/service/uploadService'
 
 const sheet = 'w-full rounded-2xl border bg-white shadow-sm divide-y'
 const pad = 'px-6 py-6'
@@ -139,9 +140,19 @@ export default function ProductNewPage() {
         })
       : []
 
-    // 서버는 URL만 수신 → 임시 placeholder URL 사용
-    const thumbnailUrl =
-      `https://via.placeholder.com/160?text=${encodeURIComponent(form.name || '상품')}`
+    // 썸네일 업로드 (파일이 있으면 업로드, 없으면 에러)
+    let thumbnailUrl = ''
+    if (form.thumbnail) {
+      try {
+        const uploaded = await uploadImages('PRODUCT_THUMB', [form.thumbnail])
+        thumbnailUrl = uploaded?.[0]?.url || ''
+      } catch (err) {
+        console.error(err)
+        return alert('썸네일 업로드에 실패했습니다.')
+      }
+    } else {
+      return alert('썸네일 이미지를 업로드하세요.')
+    }
 
     const payload = {
       name: form.name,

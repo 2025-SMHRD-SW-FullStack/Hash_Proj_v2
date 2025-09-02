@@ -53,7 +53,7 @@ export const computeFeedbackState = (row = {}) => {
 
   const d = parseDday(row.feedbackDue)
   if (typeof d === 'number') {
-    if (d >= 0) return { key: 'PENDING_WRITE', label: `작성대기 (D-${d})` }
+    if (d >= 0) return { key: 'WAIT', label: `작성대기 (D-${d})` }
   }
   // d 없음 또는 마감 지남
   return { key: 'EXPIRED', label: '기간만료' }
@@ -64,7 +64,7 @@ export const statusBadge = (row = {}) => {
   const { key, label } = computeFeedbackState(row)
   const base = 'inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[12px] font-medium'
   let cls = `${base} bg-slate-50 text-slate-700 ring-1 ring-slate-200`
-  if (key === 'PENDING_WRITE') cls = `${base} bg-amber-50 text-amber-700 ring-1 ring-amber-200`
+  if (key === 'WAIT') cls = `${base} bg-amber-50 text-amber-700 ring-1 ring-amber-200`
   else if (key === 'EXPIRED') cls = `${base} bg-rose-50 text-rose-700 ring-1 ring-rose-200`
   else if (key === 'NEW') cls = `${base} bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200`
   else if (key === 'REPORT_PENDING') cls = `${base} bg-violet-50 text-violet-700 ring-1 ring-violet-200`

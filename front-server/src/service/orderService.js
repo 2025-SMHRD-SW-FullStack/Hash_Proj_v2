@@ -98,13 +98,12 @@ export const getConfirmWindow = (orderId) =>
 export const fetchSellerOrders = async ({
   status, from, to, q, page = 0, size = 20,
 } = {}) => {
+  const statusApi = mapStatusForApi(status)
   const params = { page, size }
-  // 🔑 ALL은 서버 enum이 아님 → 보내지 않음
-  if (status && status !== 'ALL') params.status = status
+  if (statusApi) params.status = statusApi     // 허용되지 않으면 아예 안 보냄
   if (from) params.from = from
-  if (to)   params.to   = to
-  if (q)    params.q    = q
-
+  if (to) params.to = to
+  if (q) params.q = q
   const { data } = await api.get('/api/seller/orders/grid', { params })
 
   // 서버가 Page 또는 배열을 반환할 수 있으므로 하위호환 형태로 래핑
@@ -139,10 +138,10 @@ export const fetchSellerOrders = async ({
 export const registerShipment = async (orderId, payload = {}) => {
   const courierCode = payload.courierCode ?? payload.carrierCode ?? payload.code ?? ''
   const courierName = payload.courierName ?? payload.carrierName ?? payload.name ?? ''
-  const trackingNo  = payload.trackingNo  ?? payload.tracking ?? payload.trackingNumber ?? ''
+  const trackingNo = payload.trackingNo ?? payload.tracking ?? payload.trackingNumber ?? ''
 
   if (!courierCode) throw new Error('courierCode is required')
-  if (!trackingNo)  throw new Error('trackingNo is required')
+  if (!trackingNo) throw new Error('trackingNo is required')
 
   // 🔑 백엔드 DTO 필드명과 1:1 일치
   const body = { courierCode, courierName, trackingNo }
@@ -155,8 +154,8 @@ export const buildOrdersCsvUrl = ({ status, from, to, q } = {}) => {
   const qs = new URLSearchParams()
   if (status && status !== 'ALL') qs.set('status', status)
   if (from) qs.set('from', from)
-  if (to)   qs.set('to', to)
-  if (q)    qs.set('q', q)
+  if (to) qs.set('to', to)
+  if (q) qs.set('q', q)
   return `/api/seller/orders/grid/export${qs.toString() ? `?${qs.toString()}` : ''}`
 }
 
@@ -165,8 +164,8 @@ export const exportSellerOrdersCSV = async (params = {}) => {
   const p = {}
   if (params.status && params.status !== 'ALL') p.status = params.status
   if (params.from) p.from = params.from
-  if (params.to)   p.to   = params.to
-  if (params.q)    p.q    = params.q
+  if (params.to) p.to = params.to
+  if (params.q) p.q = params.q
 
   const res = await api.get('/api/seller/orders/grid/export', {
     params: p,
@@ -179,19 +178,20 @@ export const exportSellerOrdersCSV = async (params = {}) => {
 export const fetchTracking = (orderId) => getTracking(orderId)
 
 
-// 프론트 키 → 서버 enum
-export const ORDER_STATUS_MAP = {
+// UI 상태 → API 상태 매핑
+// 신규주문은 보통 결제완료(PAID)로 해석하는 게 자연스러워요.
+const STATUS_MAP = {
   ALL: null,
-  READY: 'READY',
-  SHIPPING: 'IN_TRANSIT',   // 🔴 기존 SHIPPING -> IN_TRANSIT 로 교체
-  DELIVERED: 'DELIVERED',
-  CONFIRMED: 'CONFIRMED',
-  PENDING: 'PENDING',
-  PAID: 'PAID',
+  NEW: 'PAID',             // ✅ 신규주문
+  READY: 'READY',          // 배송준비
+  SHIPPING: 'IN_TRANSIT',  // 배송중
+  DELIVERED: 'DELIVERED',  // 배송완료
+  CONFIRMED: 'CONFIRMED',  // 구매확정
 }
+const mapStatusForApi = (ui) => STATUS_MAP[ui?.toUpperCase?.()] ?? null
 
 // 그리드 조회 래퍼
-export async function fetchSellerOrdersGrid({ statusKey='ALL', page=0, size=20, q, from, to } = {}) {
+export async function fetchSellerOrdersGrid({ statusKey = 'ALL', page = 0, size = 20, q, from, to } = {}) {
   const params = { page, size }
   const mapped = ORDER_STATUS_MAP[statusKey] ?? null
   if (mapped) params.status = mapped       // ALL이면 status 생략
@@ -206,3 +206,5 @@ export async function fetchSellerOrdersGrid({ statusKey='ALL', page=0, size=20, 
   if (res.status < 200 || res.status >= 300) throw new Error(`orders/grid ${res.status}`)
   return res.data
 }
+
+

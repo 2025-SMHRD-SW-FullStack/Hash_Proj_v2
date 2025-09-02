@@ -1,3 +1,4 @@
+// /src/routes/AppRouter.jsx
 import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import PublicRouter from './PublicRouter'
@@ -53,13 +54,17 @@ const AppRouter = () => {
         {/* TODO: 유저 구분 */}
         {isLoggedIn && <Route path="/user/*" element={<UserRouter />} />}
 
+        {/* 비회원 전용 */}
+        {!isLoggedIn && <Route path="/public/*" element={<PublicRouter />} />}
 
+        {/* 로그인 사용자 전용 */}
+        {isLoggedIn && <Route path="/user/*" element={<UserRouter />} />}
       </Route>
 
-      {/* 셀러(중간관리자) 전용 라우터 - 별도 레이아웃 */}
+      {/* 셀러(중간관리자) */}
       <Route path="/seller/*" element={<SellerRouter />} />
 
-      {/* 관리자 전용 라우터 - 로그인 상태에서만 노출 */}
+      {/* 관리자(로그인 필요) */}
       {isLoggedIn && <Route path="/admin/*" element={<AdminRouter />} />}
     </Routes>
   )

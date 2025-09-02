@@ -17,6 +17,8 @@ export const submitSurvey = (orderItemId, payload) =>
   api.post(`/api/surveys/answers`, { orderItemId, ...payload }).then(r => r.data);
 
 
+
+
 // 셀러 피드백
 
 /** 셀러 피드백 그리드 (주문 그리드 기반)
@@ -67,122 +69,90 @@ export const fetchFeedbackQuestionStats = async ({ productId, from, to }) => {
 
 
 // 피드백 통계
-
-import { COMMON_QUESTIONS, SURVEY_BY_CATEGORY } from '/src/constants/feedbacksSurvey'
-
-// === 목업 플래그
-const USE_MOCK = true;
-
-// 지연 모의
-const sleep = (ms = 300) => new Promise(r => setTimeout(r, ms));
-
-// 카테고리별 상품 목업
-const MOCK_PRODUCTS = {
-  '전자제품': [
-    { id: 101, name: '휴대용 미니 공기청정기' },
-    { id: 102, name: '무선 진동 드라이버' },
-  ],
-  '화장품': [
-    { id: 201, name: '저자극 데일리 토너' },
-    { id: 202, name: '롱웨어 쿠션 파운데이션' },
-  ],
-  '무형자산(플랫폼)': [
-    { id: 301, name: '업무 협업 SaaS 베이직' },
-  ],
-  '밀키트': [
-    { id: 401, name: '프리미엄 라자냐 밀키트' },
-  ],
-};
-
-// 랜덤 유틸(목업)
-const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-
-// 별점 카운트(1~5)
-const mockStarCounts = () => {
-  const counts = [0,0,0,0,0].map(() => rand(0, 10));
-  const sum = counts.reduce((a,b)=>a+b,0) || 1;
-  const weighted = counts.reduce((acc,c,i)=> acc + c*(i+1), 0);
-  const avg = Number((weighted / sum).toFixed(2));
-  return { counts, avg, total: sum };
-};
-
-export async function fetchProductsByCategory(category) {
-  if (!USE_MOCK) {
-    // TODO: 실제 API 호출
-    // const { data } = await api.get('/api/seller/feedbacks/products', { params: { category } });
-    // return data;
-  }
-  await sleep();
-  return MOCK_PRODUCTS[category] || [];
-}
+// 내부 헬퍼: 2xx만 데이터, 나머진 null
+const getSafe = (url, params) =>
+  api.get(url, { params, validateStatus: () => true })
+     .then(r => (r.status >= 200 && r.status < 300 ? r.data : null))
+     .catch(() => null)
 
 /**
- * 피드백 통계 요약 + 차트 데이터
- * 반환 스키마:
+ * 피드백 통계(인구통계/요약/설문 문항별 평균) 묶어서 반환
+ * @param {object} args
+ * @param {number|string} args.productId  (필수)
+ * @param {string} [args.category]        (questions API에 필요)
+ * @param {string} [args.from]            'YYYY-MM-DD'
+ * @param {string} [args.to]              'YYYY-MM-DD'
+ *
+ * 반환 shape:
  * {
- *   summary: { delivered, written, writeRate, reported, reportRate, expired, avgWriteDays },
- *   demographics: [{name:'10대', value: n}, ...],
+ *   summary: {
+ *     totalCount, averageOverallScore, from, to
+ *   } | null,
  *   stars: {
- *     distribution: [{score:1,count:n}, ...],
- *     overallAvg: 3.85,
- *     byQuestion: [{ key, label, avg }, ...],
+ *     overallAvg,                 // 숫자 | null
+ *     distribution: [{score, count}],  // 1~5 분포
+ *     byQuestion:  [{label, avg}],     // 문항별 평균
  *   },
- *   lastGeneratedAt: '2025-08-29 00:00',
- *   aiDaily: [{date:'2025-08-24', text:'...'}, ...] // 신고 제외 가정
+ *   demographics: [{ name, value, avg }] // 연령대 분포(도넛용)
  * }
  */
-export async function fetchFeedbackStats({ category, productId }) {
-  if (!USE_MOCK) {
-    // TODO: 실제 API 호출
-    // const { data } = await api.get('/api/seller/feedbacks/stats', { params: { category, productId } });
-    // return data;
-  }
-  await sleep();
+export async function fetchFeedbackStats({ productId, category, from, to }) {
+  const paramsCommon = { productId, from, to }
 
-  // --- 목업 생성 ---
-  const delivered = rand(10, 40);
-  const written = rand(0, delivered);
-  const reported = rand(0, Math.floor(written * 0.2));
-  const expired = delivered - written;
-  const writeRate = delivered ? Math.round((written / delivered) * 100) : 0;
-  const reportRate = written ? Math.round((reported / written) * 100) : 0;
-  const avgWriteDays = Number((Math.random() * 5 + 1).toFixed(1)); // 1~6일 사이
+  const [demo, qs, sum] = await Promise.all([
+    getSafe('/api/seller/feedbacks/demographics', paramsCommon),
+    getSafe('/api/seller/feedbacks/questions', { ...paramsCommon, category }),
+    getSafe('/api/seller/feedbacks/summary', paramsCommon),
+  ])
 
-  const demo = [
-    { name: '10대', value: rand(0, 3) },
-    { name: '20대', value: rand(1, 8) },
-    { name: '30대', value: rand(1, 8) },
-    { name: '40대', value: rand(0, 6) },
-    { name: '50대+', value: rand(0, 4) },
-  ];
+  // ── demographics → 도넛 데이터 [{ name, value, avg }]
+  const demographics = (demo?.byAgeRange ?? []).map(a => ({
+    name: a?.key ?? '',                         // 라벨 (예: '20대')
+    value: Number(a?.count ?? 0),               // 분포 카운트
+    avg: typeof a?.averageOverallScore === 'number'
+      ? a.averageOverallScore
+      : null,
+  }))
 
-  const star = mockStarCounts();
-  const distribution = [1,2,3,4,5].map((s, i) => ({ score: s, count: star.counts[i] }));
-  const overallAvg = star.avg;
+  // ── summary.ratingCounts → 별점 분포 [{ score, count }]
+  const distribution = (() => {
+    const rc = sum?.ratingCounts
+    if (!rc || typeof rc !== 'object') return []
+    return Object.entries(rc)
+      .map(([k, v]) => ({ score: Number(k), count: Number(v ?? 0) }))
+      .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
+  })()
 
-  const qs = [...COMMON_QUESTIONS, ...(SURVEY_BY_CATEGORY[category] || [])];
-  const byQuestion = qs.map(q => ({ key: q.key, label: q.label, avg: Number((Math.random() * 2 + 3).toFixed(2)) })); // 3.00~5.00
-
-  const today = new Date();
-  const pad = n => (n<10?'0'+n:n);
-  const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const lastGeneratedAt = `${ymd(today)} 00:00`;
-
-  const aiDaily = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(today.getTime() - (6 - i) * 86400000);
-    return {
-      date: ymd(d),
-      text: `요약(${ymd(d)}): 배송, 사용성, 가격 만족 키워드가 주로 언급되었습니다. 신고 피드백 제외.`,
-    };
-  });
+  // ── questions.questions → 문항 평균 [{ label, avg }]
+  const byQuestion = (qs?.questions ?? []).map(q => ({
+    label: q?.label ?? '',
+    avg: Number(q?.average ?? 0),
+  }))
 
   return {
-    summary: { delivered, written, writeRate, reported, reportRate, expired, avgWriteDays },
-    demographics: demo,
-    stars: { distribution, overallAvg, byQuestion },
-    lastGeneratedAt,
-    aiDaily,
-  };
+    summary: sum
+      ? {
+          totalCount: Number(sum.totalCount ?? 0),
+          averageOverallScore: Number(sum.averageOverallScore ?? 0),
+          from: sum.from,
+          to: sum.to,
+        }
+      : null,
+    stars: {
+      overallAvg:
+        typeof sum?.averageOverallScore === 'number'
+          ? sum.averageOverallScore
+          : null,
+      distribution,
+      byQuestion,
+    },
+    demographics,
+  }
+}
+
+/** (선택) 설문 템플릿: 카테고리/문항 라벨 필요 시 사용 */
+export async function fetchSurveyTemplate(productId) {
+  return getSafe(`/api/products/${productId}/survey-template`)
 }
 
 
@@ -228,3 +198,36 @@ export const getMyFeedbacks = () =>
  */
 export const getFeedbackDetail = (feedbackId) =>
   api.get(`/api/feedbacks/${feedbackId}`).then(r => r.data);
+
+
+
+// 피드백 통계
+// 모듈 캐시: 페이지 내에서 여러 번 호출해도 네트워크는 1회
+let _myProductsCache = null
+
+// 전체 내 상품 목록
+export async function listMyProducts() {
+  if (_myProductsCache) return _myProductsCache
+  const res = await api.get('/api/seller/products', { validateStatus: () => true })
+  if (res.status < 200 || res.status >= 300) {
+    console.error('[feedbackService] /api/seller/products ->', res.status, res.data)
+    _myProductsCache = []
+    return _myProductsCache
+  }
+  const raw = res.data
+  const arr = Array.isArray(raw) ? raw : (raw?.content ?? raw?.items ?? raw?.list ?? [])
+  _myProductsCache = (Array.isArray(arr) ? arr : []).map(p => ({
+    id: p?.id ?? p?.productId ?? null,
+    name: p?.name ?? p?.productName ?? '(이름 없음)',
+    category: p?.category ?? '',
+  })).filter(x => x.id != null)
+  return _myProductsCache
+}
+
+// ✅ 카테고리별 목록(클라이언트 필터)
+export async function fetchProductsByCategory(category) {
+  const all = await listMyProducts()
+  if (!category) return all
+  const norm = v => String(v ?? '').trim().toLowerCase()
+  return all.filter(p => norm(p.category) === norm(category))
+}

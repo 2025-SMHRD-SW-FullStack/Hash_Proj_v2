@@ -1,29 +1,19 @@
 // /src/pages/seller/SellerMain.jsx
-<<<<<<< HEAD
-import React, { useEffect, useMemo, useState } from 'react'
-=======
-import React, { useMemo, useState, useEffect, Suspense } from 'react'
->>>>>>> 4bcd383b5ec71bb817dea8c62b3994ccc88f5bc9
+import React, { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '/src/components/common/Button'
 import StoreSalesStats from '/src/components/seller/charts/StoreSalesStats'
-<<<<<<< HEAD
+
+import { listRooms, markRead } from '/src/service/chatService'
 import { fetchSellerOrders } from '/src/service/orderService'
 import { getAmount as _getAmount } from '/src/util/orderUtils'
 import api from '/src/config/axiosInstance'
 import { fetchDailySettlementSummary } from '/src/service/settlementService'
-import { div } from 'framer-motion/client'
-=======
-import ChatList from '../../components/chat/ChatList'
-const ChatRoom = React.lazy(() => import('../../components/chat/ChatRoom'))
-import useAppModeStore from '../../stores/appModeStore'
->>>>>>> 4bcd383b5ec71bb817dea8c62b3994ccc88f5bc9
 
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 const kpi = 'flex items-center justify-between py-2 text-sm'
 
-<<<<<<< HEAD
-// 금액 추출 유틸 (orderUtils.getAmount 우선, 폴백 마련)
+// 금액 추출 유틸 (orderUtils.getAmount 우선, 폴백)
 const getAmount = (row) => {
   try { return Number(_getAmount?.(row) ?? 0) } catch { /* noop */ }
   return Number(row?.payAmount ?? row?.amount ?? row?.totalAmount ?? 0)
@@ -39,7 +29,7 @@ const normStatus = (s) => {
   if (u.includes('RETURN') || u.includes('반품')) return 'RETURN'
   if (u.includes('CANCEL') || u.includes('취소')) return 'CANCEL'
   if (u.includes('READY') || u.includes('PREPAR') || u.includes('발송') || u.includes('배송준비')) return 'READY'
-  if (u.includes('SHIP') || u.includes('배송중')) return 'SHIPPING'
+  if (u.includes('SHIP') || u.includes('IN_TRANSIT') || u.includes('배송중')) return 'SHIPPING'
   if (u.includes('DELIVER') || u.includes('배송완료')) return 'DELIVERED'
   return u
 }
@@ -47,7 +37,7 @@ const normStatus = (s) => {
 // 구매확정 여부 추정
 const isPurchaseConfirmed = (r) => {
   const u = String(r?.status || r?.orderStatus || '').toUpperCase()
-  return u.includes('PURCHASE_CONF') || r?.purchaseConfirmed === true
+  return u.includes('PURCHASE_CONF') || u.includes('CONFIRMED') || r?.purchaseConfirmed === true
 }
 
 // 날짜 유틸
@@ -60,13 +50,8 @@ const ymd = (d) => {
 const fmt = (n) => (typeof n === 'number' ? n.toLocaleString() : (n ?? '0'))
 
 export default function SellerMain() {
-=======
-const SellerMain = () => {
->>>>>>> 4bcd383b5ec71bb817dea8c62b3994ccc88f5bc9
   const navigate = useNavigate()
-  const { setMode } = useAppModeStore()
 
-<<<<<<< HEAD
   // 주문 리스트 (최근 14일만 당겨서 집계)
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
@@ -101,98 +86,49 @@ const SellerMain = () => {
       } finally {
         setLoading(false)
       }
-=======
-  // ✅ 이 페이지는 항상 셀러 모드
-  useEffect(() => { setMode('seller') }, [setMode])
-
-  // ─ 채팅 패널 상태 ─
-  const [selectedRoomId, setSelectedRoomId] = useState(null)
-  const openRoom = (roomId) => {
-    const rid = Number(roomId)
-    if (Number.isFinite(rid) && rid > 0) setSelectedRoomId(rid)
-  }
-  const closeRoom = () => setSelectedRoomId(null)
-
-  // ✅ ESC 눌러 닫기
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') closeRoom() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
-  // --- (목업 데이터) ---
-  const orders = [
-    { id: 'O-001', status: '발송대기', price: 39000, exchangeRequested: false, returnRequested: false, cancelRequested: false, deliveredAt: null, purchaseConfirmed: false, feedbackSubmitted: false, feedbackReviewed: false },
-    { id: 'O-002', status: '배송중',   price: 59000, exchangeRequested: false, returnRequested: false, cancelRequested: false, deliveredAt: null, purchaseConfirmed: false, feedbackSubmitted: false, feedbackReviewed: false },
-    { id: 'O-003', status: '배송완료', price: 42000, exchangeRequested: true,  returnRequested: false, cancelRequested: false, deliveredAt: '2025-08-22', purchaseConfirmed: false, feedbackSubmitted: true,  feedbackReviewed: false },
-    { id: 'O-004', status: '배송완료', price: 29000, exchangeRequested: false, returnRequested: true,  cancelRequested: false, deliveredAt: '2025-08-21', purchaseConfirmed: true,  feedbackSubmitted: true,  feedbackReviewed: true  },
-  ]
-
-  const counts = useMemo(() => {
-    const by = (fn) => orders.filter(fn).length
-    return {
-      newOrders: by(o => o.status === '발송대기'),
-      shipReady: by(o => o.status === '발송대기'),
-      shipping:  by(o => o.status === '배송중'),
-      shipped:   by(o => o.status === '배송완료'),
-      exchange:  by(o => o.exchangeRequested),
-      returns:   by(o => o.returnRequested),
-      cancels:   by(o => o.cancelRequested),
-      newFeedbacks: by(o => o.feedbackSubmitted && !o.feedbackReviewed),
-      purchaseConfirmed: by(o => o.purchaseConfirmed),
->>>>>>> 4bcd383b5ec71bb817dea8c62b3994ccc88f5bc9
     }
     run()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 상품문의 로드 (API 미확정: 후보 경로 순차 시도, 404/405는 스킵 → 빈 목록 유지)
+
+  // 상품문의(채팅방) 로드 – chatService 사용
   useEffect(() => {
     const maskName = (name) => {
       if (!name) return '고객'
       const s = String(name)
       return s.length > 1 ? `${s[0]}**` : `${s}**`
     }
-    const normalizeThread = (t) => {
-      const id = t?.id || t?.roomId || t?.chatId || t?.threadId || t?.conversationId
-      const buyerName = t?.buyerName || t?.customerName || t?.userName || t?.buyer?.name
-      const productName = t?.productName || t?.product?.name
-      const lastMessage = t?.lastMessage || t?.lastMsg || t?.lastContent || t?.last_message
-      const unread = t?.unread ?? t?.unreadCount ?? t?.unread_count ?? 0
-      const updatedAt = t?.updatedAt || t?.lastMessageAt || t?.updated_at || t?.lastAt
-      return { id, buyer: maskName(buyerName), product: productName || '', lastMessage: lastMessage || '', unread: Number(unread || 0), updatedAt }
-    }
-
-    const loadInquiries = async () => {
-      setInqLoading(true)
-      setInqErr(null)
+    (async () => {
+      setInqLoading(true); setInqErr(null)
       try {
-        const candidates = [
-          '/api/seller/inquiries',
-          '/api/seller/chats/inquiries',
-          '/api/seller/chats',
-          '/api/me/chats',
-        ]
-        let list = []
-        for (const path of candidates) {
-          try {
-            const { data } = await api.get(path, { params: { page: 0, size: 8 } })
-            const arr = data?.content ?? data?.list ?? data?.items ?? data
-            if (Array.isArray(arr)) { list = arr; break }
-          } catch (e) {
-            const st = e?.response?.status
-            if (st === 404 || st === 405) continue
-            throw e
+        // 🔹 핵심: 판매자 시점으로 조회
+        const rooms = await listRooms('seller')
+        // 페이지/배열 응답 모두 대응
+        const arr = Array.isArray(rooms) ? rooms : (rooms?.content ?? rooms?.rows ?? [])
+        const norm = arr.map((r) => {
+          const id = r.id ?? r.roomId
+          const buyerName = r.buyerName ?? r.userName ?? r.customerName ?? r.peerName
+          const productName = r.productName ?? r.product?.name
+          const lastMessage = r.lastMessage ?? r.lastMsg ?? r.lastContent
+          const unread = r.unread ?? r.unreadCount ?? 0
+          const updatedAt = r.updatedAt ?? r.lastMessageAt
+          return {
+            id,
+            buyer: maskName(buyerName),
+            product: productName || '',
+            lastMessage: lastMessage || '',
+            unread: Number(unread || 0),
+            updatedAt,
           }
-        }
-        setInq(list.map(normalizeThread))
+        })
+        setInq(norm)
       } catch (e) {
         setInqErr(e)
       } finally {
         setInqLoading(false)
       }
-    }
-    loadInquiries()
+    })()
   }, [])
 
   // 오늘자 정산 요약 로드 (백엔드 공식 값)
@@ -336,7 +272,6 @@ const SellerMain = () => {
 
         {/* 정산 (오늘자) */}
         <section className={box}>
-          {/* 상세 4줄 */}
           <div className="mt-2 rounded-lg border bg-gray-50">
             {settleLoading ? (
               <div className="p-3 text-center text-xs text-gray-500">불러오는 중…</div>
@@ -377,14 +312,13 @@ const SellerMain = () => {
         </section>
       </div>
 
-      {/* 중간: 좌(그래프) — 우(상품문의/톡톡) */}
+      {/* 중간: 좌(그래프) — 우(상품문의) */}
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* 그래프 */}
         <StoreSalesStats className="md:col-span-2" from={ymd(start)} to={ymd(today)} />
 
-        {/* 상품문의/채팅(셀러) */}
+        {/* 상품문의 */}
         <section className={box}>
-<<<<<<< HEAD
           <h2 className="mb-2 text-base font-semibold">상품문의</h2>
 
           {inqLoading ? (
@@ -405,7 +339,10 @@ const SellerMain = () => {
                     <Button
                       variant="admin"
                       className="w-full justify-start rounded-lg p-3 text-left"
-                      onClick={() => navigate('/user/chat', { state: { roomId: t.id, ctx: 'seller' } })}
+                      onClick={async () => {
+                        try { await markRead(t.id) } catch { }
+                        navigate(`/seller/chat/rooms/${t.id}`)
+                      }}
                     >
                       <div className="flex w-full items-start gap-3">
                         <div className="flex-1">
@@ -439,50 +376,7 @@ const SellerMain = () => {
           >
             채팅 페이지로 이동
           </Button>
-=======
-          <h2 className="mb-2 text-base font-semibold">상품문의 (셀러 채팅)</h2>
-          <div className="rounded-lg border p-3">
-            <ChatList onOpenRoom={openRoom} />
-          </div>
-          <button
-            className="mt-3 w-full rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
-            onClick={() => navigate('/seller/chat')}
-          >
-            채팅 전체 페이지로 이동
-          </button>
->>>>>>> 4bcd383b5ec71bb817dea8c62b3994ccc88f5bc9
         </section>
-      </div>
-
-      {/* ✅ 오버레이 (배경 클릭으로 닫힘) */}
-      {selectedRoomId && (
-        <div
-          className="fixed inset-0 z-30 bg-black/30 backdrop-blur-[1px]"
-          onClick={closeRoom}
-        />
-      )}
-
-      {/* ✅ 슬라이드 채팅 패널 + 닫기 버튼 */}
-      <div
-        className={`fixed top-0 right-0 z-40 h-full w-full max-w-md transform bg-white shadow-xl transition-transform duration-300 ease-in-out ${
-          selectedRoomId ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        aria-hidden={!selectedRoomId}
-      >
-        {/* Close(X) */}
-        <button
-          aria-label="채팅 닫기"
-          onClick={closeRoom}
-          className="absolute right-3 top-3 rounded-full border px-2 py-1 text-sm hover:bg-gray-100"
-        >
-          ×
-        </button>
-
-        {selectedRoomId && (
-          <Suspense fallback={<div className="p-4">채팅방 불러오는 중…</div>}>
-            <ChatRoom roomId={selectedRoomId} onClose={closeRoom} />
-          </Suspense>
-        )}
       </div>
 
       <div className="h-8" />

@@ -1,26 +1,30 @@
 // src/components/seller/feedbacks/FeedbackFilterChips.jsx
 
-import React from 'react'
-import StatusChips from '/src/components/product/StatusChips'
-import { TAB_KEYS } from '/src/constants/sellerfeedbacks'
+import React from 'react';
+import StatusChips from '/src/components/seller/StatusChips';
+import { FEEDBACK_FILTERS } from '/src/constants/sellerfeedbacks';
 
 export default function FeedbackFilterChips({ counts, value, onChange }) {
+  // ✅ FEEDBACK_FILTERS 배열을 map으로 순회하여 items를 동적으로 생성합니다.
+  // 이렇게 하면 key 값이 항상 고유하고 정확하게 보장됩니다.
+  const items = FEEDBACK_FILTERS.map(filter => {
+    const count = counts[filter.key];
+    const showCount = count > 0 && filter.key !== 'ALL';
+
+    return {
+      key: filter.key, // FEEDBACK_FILTERS의 key를 직접 사용
+      label: showCount ? `${filter.baseLabel}` : filter.baseLabel,
+      count: count,
+    };
+  });
+
   return (
     <StatusChips
-      items={[
-        { key: TAB_KEYS.ALL,             label: '전체',                        count: counts[TAB_KEYS.ALL] },
-        { key: TAB_KEYS.NEW,             label: `신규 작성 ${counts[TAB_KEYS.NEW]}건` },
-        { key: TAB_KEYS.WAIT,            label: `작성대기 ${counts[TAB_KEYS.WAIT]}건` },
-        { key: TAB_KEYS.EXPIRED,         label: `기간만료 ${counts[TAB_KEYS.EXPIRED]}건` },
-        { key: TAB_KEYS.REPORT_PENDING,  label: `신고대기 ${counts[TAB_KEYS.REPORT_PENDING]}건` },
-        { key: TAB_KEYS.REPORT_APPROVED, label: `신고완료 ${counts[TAB_KEYS.REPORT_APPROVED]}건` },
-        { key: TAB_KEYS.REPORT_REJECTED, label: `신고 거절 ${counts[TAB_KEYS.REPORT_REJECTED]}건` },
-        { key: TAB_KEYS.EXCHANGE,        label: `교환처리중 ${counts[TAB_KEYS.EXCHANGE]}건` },
-      ]}
+      items={items}
       value={value}
       onChange={onChange}
       size="sm"
       variant="admin"
     />
-  )
+  );
 }

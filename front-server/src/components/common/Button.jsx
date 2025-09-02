@@ -13,9 +13,9 @@ const buttonVariants = cva(
         primary: 'bg-[#5882F6] text-white',
         signUp:
           'border-solid border-[1px] border-[#C3C3C3] bg-white text-[#5882F6]',
-        admin: 'bg-[#ADD973] text-white',
+        admin: 'bg-[#D6BAE9] text-white',
         unselected: 'bg-white border-[#C3C3C3] border-solid border-[1px] text-[#C3C3C3]',
-        whiteBlack: 'bg-white text-[#222] border-[#CCCCCC] border-solid border-[1px] ',
+        blackWhite: 'bg-white text-[#222] border-[#CCCCCC] border-solid border-[1px] ',
         // [추가] 시안과 유사한 회색 테두리 버튼 스타일
         outline: 'bg-white text-gray-800 border border-solid border-gray-300 hover:bg-gray-50',
       },
