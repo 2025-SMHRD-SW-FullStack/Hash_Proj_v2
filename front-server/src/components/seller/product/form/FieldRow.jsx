@@ -1,3 +1,4 @@
+// src/components/seller/product/form/FieldRow.jsx
 import React from 'react'
 
 export default function FieldRow({ label, required, help, children }) {

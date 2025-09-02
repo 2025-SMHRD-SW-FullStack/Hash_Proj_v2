@@ -5,8 +5,7 @@ import com.meonjeo.meonjeo.product.ProductRepository;
 import com.meonjeo.meonjeo.security.AuthSupport;
 import com.meonjeo.meonjeo.seller.SellerService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @Service @RequiredArgsConstructor
 public class AdService {
@@ -314,5 +314,70 @@ public class AdService {
             }
         }
         return list;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AdminBookingItem> adminBookings(String q, AdBookingStatus status, Pageable pageable) {
+        var sort = PageRequest.of(
+                Math.max(0, pageable.getPageNumber()),
+                Math.min(200, pageable.getPageSize()),
+                Sort.by(Sort.Direction.DESC, "id")
+        );
+
+        Page<AdBooking> page = (status != null)
+                ? bookingRepo.findByStatus(status, sort)
+                : bookingRepo.findAll(sort);
+
+        // (선택) productName 매핑이 필요 없다면 이 블록 통째로 삭제하고 아래에서 null 넣어도 됩니다.
+        var productIds = page.getContent().stream()
+                .map(AdBooking::getProductId)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        var products = productRepo.findAllById(productIds);
+        var productNameById = new java.util.HashMap<Long, String>();
+        for (var p : products) {
+            try {
+                var idGetter = p.getClass().getMethod("getId");
+                var nameGetter = p.getClass().getMethod("getName"); // 프로젝트에 따라 getTitle 등으로 바꾸세요
+                Long pid = (Long) idGetter.invoke(p);
+                String name = (String) nameGetter.invoke(p);
+                productNameById.put(pid, name);
+            } catch (Exception ignore) { /* 이름 접근 실패 시 null 유지 */ }
+        }
+
+        // 1) 먼저 DTO 리스트로 매핑
+        var items = page.getContent().stream()
+                .map(b -> new AdminBookingItem(
+                        b.getId(),
+                        b.getSlot().getType(),
+                        b.getSlot().getPosition(),
+                        b.getSlot().getCategory(),
+                        b.getSellerId(),
+                        null, // shopName은 필요 시 SellerService로 채우세요
+                        b.getProductId(),
+                        productNameById.get(b.getProductId()),
+                        b.getStartDate(),
+                        b.getEndDate(),
+                        b.getStatus().name()
+                ))
+                .toList();
+
+        // 2) q가 있으면 리스트에서 필터링
+        java.util.List<AdminBookingItem> filtered = items;
+        if (q != null && !q.isBlank()) {
+            String qq = q.toLowerCase();
+            filtered = items.stream()
+                    .filter(item ->
+                            (item.productName() != null && item.productName().toLowerCase().contains(qq)) ||
+                                    (item.shopName() != null && item.shopName().toLowerCase().contains(qq)) ||
+                                    String.valueOf(item.sellerId()).contains(qq)
+                    )
+                    .toList();
+            // 필터링했으니 totalElements도 필터링된 개수로
+            return new PageImpl<>(filtered, sort, filtered.size());
+        }
+
+        // 3) 검색 없으면 기존 total 유지
+        return new PageImpl<>(filtered, sort, page.getTotalElements());
     }
 }

@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -107,4 +108,15 @@ public class AdController {
         return service.serveFilled(type, category, d);
     }
 
+    @Operation(summary = "[관리자] 광고 예약 목록")
+    @GetMapping("/admin/bookings")
+    public Page<com.meonjeo.meonjeo.ad.dto.AdminBookingItem> adminBookings(
+            @RequestParam(required = false) AdBookingStatus status,
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size
+    ) {
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(200, size), Sort.by(Sort.Direction.DESC, "id"));
+        return service.adminBookings(q, status, pageable);
+    }
 }

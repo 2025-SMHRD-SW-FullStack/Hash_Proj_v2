@@ -1,27 +1,24 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import TestImg from '../../../../assets/images/ReSsol_TestImg.png';
 
 const MyFeedbackCard = ({ feedback }) => {
   const navigate = useNavigate();
 
-  const imageUrls = useMemo(() => {
-    try {
-      return JSON.parse(feedback.imagesJson || '[]');
-    } catch {
-      return [];
-    }
-  }, [feedback.imagesJson]);
+  // 'useMemo'를 사용한 이미지 파싱 로직을 제거했습니다.
 
   return (
     <div
       className="w-44 border rounded-lg p-2 shadow-sm cursor-pointer 
                  hover:shadow-md hover:-translate-y-1 transition-all"
-      onClick={() => navigate(`/user/mypage/feedback/${feedback.id}`)}
+      // ✅ 사용자 ID가 포함된 경로로 수정합니다.
+      onClick={() => navigate(`/my-page/feedbacks/${feedback.id}`)}
     >
       {/* 이미지 */}
       <img
-        src={imageUrls[0] || TestImg}
+        // ✅ src를 feedback.productImageUrl로 변경합니다.
+        //    productImageUrl이 없으면 TestImg를 보여줍니다.
+        src={feedback.productImageUrl || TestImg}
         alt={feedback.productName || '상품 이미지'}
         className="w-full h-32 object-cover rounded-md"
       />
@@ -39,7 +36,7 @@ const MyFeedbackCard = ({ feedback }) => {
           </p>
         )}
 
-        {/* 작성일 */}
+        {/* 작성일 (기존 코드와 동일) */}
         <p className="text-xs text-gray-400 mt-1">
           {new Date(feedback.createdAt).toLocaleDateString('ko-KR')}
         </p>

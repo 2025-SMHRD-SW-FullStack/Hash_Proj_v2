@@ -58,4 +58,14 @@ public class ProductController {
     public void delete(@PathVariable Long id) {
         productService.delete(id);
     }
+
+    // 관리자 전용 상품 삭제 엔드포인트
+    @Operation(summary="상품 삭제(관리자 전용)")
+    @DeleteMapping("/admin/products/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public void adminDelete(@PathVariable Long id) {
+        productService.delete(id); // 기존 서비스 재사용
+    }
 }
+
+

@@ -6,7 +6,16 @@ import api from '../config/axiosInstance';
  * @returns {Promise<object>} - 신청 후 반환되는 셀러 프로필 정보
  */
 export const applySeller = async (payload) => {
-  const { data } = await api.post('/api/seller-apply', payload);
+  // 서버 DTO에 없는 값(zipcode 등)은 보내지 않도록 방어
+  const body = {
+    bizNo: payload.bizNo?.trim(),
+    shopName: payload.shopName?.trim(),
+    ownerName: payload.ownerName?.trim(),
+    addr: payload.addr?.trim(),
+    phone: payload.phone?.trim(),
+    category: payload.category?.trim(),
+  };
+  const { data } = await api.post('/api/seller-apply', body);
   return data;
 };
 

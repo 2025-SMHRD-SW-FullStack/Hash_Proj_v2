@@ -1,3 +1,4 @@
+// src/components/seller/product/form/DiscountRow.jsx
 import React, { useMemo } from 'react'
 import FieldRow from './FieldRow'
 import Button from '../../../common/Button'

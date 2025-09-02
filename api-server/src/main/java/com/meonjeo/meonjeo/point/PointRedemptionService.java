@@ -37,7 +37,7 @@ public class PointRedemptionService {
         // 잔액 락(차감) — 승인 되면 유지, 반려되면 되돌림(+)
         ledgerService.spend(uid, amount, "REDEEM_LOCK", "redeem:"+r.getId());
 
-        return new RedemptionResponse(r.getId(), r.getAmount(), r.getStatus(), r.getCreatedAt(), r.getProcessedAt());
+        return new RedemptionResponse(r.getId(), r.getUserId(), r.getAmount(), r.getStatus(), r.getCreatedAt(), r.getProcessedAt());
     }
 
     @Transactional
@@ -60,6 +60,6 @@ public class PointRedemptionService {
     }
 
     public static RedemptionResponse toDto(PointRedemption r){
-        return new RedemptionResponse(r.getId(), r.getAmount(), r.getStatus(), r.getCreatedAt(), r.getProcessedAt());
+        return new RedemptionResponse(r.getId(), r.getUserId(), r.getAmount(), r.getStatus(), r.getCreatedAt(), r.getProcessedAt());
     }
 }

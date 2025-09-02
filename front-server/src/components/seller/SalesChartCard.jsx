@@ -1,4 +1,4 @@
-// /src/components/seller/StatusChips.jsx
+// /src/components/seller/SalesChartCard.jsx
 import React from 'react'
 import Button from '/src/components/common/Button'
 

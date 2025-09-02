@@ -1,3 +1,4 @@
+// /src/pages/seller/product/ProductEditPage.jsx
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Button from '../../../components/common/Button'
@@ -7,88 +8,46 @@ import DetailComposer from '../../../components/seller/product/DetailComposer'
 import OptionSection from '../../../components/seller/product/options/OptionSection'
 import { CATEGORIES } from '../../../constants/products'
 
-// 더미(목록형) 시드
-import { productsMock as LIST_SEED } from '../../../data/products.mock.js'
+// 실서버 API
+import { getMyProductDetail, updateMyProduct } from '/src/service/productService'
 
 const sheet = 'w-full rounded-2xl border bg-white shadow-sm divide-y'
 const pad = 'px-6 py-6'
 const wrap = 'mx-auto w-full max-w-[1120px] px-6'
 
 // 폭 통일 (등록 페이지와 동일)
-const longW = 'w-full max-w-[750px]'  // 카테고리
-const longW2 = 'w-full max-w-[721px]' // 브랜드/상품명
-const shortW = 'w-[224px]'            // 판매가/날짜/포인트/재고
+const longW = 'w-full max-w-[750px]'
+const longW2 = 'w-full max-w-[721px]'
+const shortW = 'w-[224px]'
 
-// ─────────────────────────────────────────────
-// In-memory Mock "API" (시드=파일, 저장=localStorage)
-const LS_KEY = 'mock_products_v1'
-const delay = (ms = 120) => new Promise(r => setTimeout(r, ms))
+// blocks ⇄ html
+function blocksToHtml(blocks = []) {
+  return blocks
+    .map((b) =>
+      b.type === 'image'
+        ? `<img src="${b.src || ''}" alt="${b.name || ''}" style="max-width:100%;height:auto;display:block;margin:8px 0;" />`
+        : `<p>${(b.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
+    )
+    .join('')
+}
+function htmlToBlocks(html = '') {
+  const out = []
+  const div = document.createElement('div')
+  div.innerHTML = html || ''
+  Array.from(div.childNodes).forEach((node) => {
+    if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'IMG') {
+      out.push({ type: 'image', src: node.getAttribute('src') || '', name: node.getAttribute('alt') || '' })
+    } else {
+      const txt = (node.textContent || '').trim()
+      if (txt) out.push({ type: 'text', text: txt })
+    }
+  })
+  return out
+}
 
-/** 목록용 → 상세형으로 수화 */
-function toDetailSeed(row) {
-  const saleStart = row.updatedAt || '2025-08-01'
-  const saleEnd = row.saleEndAt || '2025-12-31'
-  return {
-    id: row.id,
-    // 기본
-    category: row.category || '',
-    brand: '', // 목록 데이터에 없으니 기본값
-    name: row.name || '',
-    price: Number(row.price ?? 0),
-
-    // 즉시할인(기본 비활성)
-    discountEnabled: false,
-    discountType: 'amount',
-    discount: 0,
-
-    // 판매기간/포인트
-    saleStart,
-    saleEnd,
-    feedbackPoint: 0,
-
-    // 재고/옵션
-    stock: Number(row.stock ?? 0),
-    useOptions: false,
-    optionGroups: [],
-    options: [],
-
-    // 미디어/상세(간단 플레이스홀더)
-    thumbnailUrl: `https://via.placeholder.com/160?text=${encodeURIComponent(row.name ?? '상품')}`,
-    detailBlocks: [{ type: 'text', text: `${row.name} 상세 설명(더미).` }],
-  }
-}
-function seedDB() {
-  return (LIST_SEED || []).map(toDetailSeed)
-}
-function loadDB() {
-  try {
-    const raw = localStorage.getItem(LS_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch {}
-  const seeded = seedDB()
-  localStorage.setItem(LS_KEY, JSON.stringify(seeded))
-  return seeded
-}
-function saveDB(db) {
-  localStorage.setItem(LS_KEY, JSON.stringify(db))
-}
-async function getProductMock(id) {
-  await delay()
-  const db = loadDB()
-  const p = db.find(x => String(x.id) === String(id))
-  if (!p) throw new Error('NOT_FOUND')
-  return structuredClone(p)
-}
-async function updateProductMock(id, patch) {
-  await delay()
-  const db = loadDB()
-  const i = db.findIndex(x => String(x.id) === String(id))
-  if (i < 0) throw new Error('NOT_FOUND')
-  db[i] = { ...db[i], ...patch }
-  saveDB(db)
-  return structuredClone(db[i])
-}
-// ─────────────────────────────────────────────
+// 날짜 포맷 헬퍼 (백엔드: LocalDateTime "yyyy-MM-dd'T'HH:mm:ss")
+const toIsoStart = (d) => (d ? `${d}T00:00:00` : null)
+const toIsoEnd = (d) => (d ? `${d}T23:59:59` : null)
 
 export default function ProductEditPage() {
   const { id } = useParams()
@@ -110,9 +69,17 @@ export default function ProductEditPage() {
     optionGroups: [],
     options: [], // [{key,label,parts,addPrice,stock,enabled}]
     // 미디어
-    thumbnail: null, // 파일 입력(교체용)
+    thumbnail: null, // (UI 유지) 파일 입력 — 서버에는 기존 URL 유지 전달
     // 상세
     detailBlocks: [],
+  })
+
+  // 서버에서 받은 원본 값(썸네일 URL/기간 등 유지용)
+  const serverSnapshotRef = useRef({
+    thumbnailUrl: '',
+    optionNames: [], // ['색상','사이즈',...]
+    saleStartAt: '',
+    saleEndAt: '',
   })
 
   const setField = (k, v) => setForm((s) => ({ ...s, [k]: v }))
@@ -128,35 +95,120 @@ export default function ProductEditPage() {
   }, [form.discountEnabled, form.discount, price])
   const final = Math.max(0, price - off)
 
-  // 상세 로드 (한 번)
+  // 옵션 초기값(서버 → OptionSection.hydrate)
+  const [optionInitial, setOptionInitial] = useState(null)
+
+  // 상세 로드 (실서버)
   useEffect(() => {
     let alive = true
     ;(async () => {
       try {
         setLoading(true)
-        const p = await getProductMock(id)
 
-        // 편집 폼에 맞게 매핑
-        const next = {
-          category: p.category || '',
-          brand: p.brand || '',
-          name: p.name || '',
-          price: String(p.price ?? ''),
-          discountEnabled: !!p.discountEnabled,
-          discountType: 'amount',
-          discount: String(p.discount ?? ''),
-          saleStart: (p.saleStart || '').slice(0, 10),
-          saleEnd: (p.saleEnd || '').slice(0, 10),
-          feedbackPoint: String(p.feedbackPoint ?? 0),
-          stock: String(p.stock ?? ''),
-          useOptions: !!p.useOptions,
-          optionGroups: p.optionGroups || [],
-          options: p.options || [],
-          thumbnail: null, // 파일은 보안상 프리필 불가
-          detailBlocks: p.detailBlocks || [],
+        const { product, variants } = await getMyProductDetail(id)
+
+        // 기본/가격 매핑
+        const basePrice = Number(product?.basePrice ?? product?.price ?? 0)
+        const salePrice = Number(product?.salePrice ?? 0)
+        const discountEnabled = salePrice > 0 && salePrice <= basePrice
+        const discount = discountEnabled ? String(basePrice - salePrice) : ''
+
+        // 판매기간/포인트
+        const saleStart = (product?.saleStartAt || '').slice(0, 10)
+        const saleEnd = (product?.saleEndAt || '').slice(0, 10)
+        const feedbackPoint = String(product?.feedbackPoint ?? 0)
+
+        // 재고
+        const stockTotal = String(product?.stockTotal ?? '')
+
+        // 상세 blocks
+        const detailBlocks = htmlToBlocks(product?.detailHtml || '')
+
+        // 옵션 라벨
+        const optionNames = [
+          product?.option1Name,
+          product?.option2Name,
+          product?.option3Name,
+          product?.option4Name,
+          product?.option5Name,
+        ].filter(Boolean)
+
+        serverSnapshotRef.current.thumbnailUrl = product?.thumbnailUrl || ''
+        serverSnapshotRef.current.optionNames = optionNames
+        serverSnapshotRef.current.saleStartAt = product?.saleStartAt || ''
+        serverSnapshotRef.current.saleEndAt = product?.saleEndAt || ''
+
+        // OptionSection 초기 구성
+        if (Array.isArray(variants) && variants.length) {
+          const depth = Math.max(
+            ...variants.map((v) => {
+              let d = 0
+              for (let i = 1; i <= 5; i++) if (v[`option${i}Value`] ?? (i === 1 ? v.optionValue : undefined)) d = i
+              return d
+            }),
+            optionNames.length || 0
+          )
+          const names = Array.from({ length: depth }).map((_, i) => optionNames[i] || `옵션${i + 1}`)
+          // 그룹 values 수집
+          const valuesSet = Array.from({ length: depth }).map(() => new Set())
+          variants.forEach((v) => {
+            for (let i = 1; i <= depth; i++) {
+              const val = v[`option${i}Value`] ?? (i === 1 ? v.optionValue : undefined)
+              if (val) valuesSet[i - 1].add(String(val))
+            }
+          })
+          const groups = valuesSet.map((s, i) => ({ name: names[i], values: Array.from(s) }))
+          // rows
+          const rows = variants.map((v) => {
+            const parts = Array.from({ length: depth }).map((_, i) => ({
+              n: names[i],
+              v: String(v[`option${i + 1}Value`] ?? (i === 0 ? v.optionValue : '')),
+            }))
+            return {
+              key: parts.map((p) => `${p.n}:${p.v}`).join('|'),
+              label: parts.map((p) => p.v).join(' / '),
+              parts,
+              addPrice: Number(v.addPrice || 0),
+              stock: Number(v.stock || 0),
+              enabled: true,
+            }
+          })
+          setOptionInitial({
+            enabled: true,
+            composeType: depth === 1 ? 'single' : 'combo',
+            nameCount: depth,
+            groups,
+            rows,
+          })
+        } else {
+          setOptionInitial({
+            enabled: false,
+            composeType: 'single',
+            nameCount: 1,
+            groups: [{ name: optionNames[0] || '옵션1', values: [] }],
+            rows: [],
+          })
         }
+
         if (!alive) return
-        setForm(next)
+        setForm({
+          category: product?.category || '',
+          brand: product?.brand || '',
+          name: product?.name || '',
+          price: String(basePrice || ''),
+          discountEnabled,
+          discountType: 'amount',
+          discount,
+          saleStart,
+          saleEnd,
+          feedbackPoint,
+          stock: stockTotal,
+          useOptions: Array.isArray(variants) && variants.length > 0,
+          optionGroups: [], // OptionSection에서 갱신
+          options: [],       // OptionSection에서 갱신
+          thumbnail: null,   // 파일은 UI 유지(서버엔 기존 URL 유지)
+          detailBlocks,
+        })
       } finally {
         if (alive) setLoading(false)
       }
@@ -168,7 +220,6 @@ export default function ProductEditPage() {
   const validateAndSubmit = async (e) => {
     e.preventDefault()
 
-    // 등록 페이지와 동일 검증(읽기전용은 이미 값 세팅되어 있음)
     if (!form.category || !CATEGORIES.includes(form.category)) {
       return alert('카테고리를 선택하세요.')
     }
@@ -204,37 +255,59 @@ export default function ProductEditPage() {
       return alert('상세페이지 내용을 입력하세요.')
     }
 
+    // --- 서버 페이로드 매핑 (스웨거 기준) ---
+    const basePrice = pNum
+    const salePrice = form.discountEnabled ? Math.max(0, basePrice - Number(form.discount || 0)) : 0
+
+    // 옵션 라벨(OptionSection 제공 groups 우선, 서버 스냅샷 보조)
+    const names = (form.optionGroups || []).map((g) => g.name?.trim()).filter(Boolean)
+    const optNames = []
+    for (let i = 0; i < 5; i++) optNames[i] = names[i] || serverSnapshotRef.current.optionNames[i] || null
+
+    const variants =
+      form.useOptions
+        ? (form.options || []).map((r) => {
+            const v = { addPrice: Number(r.addPrice || 0), stock: Number(r.stock || 0) }
+            // parts 순서대로 option1~ 지정 (optionValue 사용 안 함)
+            ;(r.parts || []).forEach((p, idx) => {
+              v[`option${idx + 1}Value`] = p.v
+            })
+            return v
+          })
+        : []
+
     const payload = {
-      // 읽기전용도 포함해 전체 병합 저장(백엔드가 머지한다고 가정)
-      category: form.category,
-      brand: form.brand,
       name: form.name,
-      price: pNum,
-
-      discountEnabled: form.discountEnabled,
-      discountType: 'amount',
-      discount: Number(form.discount || 0),
-      finalPrice: final,
-
-      saleStart: form.saleStart,
-      saleEnd: form.saleEnd,
+      brand: form.brand,
+      category: form.category,
+      basePrice,
+      salePrice,
+      thumbnailUrl: serverSnapshotRef.current.thumbnailUrl || '', // UI는 파일 유지, 서버에는 기존 URL 전달
+      detailHtml: blocksToHtml(form.detailBlocks),
+      // 백엔드가 LocalDateTime(yyyy-MM-dd'T'HH:mm:ss) 요구
+      saleStartAt: serverSnapshotRef.current.saleStartAt || toIsoStart(form.saleStart),
+      saleEndAt:   serverSnapshotRef.current.saleEndAt   || toIsoEnd(form.saleEnd),
       feedbackPoint: Number(form.feedbackPoint || 0),
 
-      stock: form.useOptions ? undefined : Number(form.stock || 0),
-
-      useOptions: form.useOptions,
-      optionGroups: form.optionGroups,
-      options: form.useOptions ? form.options : [],
-
-      // 파일 업로드는 더미라서 파일명만 보관
-      files: form.thumbnail ? { thumbnail: form.thumbnail.name } : undefined,
-
-      detailBlocks: form.detailBlocks,
+      option1Name: optNames[0],
+      option2Name: optNames[1],
+      option3Name: optNames[2],
+      option4Name: optNames[3],
+      option5Name: optNames[4],
+      variants,
+      // 옵션이 없으면 서버 단일 SKU 생성 시 사용할 총 재고 전달
+      ...(form.useOptions ? {} : { stockTotal: Number(form.stock || 0) }),
     }
 
-    await updateProductMock(id, payload)
-    alert('수정 저장 완료(모크)')
-    navigate('/seller/products')
+    try {
+      await updateMyProduct(id, payload)
+      alert('수정 저장 완료')
+      navigate('/seller/products?status=ALL')
+    } catch (err) {
+      console.error(err)
+      const msg = err?.response?.data?.message || err?.message || '상품 수정 실패'
+      alert(msg)
+    }
   }
 
   if (loading) {
@@ -368,6 +441,7 @@ export default function ProductEditPage() {
               enabled={form.useOptions}
               price={Number(form.price || 0)}
               value={form.options}
+              initial={optionInitial}
               onChange={({ enabled, groups, rows }) => {
                 setField('useOptions', enabled)
                 setField('optionGroups', groups)
@@ -376,7 +450,7 @@ export default function ProductEditPage() {
             />
           </section>
 
-          {/* 미디어 (수정 가능) */}
+          {/* 미디어 (UI 유지 – 파일 입력) */}
           <section className={pad}>
             <div className="space-y-4">
               <FieldRow label="썸네일" help="이미지 1장 업로드">

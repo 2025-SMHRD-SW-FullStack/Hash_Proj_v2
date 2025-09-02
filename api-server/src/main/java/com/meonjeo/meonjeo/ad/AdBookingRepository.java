@@ -51,4 +51,5 @@ public interface AdBookingRepository extends JpaRepository<AdBooking, Long> {
             @Param("category") String category,
             @Param("date") java.time.LocalDate date);
 
+    Page<AdBooking> findByStatus(AdBookingStatus status, Pageable pageable);
 }

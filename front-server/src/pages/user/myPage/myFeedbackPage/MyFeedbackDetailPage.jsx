@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// ✅ getSurveyTemplate 함수를 함께 import합니다.
 import { getFeedbackDetail, getSurveyTemplate } from '../../../../service/feedbackService'; 
 import Button from '../../../../components/common/Button';
 
@@ -25,7 +24,7 @@ const MyFeedbackDetailPage = () => {
   const { feedbackId } = useParams();
   const navigate = useNavigate();
   const [feedback, setFeedback] = useState(null);
-  const [surveyTemplate, setSurveyTemplate] = useState(null); // ✅ 설문지 템플릿 상태 추가
+  const [surveyTemplate, setSurveyTemplate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -33,11 +32,9 @@ const MyFeedbackDetailPage = () => {
     const fetchDetails = async () => {
       try {
         setLoading(true);
-        // 1. 피드백 상세 정보 가져오기
         const feedbackData = await getFeedbackDetail(feedbackId);
         setFeedback(feedbackData);
 
-        // 2. 받아온 productId로 설문지 템플릿 가져오기
         if (feedbackData?.productId) {
           const templateData = await getSurveyTemplate(feedbackData.productId);
           setSurveyTemplate(templateData);
@@ -52,11 +49,9 @@ const MyFeedbackDetailPage = () => {
     fetchDetails();
   }, [feedbackId]);
   
-  // JSON 파싱은 useMemo를 사용해 성능 최적화
   const surveyScores = useMemo(() => feedback?.scoresJson ? JSON.parse(feedback.scoresJson) : {}, [feedback]);
   const imageUrls = useMemo(() => feedback?.imagesJson ? JSON.parse(feedback.imagesJson) : [], [feedback]);
 
-  // ✅ 선택형 답변의 라벨을 찾아주는 헬퍼 함수
   const getAnswerDisplayValue = (question, answerValue) => {
     if (question.type === 'SCALE_1_5') {
         const labels = { 1: '매우 불만족', 2: '불만족', 3: '보통', 4: '만족', 5: '매우 만족' };
@@ -64,7 +59,7 @@ const MyFeedbackDetailPage = () => {
     }
     if (question.type === 'CHOICE_ONE') {
         const option = question.options?.find(opt => opt.value === answerValue);
-        return option?.label || answerValue; // 'NA' 같은 경우
+        return option?.label || answerValue;
     }
     return answerValue;
   };
@@ -84,16 +79,18 @@ const MyFeedbackDetailPage = () => {
 
       {/* --- 기본 정보 --- */}
        <div className="border rounded-lg p-6 bg-white shadow-sm">
-        <h3 className="font-bold text-lg mb-4 pb-2 border-b">상품의 총점</h3>
-        <div className="flex items-center gap-2 mt-2">
-          <StarRating score={feedback.overallScore} />
+        <h3 className="font-bold text-lg mb-2">{feedback.productName}</h3>
+        <p className="text-sm text-gray-500 mb-4">{feedback.optionName}</p>
+        <div className="flex items-center gap-2 mt-2 pb-2 border-b">
+            <span className='font-semibold'>총점</span>
+            <StarRating score={feedback.overallScore} />
         </div>
       </div>
 
       {/* --- 상세 설문 결과 --- */}
       {surveyTemplate && Object.keys(surveyScores).length > 0 && (
         <div className="border rounded-lg p-6 bg-white shadow-sm">
-          <h3 className="font-bold text-lg mb-4 pb-2 border-b">항목별 별점</h3>
+          <h3 className="font-bold text-lg mb-4 pb-2 border-b">상세 응답</h3>
           <div className="space-y-4">
             {surveyTemplate.questions.map(q => {
               const userAnswer = surveyScores[q.code];
@@ -114,7 +111,7 @@ const MyFeedbackDetailPage = () => {
 
       {/* --- 작성 내용 및 사진 --- */}
       <div className="border rounded-lg p-6 bg-white shadow-sm">
-        <h3 className="font-bold text-lg mb-4 pb-2 border-b">작성한 피드백 내용</h3>
+        <h3 className="font-bold text-lg mb-4 pb-2 border-b">작성한 피드백</h3>
         <p className="whitespace-pre-wrap p-4 bg-gray-50 rounded-md min-h-[100px]">{feedback.content}</p>
 
         {imageUrls.length > 0 && (

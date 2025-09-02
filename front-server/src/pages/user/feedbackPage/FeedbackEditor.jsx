@@ -1,16 +1,20 @@
+// src/pages/user/feedbackPage/FeedbackEditor.jsx
+
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+// 1. 이미지 업로드 서비스 함수를 import 합니다.
 import { submitFeedback } from "../../../service/feedbackService";
-import { getMyPointBalance } from "../../../service/pointService"; // 포인트 조회 서비스 import
+import { uploadImages } from "../../../service/uploadService"; // [수정] 추가
+import { getMyPointBalance } from "../../../service/pointService";
 import Button from "../../../components/common/Button";
 import ChatRoom from "../../../components/chat/ChatRoom";
 import Icon from "../../../components/common/Icon";
 import CloseIcon from "../../../assets/icons/ic_close.svg";
 import useFeedbackStore from "../../../stores/feedbackStore";
-import FeedbackSuccessModal from "../../../components/feedback/FeedbackSuccessModal"; // 새로 만든 모달 import
-import useAuthStore from "../../../stores/authStore"; // ✅ authStore import 추가
+import FeedbackSuccessModal from "../../../components/feedback/FeedbackSuccessModal";
+import useAuthStore from "../../../stores/authStore";
 
-const MAX_LENGTH = 1000; // 글자 수 제한 상수
+const MAX_LENGTH = 1000;
 
 const FeedbackEditor = () => {
   const [searchParams] = useSearchParams();
@@ -23,7 +27,6 @@ const FeedbackEditor = () => {
   const scoresJson = searchParams.get("scoresJson");
   const addFeedback = useFeedbackStore((state) => state.addFeedback);
 
-  // ✅ authStore에서 setPoints 함수 가져오기
   const setPoints = useAuthStore((state) => state.setPoints);
 
   // --- 수기 작성 관련 상태 ---
@@ -38,9 +41,8 @@ const FeedbackEditor = () => {
   const [input, setInput] = useState('');
   const [draft, setDraft] = useState('');
   const [status, setStatus] = useState('IN_PROGRESS');
-  const fileInputRef = useRef(null); // AI 채팅 파일 입력을 위한 ref
+  const fileInputRef = useRef(null);
 
-  // --- 모달 및 포인트 정보 저장을 위한 state 추가 ---
   const [isSuccessModalOpen, setSuccessModalOpen] = useState(false);
   const [feedbackResult, setFeedbackResult] = useState({ awarded: 0, total: 0 });
 
@@ -112,7 +114,7 @@ const FeedbackEditor = () => {
     }, 1000);
   };
 
-  // --- 최종 제출 핸들러 ---
+  // --- 최종 제출 핸들러 (수정된 부분) ---
   const handleSubmit = async () => {
     const finalContent = type === 'AI' ? draft : manualContent;
     if (!finalContent.trim()) {
@@ -126,13 +128,24 @@ const FeedbackEditor = () => {
     setIsSubmitting(true);
     
     try {
+      // [수정] 2. 이미지 업로드 로직 추가
+      let uploadedImageUrls = [];
+      // 수기 작성(MANUAL) 모드이고, 선택된 파일이 있을 때만 업로드 실행
+      if (type === 'MANUAL' && selectedFiles.length > 0) {
+        // 'EXCHANGE' 타입은 교환/반품 이미지와 같은 경로를 사용하기 위함입니다.
+        // 필요 시 'FEEDBACK' 등 새로운 타입을 서버에 추가할 수 있습니다.
+        const uploadResults = await uploadImages('EXCHANGE', selectedFiles);
+        uploadedImageUrls = uploadResults.map(res => res.url);
+      }
+
       const payload = {
         orderItemId: Number(orderItemId),
         type,
         overallScore: Number(overallScore),
         scoresJson,
         content: finalContent,
-        imagesJson: JSON.stringify(imagePreviews)
+        // [수정] 3. 미리보기 주소 대신 실제 업로드된 URL을 사용합니다.
+        imagesJson: JSON.stringify(uploadedImageUrls)
       };
 
       const feedbackResponse = await submitFeedback(payload);
@@ -140,16 +153,14 @@ const FeedbackEditor = () => {
       if(productId) {
         addFeedback(productId, {
           ...feedbackResponse,
-          author: '작성자닉네임', // 실제로는 zustand 등에서 로그인된 사용자 정보로 대체해야 합니다.
+          author: '작성자닉네임',
           createdAt: new Date().toISOString(),
         });
       }
 
-      // 포인트 지급 및 잔액 조회
-      const awardedPoint = feedbackResponse.awardedPoint || 500; // API 응답에 지급 포인트가 없다면 기본값 사용
+      const awardedPoint = feedbackResponse.awardedPoint || 500;
       const newTotalBalance = await getMyPointBalance();
 
-      // ✅ authStore에 포인트 업데이트
       setPoints(newTotalBalance);
       
       setFeedbackResult({
@@ -157,7 +168,6 @@ const FeedbackEditor = () => {
         total: newTotalBalance,
       });
 
-      // alert 대신 모달을 띄웁니다.
       setSuccessModalOpen(true);
 
     } catch (e) {
@@ -274,17 +284,16 @@ const FeedbackEditor = () => {
         </div>
       )}
 
-      {/* 성공 모달 렌더링 */}
       <FeedbackSuccessModal
         isOpen={isSuccessModalOpen}
         onClose={() => {
           setSuccessModalOpen(false);
-          navigate(`/product/${productId}`); // 모달이 닫히면 상품 페이지로 이동
+          navigate(`/product/${productId}`);
         }}
         earnedPoints={feedbackResult.awarded}
         totalPoints={feedbackResult.total}
         onGoToProduct={() => navigate(`/product/${productId}`)}
-        onGoToMyPage={() => navigate('/user/mypage/orders')} // 피드백 목록 대신 주문내역으로 이동
+        onGoToMyPage={() => navigate('/user/mypage/orders')}
       />
     </>
   );

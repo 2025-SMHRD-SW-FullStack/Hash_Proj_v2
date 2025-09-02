@@ -1,12 +1,21 @@
-import React from 'react'
-import testImg from '../../assets/images/ReSsol_TestImg.png' // 기본 이미지 경로 확인
+import React, { useState } from 'react'; // useState 추가
+import testImg from '../../assets/images/ReSsol_TestImg.png';
 
 const Product = ({ product, onClick, isSimple = false }) => {
   if (!product) return null;
 
+  // ✅ 이미지 로딩 에러 상태 추가
+  const [imgError, setImgError] = useState(false);
+
   const handleClick = () => onClick?.(product.id);
 
-  const imgSrc = product.thumbnailUrl || testImg;
+  // ✅ thumbnailUrl이 있고, 에러가 나지 않았으면 해당 URL 사용, 아니면 testImg 표시
+  const imgSrc = product.thumbnailUrl && !imgError ? product.thumbnailUrl : testImg;
+
+  // ✅ 이미지 로딩 실패 시 호출될 함수
+  const handleImageError = () => {
+    setImgError(true);
+  };
 
   return (
     <div
@@ -16,6 +25,8 @@ const Product = ({ product, onClick, isSimple = false }) => {
       <img
         src={imgSrc}
         alt={product.name}
+        // ✅ onError 이벤트 핸들러 추가
+        onError={handleImageError}
         className="w-full sm:w-48 h-48 sm:h-48 border border-solid rounded-xl object-cover"
       />
       <div className="w-full mt-2 space-y-1 sm:space-y-2">
@@ -49,4 +60,4 @@ const Product = ({ product, onClick, isSimple = false }) => {
   )
 }
 
-export default Product
+export default Product;

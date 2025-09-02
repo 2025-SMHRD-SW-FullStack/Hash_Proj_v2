@@ -1,3 +1,4 @@
+// /src/pages/seller/product/ProductNewPage.jsx
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../../components/common/Button'
@@ -6,15 +7,31 @@ import DiscountRow from '../../../components/seller/product/form/DiscountRow'
 import DetailComposer from '../../../components/seller/product/DetailComposer'
 import { CATEGORIES } from '../../../constants/products'
 import OptionSection from '../../../components/seller/product/options/OptionSection'
+import { createMyProduct } from '/src/service/productService'
+import { uploadImages } from '/src/service/uploadService'
 
 const sheet = 'w-full rounded-2xl border bg-white shadow-sm divide-y'
 const pad = 'px-6 py-6'
 const wrap = 'mx-auto w-full max-w-[1120px] px-6'
 
-// 폭 통일
+// 폭 통일 (Edit 페이지와 동일)
 const longW = 'w-full max-w-[750px]'  // 카테고리
 const longW2 = 'w-full max-w-[721px]' // 브랜드/상품명
 const shortW = 'w-[224px]'            // 판매가/날짜/포인트/재고
+
+// blocks -> html (서버는 detailHtml 문자열 수신)
+function blocksToHtml(blocks = []) {
+  return blocks
+    .map((b) =>
+      b.type === 'image'
+        ? `<img src="${b.src || ''}" alt="${b.name || ''}" style="max-width:100%;height:auto;display:block;margin:8px 0;" />`
+        : `<p>${(b.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
+    )
+    .join('')
+}
+
+// LocalDateTime 변환기: 시작=00:00:00, 종료=23:59:59
+const toLdt = (d, isEnd = false) => (d ? `${d}T${isEnd ? '23:59:59' : '00:00:00'}` : null)
 
 export default function ProductNewPage() {
   const navigate = useNavigate()
@@ -31,35 +48,38 @@ export default function ProductNewPage() {
     // 옵션
     useOptions: false,
     optionGroups: [],
-    options: [], // [{key,label,delta,stock}]
+    options: [], // [{key,label,parts,addPrice,stock,enabled}]
     // 미디어
-    thumbnail: null,
-    // 상세(HTML 미사용)
+    thumbnail: null, // UI는 파일, 서버엔 URL만 전송
+    // 상세(블록 에디터)
     detailBlocks: [],
   })
 
   const setField = (k, v) => setForm((s) => ({ ...s, [k]: v }))
   const on = (k) => (e) => setField(k, e.target.value)
-  const onNum = (k) => (e) => setField(k, e.target.value.replace(/[^\d]/g, ''))
+  const onNum = (k) => (e) => setField(k, e.target.value.replace(/[^\d-]/g, ''))
 
-  const price = Number(form.price || 0)
-  const off = useMemo(() => {
-    if (!form.discountEnabled || !price) return 0
-    const v = Number(form.discount || 0) // 금액형만 사용
-    return Math.max(0, v)
-  }, [form.discountEnabled, form.discount, price])
+  // 가격/할인 계산 (Edit 페이지와 동일 로직)
+  const basePrice = Number(form.price || 0)
+  const discountAmt = useMemo(() => {
+    if (!form.discountEnabled || !basePrice) return 0
+    const v = Number(form.discount || 0)
+    return Math.max(0, Math.min(v, basePrice))
+  }, [form.discountEnabled, form.discount, basePrice])
+  const salePriceCalc = Math.max(0, basePrice - discountAmt)
 
-  const final = Math.max(0, price - off)
-
-  const validateAndSubmit = (e) => {
+  // 검증 + 등록
+  const validateAndSubmit = async (e) => {
     e.preventDefault()
 
+    // ── 공통 검증 ───────────────────
     if (!form.category || !CATEGORIES.includes(form.category)) {
       return alert('카테고리를 선택하세요.')
     }
     if (!form.brand.trim()) return alert('브랜드명을 입력하세요.')
     if (!form.name.trim()) return alert('상품명을 입력하세요.')
-    if (!price || price <= 0) return alert('판매가를 입력하세요.')
+
+    if (!basePrice || basePrice <= 0) return alert('판매가를 입력하세요.')
 
     if (!form.saleStart || !form.saleEnd) return alert('판매기간을 선택하세요.')
     if (form.saleEnd < form.saleStart) return alert('판매 종료일은 시작일 이후여야 합니다.')
@@ -67,43 +87,111 @@ export default function ProductNewPage() {
     const fb = Number(form.feedbackPoint)
     if (!Number.isFinite(fb)) return alert('피드백 포인트를 입력하세요.')
 
-    // 재고 / 옵션 (옵션은 필수 아님)
+    // 할인 50~100%(백엔드 기준)
+    if (form.discountEnabled) {
+      const min = Math.floor(basePrice * 0.5), max = basePrice
+      if (!(salePriceCalc >= min && salePriceCalc <= max)) {
+        return alert('할인가는 기본가의 50% 이상, 100% 이하만 허용됩니다.')
+      }
+    }
+
+    // 옵션/재고
     if (!form.useOptions) {
       const stock = Number(form.stock)
       if (!Number.isFinite(stock) || stock <= 0) {
         return alert('수량(재고)을 올바르게 입력하세요.')
       }
     } else {
+      // 옵션 추가금 ±50%(기준=할인가>0 ? 할인가 : 기본가)
+      const baseForDelta = form.discountEnabled ? salePriceCalc : basePrice
+      const range = baseForDelta * 0.5
       for (const r of form.options ?? []) {
         if (!Number.isFinite(r.stock) || r.stock < 0) {
           return alert('옵션 재고를 올바르게 입력하세요.')
         }
-        if (!Number.isFinite(r.delta)) {
-          return alert('옵션 추가금을 올바르게 입력하세요.')
+        const add = Number(r.addPrice ?? r.delta ?? 0)
+        if (!Number.isFinite(add) || add < -range || add > range) {
+          return alert('옵션 추가금은 기준가의 ±50% 이내여야 합니다.')
         }
       }
       // 옵션 0개도 허용
     }
 
-    // 상세페이지(블록만)
     if (!form.detailBlocks?.length) {
       return alert('상세페이지 내용을 입력하세요.')
     }
 
-    const payload = {
-      ...form,
-      price,
-      discount: Number(form.discount || 0),
-      finalPrice: final,
-      files: { thumbnail: form.thumbnail?.name },
-      stock: form.useOptions ? undefined : Number(form.stock || 0),
-      options: form.useOptions ? form.options : [],
-      // detailBlocks 그대로 전송
+    // ── 서버 페이로드 매핑 ────────────
+    const salePrice = form.discountEnabled ? salePriceCalc : 0
+
+    // 옵션 라벨 (최대 5개)
+    const names = (form.optionGroups || []).map((g) => g.name?.trim()).filter(Boolean)
+    const optNames = []
+    for (let i = 0; i < 5; i++) optNames[i] = names[i] || null
+
+    // variants (option{n}Value 전송)
+    const variants = form.useOptions
+      ? (form.options || []).map((row) => {
+          const v = { addPrice: Number(row.addPrice || 0), stock: Number(row.stock || 0) }
+          ;(row.parts || []).forEach((p, idx) => {
+            v[`option${idx + 1}Value`] = p.v
+          })
+          return v
+        })
+      : []
+
+    // 썸네일 업로드 (파일이 있으면 업로드, 없으면 에러)
+    let thumbnailUrl = ''
+    if (form.thumbnail) {
+      try {
+        const uploaded = await uploadImages('PRODUCT_THUMB', [form.thumbnail])
+        thumbnailUrl = uploaded?.[0]?.url || ''
+      } catch (err) {
+        console.error(err)
+        return alert('썸네일 업로드에 실패했습니다.')
+      }
+    } else {
+      return alert('썸네일 이미지를 업로드하세요.')
     }
 
-    console.log('[상품 등록 payload]', payload)
-    alert('임시: 상품이 등록되었다고 가정합니다.')
-    navigate('/seller/products')
+    const payload = {
+      name: form.name,
+      brand: form.brand,
+      category: form.category,
+
+      basePrice,
+      salePrice,
+
+      thumbnailUrl,
+      detailHtml: blocksToHtml(form.detailBlocks),
+
+      saleStartAt: toLdt(form.saleStart, false),
+      saleEndAt:   toLdt(form.saleEnd, true),
+      feedbackPoint: Number(form.feedbackPoint || 0),
+
+      // 옵션 라벨(서버가 optionName/option1Name 모두 쓸 수 있어 호환 필드 같이 전송)
+      optionName: optNames[0],
+      option1Name: optNames[0],
+      option2Name: optNames[1],
+      option3Name: optNames[2],
+      option4Name: optNames[3],
+      option5Name: optNames[4],
+
+      variants,
+
+      // 단일 상품 재고
+      stockTotal: !form.useOptions ? Number(form.stock || 0) : undefined,
+    }
+
+    try {
+      await createMyProduct(payload)
+      alert('상품이 등록되었습니다.')
+      navigate('/seller/products')
+    } catch (err) {
+      console.error(err)
+      const msg = err?.response?.data?.message || err?.message || '상품 등록 실패'
+      alert(msg)
+    }
   }
 
   return (
@@ -124,9 +212,7 @@ export default function ProductNewPage() {
                   >
                     <option value="">선택</option>
                     {CATEGORIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
+                      <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                 </div>
@@ -155,7 +241,7 @@ export default function ProductNewPage() {
               <FieldRow
                 label="판매가(원)"
                 required
-                help={`할인 적용 시 최종가: ${final.toLocaleString('ko-KR')}원`}
+                help={`할인 적용 시 최종가: ${salePriceCalc.toLocaleString('ko-KR')}원`}
               >
                 <input
                   type="number"
@@ -168,7 +254,7 @@ export default function ProductNewPage() {
             </div>
           </section>
 
-          {/* 즉시할인 */}
+          {/* 즉시할인 (Edit과 동일 컴포넌트) */}
           <section className={pad}>
             <DiscountRow form={form} setField={setField} />
           </section>
@@ -204,19 +290,22 @@ export default function ProductNewPage() {
                 />
               </FieldRow>
 
-              <FieldRow label="재고 수량" required>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  className={`${shortW} rounded-lg border px-3 py-2 text-sm`}
-                  value={form.stock}
-                  onChange={onNum('stock')}
-                />
-              </FieldRow>
+              {/* 옵션 미사용일 때만 단일 재고 입력 */}
+              {!form.useOptions && (
+                <FieldRow label="재고 수량" required>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    className={`${shortW} rounded-lg border px-3 py-2 text-sm`}
+                    value={form.stock}
+                    onChange={onNum('stock')}
+                  />
+                </FieldRow>
+              )}
             </div>
           </section>
 
-          {/* 옵션 (필요시 사용) */}
+          {/* 옵션 (Edit과 동일 UX) */}
           <section className={pad}>
             <OptionSection
               enabled={form.useOptions}
@@ -230,7 +319,7 @@ export default function ProductNewPage() {
             />
           </section>
 
-          {/* 미디어 */}
+          {/* 미디어 (UI 유지; 서버엔 URL로 전송) */}
           <section className={pad}>
             <div className="space-y-4">
               <FieldRow label="썸네일" required help="이미지 1장 업로드">
@@ -251,12 +340,13 @@ export default function ProductNewPage() {
               <div className={longW2}>
                 <DetailComposer
                   initialBlocks={form.detailBlocks || []}
-                  editorClass="h-60"           // 필요하면 h-72 등으로 조절
+                  editorClass="h-60"
                   onChange={(blocks) => setField('detailBlocks', blocks)}
                 />
               </div>
             </FieldRow>
           </section>
+
           {/* 액션 */}
           <div className="flex items-center justify-end gap-2 px-6 py-4">
             <Button type="button" variant="signUp" onClick={() => navigate('/seller/products')}>

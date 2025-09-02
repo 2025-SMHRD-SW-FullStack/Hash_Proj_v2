@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import Button from '../../components/common/Button'
 import { CATEGORIES } from '../../constants/products'
 import { getMyProducts } from '/src/service/productService' // 셀러 소유 상품 전용
-import { fetchAdUnavailableDates, fetchAdInventory, createAdBooking /*, confirmAdPayment*/ } from '/src/service/adsService'
+import { fetchAdUnavailableDates, fetchAdInventory, createAdBooking, confirmAdPayment } from '/src/service/adsService'
 import { AD_SLOT_TYPES } from '/src/constants/ads'
+import { loadTossPayments } from '@tosspayments/payment-sdk'
 
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/dist/style.css'
@@ -219,14 +220,21 @@ export default function AdsPowerPage() {
       setBooking(bookingRes)
 
       const finalPrice = bookingRes?.price ?? price
-      alert(`예약이 생성되었습니다.\n예약번호: ${bookingRes?.bookingId}\n결제금액: ${fmt(finalPrice)}원`)
+      const clientKey = (import.meta.env.VITE_TOSS_CLIENT_KEY || '').trim()
+      if (!clientKey) {
+        alert('예약이 생성되었지만 결제 클라이언트 키가 없습니다. 관리자에게 문의하세요.')
+        return
+      }
 
-      // (선택) Toss 결제까지 즉시
-      // const orderId = `ad-${bookingRes.bookingId}-${Date.now()}`
-      // const paymentKey = `TEST-${bookingRes.bookingId}`
-      // const confirm = await confirmAdPayment({ paymentKey, orderId, amount: finalPrice, bookingId: bookingRes.bookingId })
-      // alert('결제가 완료되었습니다.')
-      // navigate('/seller')
+      const orderId = `ad-${bookingRes.bookingId}-${Date.now()}`
+      const toss = await loadTossPayments(clientKey)
+      await toss.requestPayment('카드', {
+        orderId,
+        orderName: '파워광고 결제',
+        amount: Number(finalPrice),
+        successUrl: `${window.location.origin}/seller/ads/pay/complete?bookingId=${encodeURIComponent(bookingRes.bookingId)}&orderId=${encodeURIComponent(orderId)}&amount=${encodeURIComponent(finalPrice)}`,
+        failUrl: `${window.location.origin}/seller/ads/pay/complete?status=fail&bookingId=${encodeURIComponent(bookingRes.bookingId)}`,
+      })
 
     } catch (e) {
       console.error(e)

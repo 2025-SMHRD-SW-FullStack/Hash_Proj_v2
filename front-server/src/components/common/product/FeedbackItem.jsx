@@ -1,11 +1,14 @@
 // src/components/common/product/FeedbackItem.jsx
 import React, { useMemo, useState } from 'react';
 import PersonIcon from '../../../assets/icons/ic_person.svg';
+import useAuthStore from '../../../stores/authStore'; // useAuthStore 추가
+import { adminDeleteFeedback } from '../../../service/feedbackService'; // adminDeleteFeedback 추가
+import Button from '../Button'; // Button 컴포넌트 추가
 
-const FeedbackItem = ({ feedback }) => {
+const FeedbackItem = ({ feedback, onFeedbackDeleted }) => { // onFeedbackDeleted 콜백 추가
   const [isExpanded, setIsExpanded] = useState(false);
+  const { isAdmin } = useAuthStore(); // isAdmin 상태 가져오기
 
-  // JSON으로 된 이미지 URL 목록을 파싱합니다.
   const imageUrls = useMemo(() => {
     try {
       return JSON.parse(feedback.imagesJson || '[]');
@@ -14,29 +17,48 @@ const FeedbackItem = ({ feedback }) => {
     }
   }, [feedback.imagesJson]);
 
-  // 피드백 내용이 길 경우 '더보기'/'접기' 기능을 제공합니다.
   const needsTruncation = feedback.content.length > 150;
   const displayText = isExpanded ? feedback.content : `${feedback.content.slice(0, 150)}${needsTruncation ? '...' : ''}`;
 
-  // ✅ [수정] 백엔드에서 받은 실제 작성자 정보를 사용합니다.
-  // authorProfileImageUrl이 없거나 비어있을 경우 기본 아이콘(PersonIcon)을 사용합니다.
   const profileImage = feedback.authorProfileImageUrl || PersonIcon;
   const nickname = feedback.authorNickname || '알 수 없는 사용자';
 
+  const handleDelete = async (e) => {
+    e.stopPropagation(); // 이벤트 버블링 방지
+    if (window.confirm('이 피드백을 정말 삭제하시겠습니까? 복구할 수 없습니다.')) {
+      try {
+        await adminDeleteFeedback(feedback.id);
+        alert('피드백이 삭제되었습니다.');
+        onFeedbackDeleted?.(feedback.id); // 부모 컴포넌트에 알림
+      } catch (error) {
+        alert('피드백 삭제에 실패했습니다.');
+        console.error(error);
+      }
+    }
+  };
+
+
   return (
     <div className="border-b border-gray-200 py-6 last:border-b-0">
-      <div className="flex items-center mb-4">
-        <img
-          src={profileImage}
-          alt="profile"
-          className="w-12 h-12 rounded-full mr-4 bg-gray-100 object-cover"
-        />
-        <div>
-          <p className="font-semibold text-gray-800">{nickname}</p>
-          <p className="text-sm text-gray-500">
-            {new Date(feedback.createdAt).toLocaleDateString('ko-KR')}
-          </p>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+            <img
+                src={profileImage}
+                alt="profile"
+                className="w-12 h-12 rounded-full mr-4 bg-gray-100 object-cover"
+            />
+            <div>
+                <p className="font-semibold text-gray-800">{nickname}</p>
+                <p className="text-sm text-gray-500">
+                    {new Date(feedback.createdAt).toLocaleDateString('ko-KR')}
+                </p>
+            </div>
         </div>
+        {isAdmin && (
+            <Button onClick={handleDelete} variant="danger" size="sm">
+                삭제
+            </Button>
+        )}
       </div>
 
       {imageUrls.length > 0 && (

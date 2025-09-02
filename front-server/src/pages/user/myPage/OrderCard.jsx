@@ -1,4 +1,3 @@
-// src/pages/user/myPage/OrderCard.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -65,10 +64,20 @@ const OrderCard = ({ order, onChanged }) => {
   const [openExchangeModal, setOpenExchangeModal] = useState(false);
   const [existingExchangeIds, setExistingExchangeIds] = useState(new Set());
 
+  // ✅ [수정] 각 OrderCard가 마운트될 때 자신의 상세 정보를 불러옵니다.
   useEffect(() => {
-    // detail 정보, 특히 items 배열이 로드된 후에 실행합니다.
+    (async () => { 
+      try { 
+        const detailData = await getMyOrderDetail(order.id);
+        setDetail(detailData);
+      } catch (e) { 
+        console.error(e); 
+      }
+    })();
+  }, [order.id]);
+
+  useEffect(() => {
     if (detail?.items && detail.items.length > 0 && ["DELIVERED", "CONFIRMED"].includes(order.status)) {
-      // 주문의 첫 번째 아이템 ID를 기준으로 피드백 작성 여부를 체크합니다.
       const firstItemId = detail.items[0].id;
       if (firstItemId) {
         (async () => {
@@ -77,25 +86,19 @@ const OrderCard = ({ order, onChanged }) => {
             setFeedbackDone(isDone);
           } catch (e) {
             console.error(e);
-            setFeedbackDone(false); // 에러 발생 시 기본값 false로 설정
+            setFeedbackDone(false);
           }
         })();
       }
     } else {
       setFeedbackDone(false);
     }
-  }, [order.status, detail]); // detail을 의존성 배열에 추가합니다.
+  }, [order.status, detail]);
 
   useEffect(() => {
     if (["IN_TRANSIT", "DELIVERED", "CONFIRMED"].includes(order.status)) {
       (async () => { try { setTrack(await getTracking(order.id)); } catch (e) { console.error(e); }})();
     } else setTrack(null);
-  }, [order.id, order.status]);
-
-  useEffect(() => {
-    if (["DELIVERED", "CONFIRMED"].includes(order.status)) {
-      (async () => { try { setFeedbackDone(await checkFeedbackDone(order.id)); } catch (e) { console.error(e); }})();
-    } else setFeedbackDone(false);
   }, [order.id, order.status]);
 
   const headerLeft = useMemo(() => {
@@ -171,8 +174,12 @@ const OrderCard = ({ order, onChanged }) => {
       </div>
 
       <div className="mt-4 space-y-4 mb-4">
-        {groupedItems.map((p) => <GroupedProductRow key={p.groupId} product={p} />)}
-        {items.length === 0 && <div className="text-sm text-gray-500">주문 상품 정보를 불러오는 중…</div>}
+        {/* ✅ [수정] detail state가 로드되기 전에는 로딩 상태를 표시합니다. */}
+        {!detail ? (
+          <div className="text-sm text-gray-500">주문 상품 정보 불러오는중...</div>
+        ) : (
+          groupedItems.map((p) => <GroupedProductRow key={p.groupId} product={p} />)
+        )}
       </div>
 
       <div className="flex items-center justify-between">
@@ -216,7 +223,7 @@ const OrderCard = ({ order, onChanged }) => {
               const remain = typeof w?.remainingSeconds === "number"
                 ? ` (남은 시간: ${Math.floor(w.remainingSeconds / 3600)}시간 ${Math.floor((w.remainingSeconds % 3600) / 60)}분)`
                 : "";
-              alert(`지금은 구매확정을 할 수 없습니다.\n(배송완료 후 7일 이내만 가능)${remain}`);
+              alert(`지금은 구매확정을 할 수 없습니다.\\n(배송완료 후 7일 이내만 가능)${remain}`);
               setOpenConfirm(false);
               return;
             }
@@ -231,7 +238,7 @@ const OrderCard = ({ order, onChanged }) => {
         }}
       />
       <TrackingModal open={openTrack} onClose={() => setOpenTrack(false)} orderId={order.id} />
-      <InfoModal open={openReadyInfo} onClose={() => setOpenReadyInfo(false)} title="배송 조회" message={"현재 상태: 배송 준비중\n집화가 시작되면 배송 조회가 가능합니다."} />
+      <InfoModal open={openReadyInfo} onClose={() => setOpenReadyInfo(false)} title="배송 조회" message={"현재 상태: 배송 준비중\\n집화가 시작되면 배송 조회가 가능합니다."} />
       <ExchangeRequestModal
         open={openExchangeModal}
         onClose={() => setOpenExchangeModal(false)}

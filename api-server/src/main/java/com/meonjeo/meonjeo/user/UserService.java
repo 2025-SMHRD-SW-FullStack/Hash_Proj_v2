@@ -1,4 +1,3 @@
-// src/main/java/com/meonjeo/meonjeo/user/UserService.java
 package com.meonjeo.meonjeo.user;
 
 import com.meonjeo.meonjeo.auth.AuthProvider;
@@ -6,14 +5,20 @@ import com.meonjeo.meonjeo.exception.EmailAlreadyExistsException;
 import com.meonjeo.meonjeo.exception.PasswordMismatchException;
 import com.meonjeo.meonjeo.exception.SocialAccountExistsException;
 import com.meonjeo.meonjeo.phone.PhoneAuthService;
+import com.meonjeo.meonjeo.seller.SellerProfile;
+import com.meonjeo.meonjeo.seller.SellerProfileRepository;
+import com.meonjeo.meonjeo.user.dto.AdminUserResponse;
 import com.meonjeo.meonjeo.user.dto.SignupRequest;
 import com.meonjeo.meonjeo.user.dto.UserUpdateRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -23,6 +28,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final PhoneAuthService phoneAuthService;
+    private final SellerProfileRepository sellerProfileRepository;
 
     /* ===== 조회 ===== */
     public Optional<User> findByEmail(String email) {
@@ -68,6 +74,7 @@ public class UserService {
             throw new PasswordMismatchException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
         }
 
+        // 엔터티 생성
         User user = User.builder()
                 .email(email)
                 .password(passwordEncoder.encode(req.getPassword()))
@@ -77,9 +84,9 @@ public class UserService {
                 // ✅ gender: "M"/"F"만 유지, "UNKNOWN"/빈문자/이상값/null → null
                 .gender(toGenderOrNull(req.getGender()))
                 .provider(AuthProvider.LOCAL)
-                .providerId(null)
+                .providerId(null)          // LOCAL은 null 허용
                 .role(Role.USER)
-                .enabled(true)
+                .enabled(true)             // 가입 완료 → 로그인 가능
                 .build();
 
         // 생년월일 파싱(빈값이면 null)
@@ -155,4 +162,21 @@ public class UserService {
 
     @Transactional
     public User save(User u) { return userRepository.save(u); }
+
+    /* ===== 관리자용 ===== */
+    public Page<AdminUserResponse> adminSearchUsers(String q, Role role, Pageable pageable) {
+        Page<User> users = userRepository.searchForAdmin(q, role, pageable);
+        return users.map(user -> {
+            SellerProfile sp = sellerProfileRepository.findByUserId(user.getId()).orElse(null);
+            return new AdminUserResponse(user, sp);
+        });
+    }
+
+    @Transactional
+    public void adminSanctionUser(Long userId, LocalDateTime sanctionUntil) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("USER_NOT_FOUND"));
+        user.setSanctionedUntil(sanctionUntil);
+        userRepository.save(user);
+    }
 }

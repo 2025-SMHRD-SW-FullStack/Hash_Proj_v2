@@ -1,3 +1,4 @@
+// /src/routes/AppRouter.jsx
 import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import PublicRouter from './PublicRouter'
@@ -23,8 +24,9 @@ const AppRouter = () => {
 
   return (
     <Routes>
+      {/* 공용 메인 레이아웃 영역 */}
       <Route element={<MainLayout />}>
-
+        {/* 메인/상품 */}
         <Route path="/" element={<MainPage />} />
         <Route path='/products' element={<ProductPage />} />
         {/* ✅ :productId를 사용해 동적 경로로 변경 */}
@@ -52,17 +54,18 @@ const AppRouter = () => {
         {/* TODO: 유저 구분 */}
         {isLoggedIn && <Route path="/user/*" element={<UserRouter />} />}
 
+        {/* 비회원 전용 */}
+        {!isLoggedIn && <Route path="/public/*" element={<PublicRouter />} />}
 
+        {/* 로그인 사용자 전용 */}
+        {isLoggedIn && <Route path="/user/*" element={<UserRouter />} />}
       </Route>
-        {/* 공통 페이지 - 모든 사용자가 접근 가능 */}
 
-        {/* 관리자 전용 페이지들 */}
-        {/* TODO: 유저 구분 */}
+      {/* 셀러(중간관리자) */}
+      <Route path="/seller/*" element={<SellerRouter />} />
 
-        {/* ✅ 셀러 전용 레이아웃(중간관리자) — 현재는 로그인 없이 접근 가능 */}
-        <Route path="/seller/*" element={<SellerRouter />} />
-
-        {isLoggedIn && <Route path="/admin/*" element={<AdminRouter />} />}
+      {/* 관리자(로그인 필요) */}
+      {isLoggedIn && <Route path="/admin/*" element={<AdminRouter />} />}
     </Routes>
   )
 }

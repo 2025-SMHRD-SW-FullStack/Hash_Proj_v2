@@ -26,14 +26,18 @@ public class PointCommandController {
 
     // ===== 관리자 =====
 
-    @Operation(summary="[관리자] 교환 요청 목록(대기중)")
+    @Operation(summary="[관리자] 교환 요청 목록(상태/검색)")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/api/admin/points/redemptions")
-    public Page<RedemptionResponse> listRequested(@RequestParam(defaultValue="0") int page,
-                                                  @RequestParam(defaultValue="20") int size){
-        var pageable = PageRequest.of(Math.max(0,page), Math.min(100,size));
-        return redemptionRepo.findByStatusOrderByIdAsc(RedemptionStatus.REQUESTED, pageable)
-                .map(PointRedemptionService::toDto);
+    public Page<AdminRedemptionItem> list(
+            @RequestParam(required = false) RedemptionStatus status, // null이면 전체
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String q // 닉네임 검색은 User join 필요
+    ) {
+        var pageable = PageRequest.of(Math.max(0, page), Math.min(100, size));
+        // ✅ 닉네임 조인 + 상태/검색 필터가 포함된 커스텀 쿼리 사용
+        return redemptionRepo.searchAdminList(status, q, pageable);
     }
 
     @Operation(summary="[관리자] 교환 승인")

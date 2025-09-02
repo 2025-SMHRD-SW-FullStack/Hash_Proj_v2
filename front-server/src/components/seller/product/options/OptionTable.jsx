@@ -1,11 +1,13 @@
+// src/components/seller/product/options/OptionTable.jsx
 // OptionTable.jsx — 3등분 + 내부 스크롤 + 셀 전체 폭 입력 UI
+
 import React from 'react'
 
 export default function OptionTable({
   combos = [],
   rowMap,
   onChange,
-  maxHeight = 320, // 목록 최대 높이(px)
+  maxHeight = 320,
 }) {
   if (!combos.length) {
     return (
@@ -17,14 +19,12 @@ export default function OptionTable({
 
   return (
     <div className="overflow-hidden rounded-lg border">
-      {/* 스크롤 영역: thead는 sticky */}
       <div className="overflow-y-auto" style={{ maxHeight }}>
         <table className="w-full table-fixed text-sm">
-          {/* 3등분 고정 */}
           <colgroup>
-            <col style={{ width: '33.3333%' }} />
-            <col style={{ width: '33.3333%' }} />
-            <col style={{ width: '33.3333%' }} />
+            {[33.3333, 33.3333, 33.3333].map((pct, i) => (
+              <col key={i} style={{ width: `${pct}%` }} />
+            ))}
           </colgroup>
 
           <thead className="sticky top-0 z-10 bg-gray-50 text-gray-600">
@@ -40,12 +40,10 @@ export default function OptionTable({
               const row = rowMap.get(c.key) || { addPrice: 0, stock: 0 }
               return (
                 <tr key={c.key} className={i % 2 ? 'bg-white' : 'bg-gray-50/50'}>
-                  {/* 옵션 라벨 */}
                   <td className="px-3 py-2 text-center truncate" title={c.label}>
                     {c.label}
                   </td>
 
-                  {/* 추가금: 셀 전체 폭 입력 */}
                   <td className="p-0">
                     <input
                       type="number"
@@ -59,7 +57,6 @@ export default function OptionTable({
                     />
                   </td>
 
-                  {/* 재고: 셀 전체 폭 입력 */}
                   <td className="p-0">
                     <input
                       type="number"

@@ -1,17 +1,10 @@
+// /src/constants/carriers.js
 // 공통 택배사 목록 + 유틸
 // - code: 우리 서비스 내부에서 쓰는 고정 코드 (영문 대문자/숏코드)
 // - label: 화면용 표시 이름
 // - aliases: 검색/자동감지용 별칭(한/영/약칭)
 // - providerCodes: 나중에 실제 조회 API를 고르면 여기에 매핑만 채우면 됨
-
-
-// 어떻게 확장하냐?
-// 새 업체 추가: CARRIERS에 { code, label, aliases } 한 줄 추가.
-// API 붙일 때: 사용하는 조회 API가 정해지면, 각 항목의 providerCodes에 해당 사업자 코드만 채워주면 끝.
-// 예) providerCodes: { sweettracker: '04', aftership: 'kr-cj' } (값은 실제 스펙에 맞춰 입력)
-
-
-
+//   예) providerCodes: { sweettracker: '04', aftership: 'kr-cj' }
 
 export const CARRIERS = [
   { code: 'CJ',       label: 'CJ대한통운',           aliases: ['cj','cj대한통운','cj logistics','대한통운'], providerCodes: {} },
@@ -57,8 +50,8 @@ export const resolveCarrier = (input = '') => {
 // 송장번호 정규화(숫자/영문/하이픈만)
 export const normalizeTrackingNo = (s = '') => String(s).replace(/[^0-9A-Za-z-]/g, '')
 
-// 서버 전송 페이로드(자동감지 없음 → 코드 필수로 쓰는 걸 권장)
+// 서버 전송 페이로드(자동감지 없음 → 코드 필수 권장)
 export const toTrackingPayload = ({ carrierCode, trackingNo }) => ({
-  carrier: carrierCode,                              // 빈 값이면 서버에서 에러 처리 권장
+  carrier: carrierCode,
   trackingNo: normalizeTrackingNo(trackingNo || ''),
 })

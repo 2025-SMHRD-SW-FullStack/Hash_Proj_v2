@@ -1,7 +1,6 @@
+// /src/components/seller/OrderDetailContent.jsx
 import React from 'react'
 import { carrierLabel } from '/src/constants/carriers'
-
-// 주문상세내역
 
 // ---- 유틸 (OrdersPage와 동일 로직)
 const pill = 'inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[12px] font-medium'
@@ -10,7 +9,7 @@ const addDays = (d, n) => new Date(d.getTime() + n * 86400000)
 const today0 = () => { const t = new Date(); t.setHours(0, 0, 0, 0); return t }
 const feedbackDeadline = (deliveredAt) => { const d = toDate(deliveredAt); return d ? addDays(d, 7) : null }
 const isPurchaseConfirmed = (o) => {
-  if (!o.deliveredAt) return false
+  if (!o?.deliveredAt) return false
   const deadline = feedbackDeadline(o.deliveredAt)
   if (!deadline) return false
   const now = today0()
@@ -56,7 +55,7 @@ export default function OrderDetailContent({ row }) {
   if (!row) return null
   const displayStatus = isPurchaseConfirmed(row) ? '구매확정' : (row.status || '-')
 
-  // ✅ 요청한 순서로 재배열
+  // ⚠️ 가격(결제금액) 행 제거한 배열
   const rows = [
     ['주문번호', <span className="font-mono">{row.id}</span>],
     ['주문일', row.orderedAt || '-'],
@@ -66,17 +65,16 @@ export default function OrderDetailContent({ row }) {
     ['택배사', carrierLabel(row.carrierCode || '') || '-'],
     ['운송장', row.trackingNo || '-'],
     ['상품명', row.product || '-'],
-    ['가격', row.price != null ? `${Number(row.price).toLocaleString()}원` : '-'],
+    // ['가격', ...]  ← 제거
     ['받는이', row.buyer || '-'],
-    ['주소', row.address || '-'],
     ['연락처', row.phone || '-'],
+    ['주소', row.address || '-'],
     ['배송요청사항', row.requestNote || '-'],
     ['피드백 내용', row.feedbackText || row.feedback || '-'],
   ]
 
-  // ✅ 표 스타일 + 라벨 가운데 정렬
   return (
-    <div className="max-h-[70vh] overflow-auto"> {/* 모달 내부도 스크롤 가능 */}
+    <div className="max-h-[70vh] overflow-auto">
       <table className="w-full table-fixed text-sm border-separate [border-spacing:0]">
         <tbody className="divide-y divide-gray-200">
           {rows.map(([label, value], idx) => (

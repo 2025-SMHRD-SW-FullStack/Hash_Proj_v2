@@ -1,97 +1,218 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState, memo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-
-import Modal from '/src/components/common/Modal'
+import StatusChips from '/src/components/seller/StatusChips'
 import Button from '/src/components/common/Button'
-import OrderDetailContent from '/src/components/product/OrderDetailContent'
+import Modal from '/src/components/common/Modal'
+import OrderDetailContent from '/src/components/seller/OrderDetailContent'
 
-import FeedbackFilterChips from '/src/components/seller/feedbacks/FeedbackFilterChips'
-import FeedbackTable from '/src/components/seller/feedbacks/FeedbackTable'
-import useFeedbackFilters from '/src/components/seller/feedbacks/useFeedbackFilters'
+import { FEEDBACK_FILTERS } from '/src/constants/sellerfeedbacks'
+import FeedbackRow from '/src/components/seller/feedbacks/FeedbackRow'
+import ReportModal from '/src/components/seller/feedbacks/ReportModal'
+import { fetchSellerFeedbackGrid } from '/src/service/feedbackService'
+import { computeFeedbackState } from '/src/util/feedbacksStatus'
 
-import { UI, TAB_KEYS } from '/src/constants/sellerfeedbacks'
-import FEEDBACKS_MOCK from '/src/data/sellerFeedbacks' // 더미 데이터
+// ---- UI 토큰
+const box   = 'rounded-xl border bg-white p-4 shadow-sm'
+const ROW_H = 48
+const HEADER_H = 44
+const MAX_ROWS = 10
+const tableMaxH = `${ROW_H * MAX_ROWS + HEADER_H}px`
+
+// colgroup 안전 렌더
+const ColGroup = memo(function ColGroup({ widths = [] }) {
+  const list = Array.isArray(widths) ? widths : []
+  return (
+    <colgroup>
+      {list.map((w, i) => (
+        <col key={i} style={{ width: typeof w === 'number' ? `${w}px` : w }} />
+      ))}
+    </colgroup>
+  )
+})
+
+// 주문번호/상품명/구매자/작성일/상태/내용/관리
+const COL_WIDTHS = [140, 220, 120, 130, 140, 300, 120]
 
 export default function SellerFeedbacksPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const status = searchParams.get('status') || TAB_KEYS.ALL
-  const setStatus = (v) => setSearchParams(v === TAB_KEYS.ALL ? {} : { status: v })
+  const filter = searchParams.get('filter') || 'ALL'
+  const q      = searchParams.get('q') || ''
+
+  // --- 검색 입력: IME 대응 + 디바운스 ---
+  const [qInput, setQInput] = useState(q)
+  const [isComp, setIsComp] = useState(false)
+  useEffect(() => setQInput(q), [q])
+
+  const setParam = (patch) => {
+    const next = new URLSearchParams(searchParams)
+    Object.entries(patch).forEach(([k, v]) => {
+      if (v === undefined || v === null || v === '') next.delete(k)
+      else next.set(k, String(v))
+    })
+    setSearchParams(next)
+  }
+
+  useEffect(() => {
+    if (isComp) return
+    const id = setTimeout(() => {
+      if (qInput !== q) setParam({ q: qInput })
+    }, 400)
+    return () => clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qInput, isComp])
 
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
 
-  const [activeRow, setActiveRow] = useState(null)       // 주문상세 모달
-  const [reportTarget, setReportTarget] = useState(null) // 신고 확인 모달
-  const [reporting, setReporting] = useState(false)
+  // 상세 모달
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [selectedRow, setSelectedRow] = useState(null)
 
-  const { counts, filtered } = useFeedbackFilters(rows, status)
+  // 신고 모달
+  const [reportOpen, setReportOpen] = useState(false)
+  const [reportTarget, setReportTarget] = useState(null)
 
-  useEffect(() => {
-    setLoading(true)
+  const handleReset = () => setParam({ filter: 'ALL', q: '' })
+
+  const load = async () => {
+    setLoading(true); setError(null)
     try {
-      setRows(FEEDBACKS_MOCK) // ✅ 더미 로드
-    } catch {
-      setError('피드백 목록을 불러오지 못했습니다.')
+      const data = await fetchSellerFeedbackGrid({ q, page: 0, size: 200 })
+      const list = data?.content || data?.items || []
+      setRows(list)
+    } catch (e) {
+      setError(e?.response?.data?.message || e.message || '로딩 실패')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }
 
-  const handleReport = async () => {
-    if (!reportTarget) return
-    try {
-      setReporting(true)
-      // 낙관적 업데이트
-      setRows((prev) =>
-        prev.map((r) => (r.feedbackId === reportTarget.feedbackId ? { ...r, reportStatus: 'PENDING' } : r))
+  useEffect(() => { load() }, [filter, q])
+
+  const filtered = useMemo(() => {
+    if (!rows?.length) return []
+    if (filter === 'ALL') return rows
+    return rows.filter(r => computeFeedbackState(r).key === filter)
+  }, [rows, filter])
+
+  const onOpenOrder = (row) => {
+    setSelectedRow(row)
+    setDetailOpen(true)
+  }
+
+  // Row → Page 신고 요청 핸들러
+  const onRequestReport = (row) => {
+    const feedbackId = row.feedbackId ?? row.id ?? row.orderItemId ?? row.orderId
+    setReportTarget({ ...row, feedbackId })
+    setReportOpen(true)
+  }
+
+  // 신고 완료 후 목록 상태 반영 & 모달 닫기
+  const handleReported = () => {
+    const targetKey = reportTarget?.feedbackId ?? reportTarget?.id
+    if (targetKey) {
+      setRows(prev =>
+        prev.map(r => {
+          const key = r.feedbackId ?? r.id ?? r.orderItemId ?? r.orderId
+          return key === targetKey ? { ...r, reportStatus: 'PENDING' } : r
+        })
       )
-      setReportTarget(null)
-      alert('신고가 접수되었습니다. (취소 불가)')
-    } catch {
-      alert('신고 접수 중 오류가 발생했습니다.')
-    } finally {
-      setReporting(false)
     }
+    setReportOpen(false)
+    setReportTarget(null)
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-4">
-      <h1 className="mb-4 text-xl font-semibold">피드백 관리</h1>
+    <div className="mx-auto w-full max-w-7xl">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold">피드백 관리</h1>
+      </div>
 
-      <section className={`${UI.box} mb-4`}>
+      {/* 필터/검색 바 */}
+      <section className={`${box} mb-4`}>
         <div className="flex flex-wrap items-center gap-2">
-          <FeedbackFilterChips counts={counts} value={status} onChange={setStatus} variant="admin"/>
+          <StatusChips
+            items={FEEDBACK_FILTERS}
+            value={filter}
+            onChange={(key) => setParam({ filter: key })}
+            size="sm"
+            variant="admin"
+          />
+          {/* 검색 입력 – IME 조합 처리 + Enter 즉시 확정 */}
+          <input
+            value={qInput}
+            onChange={(e) => setQInput(e.target.value)}
+            onCompositionStart={() => setIsComp(true)}
+            onCompositionEnd={() => setIsComp(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                setParam({ q: qInput })
+              }
+            }}
+            placeholder="주문번호/수취인/연락처 검색"
+            className="w-64 rounded-lg border px-3 py-2 text-sm outline-none focus:ring"
+          />
+          <Button size="sm" onClick={handleReset} variant="admin">
+            초기화
+          </Button>
         </div>
       </section>
 
-      <section className={UI.box}>
-        <FeedbackTable
-          rows={filtered}
-          loading={loading}
-          error={error}
-          onOpenOrder={setActiveRow}
-          onRequestReport={setReportTarget}
-        />
+      {/* 목록 테이블 */}
+      <section className={box}>
+        <div className="overflow-x-auto" style={{ maxHeight: tableMaxH }}>
+          <table className="w-full table-fixed text-sm text-center">
+            <ColGroup widths={[140, 220, 120, 130, 140, 300, 120]} />
+            <thead className="sticky top-0 z-10 border-b bg-gray-50 text-left text-[13px] text-gray-500">
+              <tr className="h-11 text-center">
+                <th className="px-3 font-medium">주문번호</th>
+                <th className="px-3 font-medium">상품명</th>
+                <th className="px-3 font-medium">구매자</th>
+                <th className="px-3 font-medium">피드백 작성일</th>
+                <th className="px-3 font-medium">상태</th>
+                <th className="px-3 font-medium">피드백 내용</th>
+                <th className="px-3 text-right font-medium">신고</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {loading && (
+                <tr><td colSpan={7} className="px-3 py-10 text-center text-gray-500">불러오는 중…</td></tr>
+              )}
+              {error && !loading && (
+                <tr><td colSpan={7} className="px-3 py-10 text-center text-rose-600">{String(error)}</td></tr>
+              )}
+              {!loading && !error && filtered.map((row, idx) => (
+                <FeedbackRow
+                  key={row.id ?? row.feedbackId ?? row.orderItemId ?? idx}
+                  row={row}
+                  onOpenOrder={onOpenOrder}
+                  onRequestReport={onRequestReport}
+                />
+              ))}
+              {!loading && !error && filtered.length === 0 && (
+                <tr><td colSpan={7} className="px-3 py-10 text-center text-gray-500">데이터가 없습니다.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
 
-      {/* 주문 상세 모달 */}
-      <Modal isOpen={!!activeRow} onClose={() => setActiveRow(null)} title={`주문 상세: ${activeRow?.orderId || ''}`}>
-        {activeRow && <OrderDetailContent order={activeRow} />}
-      </Modal>
-
-      {/* 신고 확인 모달 */}
-      <Modal isOpen={!!reportTarget} onClose={() => setReportTarget(null)} title="피드백 신고">
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">신고 후 취소가 불가합니다. 신고하시겠습니까?</p>
-          <div className="flex justify-end gap-2">
-            <Button onClick={() => setReportTarget(null)} className="border">취소</Button>
-            <Button onClick={handleReport} disabled={reporting} className="border border-red-300 text-red-600 hover:bg-red-50">
-              {reporting ? '신고 중…' : '신고하기'}
-            </Button>
-          </div>
+      {/* 상세 모달 */}
+      <Modal open={detailOpen} onClose={() => setDetailOpen(false)} title="주문 상세">
+        <div className="p-4">
+          <OrderDetailContent row={selectedRow} />
         </div>
       </Modal>
+
+      {/* 신고 모달 */}
+      <ReportModal
+        open={reportOpen}
+        onClose={() => { setReportOpen(false); setReportTarget(null) }}
+        feedbackId={reportTarget?.feedbackId}
+        onReported={handleReported}
+      />
     </div>
   )
 }

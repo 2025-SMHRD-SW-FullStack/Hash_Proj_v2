@@ -29,9 +29,19 @@ public class FeedbackReportController {
     @GetMapping("/api/admin/feedback-reports")
     public Page<ReportResponse> listPending(@RequestParam(defaultValue="0") int page,
                                             @RequestParam(defaultValue="20") int size,
-                                            @RequestParam(defaultValue="PENDING") ReportStatus status){
-        var pageable = PageRequest.of(Math.max(0,page), Math.min(100,size));
-        return repo.findByStatusOrderByIdAsc(status, pageable).map(FeedbackReportService::toDto);
+                                            @RequestParam(required = false) ReportStatus status){
+        var pageable = PageRequest.of(
+                Math.max(0, page),
+                Math.min(100, size),
+                Sort.by(Sort.Direction.DESC, "id")  // 최신순
+        );
+        if (status == null) {
+            // 전체
+            return repo.findAll(pageable).map(FeedbackReportService::toDto);
+        }
+        // 단일 상태
+        return repo.findByStatusOrderByIdAsc(status, pageable)
+                .map(FeedbackReportService::toDto);
     }
 
     @Operation(summary="[관리자] 신고 승인(피드백 삭제 처리)")

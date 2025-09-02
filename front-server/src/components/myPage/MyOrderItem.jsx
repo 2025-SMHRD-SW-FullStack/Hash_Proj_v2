@@ -1,74 +1,83 @@
-import React from 'react';
-import Button from '../common/Button';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import TestImg from '../../assets/images/ReSsol_TestImg.png';
+import { getMyOrderDetail } from '../../service/orderService'; // 상세 정보 조회를 위한 함수 import
+import { formatDateTime, formatPrice } from '../../util/format';
+import { getOrderStatusText } from '../../util/orderUtils';
+import Button from '../common/Button';
+import StatusBadge from '../common/StatusBadge';
 
-// 주문 상태 한글 변환 함수
-const getStatusText = (status) => {
-  switch (status) {
-    case 'PENDING': return '결제 대기중';
-    case 'PAID': return '주문 완료';
-    case 'READY': return '배송 준비중';
-    case 'IN_TRANSIT': return '배송 중';
-    case 'DELIVERED': return '배송 완료';
-    case 'CONFIRMED': return '구매 확정';
-    default: return status;
-  }
-};
-
+// 각 주문 아이템을 표시하는 컴포넌트
 const MyOrderItem = ({ order }) => {
   const navigate = useNavigate();
+  // ✅ [수정] 주문 상세 정보를 담을 state와 로딩 상태를 추가합니다.
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const formattedDate = new Date(order.createdAt).toLocaleString('ko-KR', {
-    year: '2-digit',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).replace(/\. /g, '.');
+  // ✅ [수정] order.id가 변경될 때마다 해당 주문의 상세 정보를 불러옵니다.
+  useEffect(() => {
+    const fetchOrderDetail = async () => {
+      if (!order.id) return;
+      try {
+        setLoading(true);
+        const data = await getMyOrderDetail(order.id);
+        setDetail(data);
+      } catch (error) {
+        console.error(`주문 상세 정보(${order.id})를 불러오는 데 실패했습니다.`, error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrderDetail();
+  }, [order.id]);
 
-  const handleOrderDetail = () => {
-    navigate(`/user/mypage/orders/${order.id}`);
-  };
+  // ✅ [수정] detail state가 로드되기 전에는 로딩 상태를 표시합니다.
+  if (loading) {
+    return (
+      <div className="border rounded-lg p-4 mb-4">
+        <p className="text-center text-gray-500">주문 상품 정보 불러오는중...</p>
+      </div>
+    );
+  }
 
-  // 피드백 버튼 클릭 시, 상세 페이지로 안내 후 이동하는 함수
-  const handleFeedbackClick = () => {
-    alert("주문 상세 페이지에서 상품별로 피드백을 작성할 수 있습니다.");
-    navigate(`/user/mypage/orders/${order.id}`);
-  };
+  // ✅ [수정] detail 정보가 없을 경우 에러 메시지를 표시합니다.
+  if (!detail || !detail.items || detail.items.length === 0) {
+    return (
+      <div className="border rounded-lg p-4 mb-4">
+        <p className="text-center text-red-500">주문 상품 정보를 불러올 수 없습니다.</p>
+      </div>
+    );
+  }
+
+  // ✅ [수정] detail.items에서 상품 정보를 가져와 표시합니다.
+  const firstItem = detail.items[0];
+  const displayProductName =
+    detail.items.length > 1
+      ? `${firstItem.productName} 외 ${detail.items.length - 1}건`
+      : firstItem.productName;
 
   return (
-    <div className="border rounded-lg p-4 mb-4 shadow-sm">
-      {/* --- 헤더: 요청하신 디자인 유지 --- */}
-      <div className='flex items-center'>
-        <h3 className="font-bold text-lg">{getStatusText(order.status)}&ensp;</h3>
-        <p className="text-sm text-gray-500 mb-3">
-          주문 번호 {order.orderUid} | {formattedDate} 주문
-        </p>
+    <div className="border rounded-lg p-4 mb-4">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-sm text-gray-500">주문번호: {order.orderUid}</span>
+        <StatusBadge status={order.status} />
       </div>
-
-      {/* --- 본문: 요청하신 디자인 유지 + 내용 수정 --- */}
-      <div className="flex justify-center items-center">
-        <div className="w-24 h-24 bg-gray-200 rounded-lg mr-4 flex-shrink-0">
-          <img src={TestImg} alt="주문 대표 이미지" className="w-full h-full object-cover rounded-lg" />
+      <div className="flex items-center">
+        <div className="w-24 h-24 bg-gray-100 rounded-md mr-4 flex-shrink-0">
+          {/* 실제 썸네일 이미지가 있다면 여기에 표시 */}
         </div>
         <div className="flex-grow">
-          {/* [수정] 상품명/옵션 대신 안내 문구와 결제 금액 표시 */}
-          <p><strong>결제 금액:</strong> {order.payAmount.toLocaleString()}원</p>
-          <p className="text-sm text-gray-600 mt-1">
-            상세 상품 정보는 '주문 상세 보기'를 통해 확인해주세요.
-          </p>
+          <p className="font-semibold">{displayProductName}</p>
+          <p className="text-sm text-gray-500">{formatDateTime(order.createdAt)}</p>
+          <p className="text-lg font-bold mt-1">{formatPrice(order.payAmount)}원</p>
         </div>
       </div>
-
-      {/* --- 푸터: 요청하신 디자인 유지 + 핸들러 연결 --- */}
-      <div className="flex justify-start gap-2 mt-4">
-        {(order.status === 'PAID' || order.status === 'IN_TRANSIT') && <><Button variant="unselected">배송 조회</Button></>}
-        {/* [수정] onClick 핸들러를 handleFeedbackClick으로 변경 */}
-        {order.status === 'DELIVERED' && <><Button onClick={handleFeedbackClick}>피드백 작성하기</Button><Button variant="unselected">교환 신청</Button></>}
-        {order.status === 'CONFIRMED' && <Button variant="unselected" disabled>포인트 지급 완료</Button>}
-        <Button variant="unselected" onClick={handleOrderDetail}>주문 상세 보기</Button>
+      <div className="flex justify-end mt-4">
+        <Button
+          variant="unselected"
+          onClick={() => navigate(`/user/mypage/orders/${order.id}`)}
+        >
+          주문 상세 보기
+        </Button>
       </div>
     </div>
   );

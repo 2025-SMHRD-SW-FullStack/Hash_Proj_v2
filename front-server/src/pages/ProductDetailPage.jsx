@@ -4,11 +4,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
 // 필요한 서비스 및 스토어 import
-import { getProductDetail } from '../service/productService.js';
+import { getProductDetail, adminDeleteProduct } from '../service/productService.js';
 import { addCartItem } from '../service/cartService.js';
 import { findOrCreateRoomByProduct } from '../service/chatService';
 import useAuthStore from '../stores/authStore';
-import { getProductFeedbacks } from '../service/feedbackService.js'; // ✅ 피드백 서비스 추가
+import { getProductFeedbacks } from '../service/feedbackService.js';
 
 // 컴포넌트 및 아이콘 import
 import Button from '../components/common/Button';
@@ -16,7 +16,7 @@ import Icon from '../components/common/Icon';
 import Modal from '../components/common/Modal';
 import Minus from '../assets/icons/ic_minus.svg';
 import Plus from '../assets/icons/ic_plus.svg';
-import Delete from '../assets/icons/ic_delete.svg';
+import Close from '../assets/icons/ic_close.svg';
 import TestImg from '../assets/images/ReSsol_TestImg.png';
 import FeedbackItem from '../components/common/product/FeedbackItem.jsx';
 
@@ -24,7 +24,7 @@ const ProductDetailPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn } = useAuthStore();
+  const { isLoggedIn, isAdmin } = useAuthStore(); // isAdmin 추가
 
   // --- 상품 정보 상태 ---
   const [productData, setProductData] = useState(null);
@@ -77,6 +77,25 @@ const ProductDetailPage = () => {
       setFeedbacksLoading(false);
     }
   };
+  
+  // [추가] 상품 삭제 핸들러
+  const handleProductDelete = async () => {
+    if (window.confirm('이 상품을 정말 삭제하시겠습니까? 복구할 수 없습니다.')) {
+      try {
+        await adminDeleteProduct(productId);
+        alert('상품이 삭제되었습니다.');
+        navigate('/products'); // 상품 목록 페이지로 이동
+      } catch (error) {
+        alert('상품 삭제에 실패했습니다.');
+        console.error(error);
+      }
+    }
+  };
+
+  const handleFeedbackDeleted = (deletedFeedbackId) => {
+    setFeedbacks(prev => prev.filter(fb => fb.id !== deletedFeedbackId));
+  };
+
 
   const handleOptionChange = (e) => {
     const selectedVariantId = e.target.value;
@@ -194,7 +213,14 @@ const ProductDetailPage = () => {
       {/* 왼쪽 상세 내용 */}
       <div className='w-full lg:w-3/4 px-4 lg:px-10'>
         <div className='flex flex-col items-center'>
-          <h2 className='my-4 text-2xl font-bold'>[{product.brand}] {product.name}</h2>
+          <div className="w-full flex justify-between items-center my-4">
+              <h2 className='text-2xl font-bold'>[{product.brand}] {product.name}</h2>
+              {isAdmin && (
+                  <Button variant="danger" size="sm" onClick={handleProductDelete}>
+                      상품 삭제
+                  </Button>
+              )}
+          </div>
           <img src={product.thumbnailUrl || TestImg} alt={product.name} className='my-5 w-full max-w-md rounded-lg shadow-md'/>
         </div>
 
@@ -219,7 +245,7 @@ const ProductDetailPage = () => {
           </div>
           <div className="space-y-6">
             {feedbacks.length > 0 ? (
-              feedbacks.map((fb) => <FeedbackItem key={fb.id} feedback={fb} />)
+              feedbacks.map((fb) => <FeedbackItem key={fb.id} feedback={fb} onFeedbackDeleted={handleFeedbackDeleted} />)
             ) : (
               <p className="text-gray-500 text-center py-8">아직 작성된 피드백이 없습니다.</p>
             )}
@@ -274,7 +300,7 @@ const ProductDetailPage = () => {
                 <div key={item.variantId} className='rounded-md bg-gray-100 p-3'>
                   <div className='flex items-start justify-between'>
                     <p className='max-w-[80%] text-sm text-gray-700'>{`${variant.option1Value ?? ''} ${variant.option2Value ?? ''}`.trim()}</p>
-                    <Icon src={Delete} alt="삭제" className='h-4 w-4 cursor-pointer' onClick={() => handleRemoveItem(item.variantId)} />
+                    <Icon src={Close} alt="삭제" className='h-4 w-4 cursor-pointer' onClick={() => handleRemoveItem(item.variantId)} />
                   </div>
                   <div className='mt-2 flex items-center justify-between'>
                     <div className='flex items-center justify-between rounded-md border border-solid border-gray-300 bg-white p-1'>

@@ -1,11 +1,14 @@
 package com.meonjeo.meonjeo.user;
 
 import com.meonjeo.meonjeo.auth.AuthProvider;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -37,4 +40,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from User u where u.phoneNumber = :phone")
     Optional<User> findByPhoneNumberForUpdate(String phone);
+
+    // [ADD] Admin user search
+    @Query(value = "SELECT u FROM User u LEFT JOIN SellerProfile sp ON u.id = sp.userId " +
+            "WHERE (:role is null OR u.role = :role) " +
+            "AND (:q is null OR :q = '' OR u.nickname LIKE %:q% OR u.email LIKE %:q% OR sp.shopName LIKE %:q%)",
+            countQuery = "SELECT count(u) FROM User u LEFT JOIN SellerProfile sp ON u.id = sp.userId " +
+                    "WHERE (:role is null OR u.role = :role) " +
+                    "AND (:q is null OR :q = '' OR u.nickname LIKE %:q% OR u.email LIKE %:q% OR sp.shopName LIKE %:q%)")
+    Page<User> searchForAdmin(@Param("q") String q, @Param("role") Role role, Pageable pageable);
 }
