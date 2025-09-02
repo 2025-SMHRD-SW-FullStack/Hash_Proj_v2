@@ -9,9 +9,13 @@ import java.time.LocalDateTime;
 @Table(
         name="feedbacks",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_feedback_item_user",
-                columnNames = {"order_item_id","user_id"}
-        )
+                name = "uk_feedback_user_product",
+                columnNames = {"user_id","product_id"}
+        ),
+        indexes = {
+                @Index(name="idx_feedback_user", columnList = "user_id"),
+                @Index(name="idx_feedback_product", columnList = "product_id")
+        }
 )
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Feedback {
@@ -23,6 +27,10 @@ public class Feedback {
 
     @Column(name="user_id", nullable=false)
     private Long userId;
+
+    // ✅ 추가: 상품 기준 1회 제한을 위해 스냅샷 저장
+    @Column(name="product_id", nullable=false)
+    private Long productId;
 
     /** 사용자가 선택한 작성 유형 (MANUAL / AI) */
     @Enumerated(EnumType.STRING)
@@ -38,6 +46,7 @@ public class Feedback {
 
     /** 자유 후기 본문 */
     @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String content;
 
     /** 업로드 완료된 이미지 URL 리스트 JSON */

@@ -98,6 +98,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/ads/seller/**").hasAnyRole("SELLER","ADMIN")
                         .requestMatchers("/api/ads/bookings/**").hasAnyRole("SELLER","ADMIN")
                         .requestMatchers("/api/shipping/webhooks/**", "/api/shipping/events").permitAll()
+                        .requestMatchers("/api/uploads/**").permitAll()
 
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()

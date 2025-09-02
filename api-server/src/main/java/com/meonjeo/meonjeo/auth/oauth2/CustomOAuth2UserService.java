@@ -1,3 +1,4 @@
+// src/main/java/com/meonjeo/meonjeo/auth/oauth2/CustomOAuth2UserService.java
 package com.meonjeo.meonjeo.auth.oauth2;
 
 import com.meonjeo.meonjeo.auth.AuthProvider;
@@ -49,7 +50,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Optional<User> existingByProvider = userRepository.findByProviderAndProviderId(provider, providerId);
         User user = existingByProvider.orElse(null);
 
-        // 2) 최초 가입인 경우 이메일 충돌 회피 및 대체 이메일 생성
+        // 2) 최초 가입
         if (user == null) {
             if (email == null || userRepository.findByEmail(email).isPresent()) {
                 // 이메일이 없거나 이미 존재하면 provider 기반 대체 이메일 생성
@@ -57,17 +58,17 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 email = provider.name().toLowerCase() + "_" + pid + "@social.mej";
             }
 
-            // ⚠️ phoneNumber / profileImageUrl 같은 '선택 필드'는 아예 세팅하지 않는다(null 유지)
+            // ⚠️ 임시 성별/생일 주입 제거 → 둘 다 null로 둠
             user = User.builder()
                     .email(email)
                     .password(passwordEncoder.encode(UUID.randomUUID().toString()))
                     .nickname(nickname)
-                    .gender(User.Gender.UNKNOWN)
-                    .birthDate(birthDate != null ? birthDate : LocalDate.of(2000, 1, 1))
+                    .gender(null)                 // ✅ 임시값 주입 제거
+                    .birthDate(birthDate)         // ✅ 제공 없으면 null
                     .provider(provider)
                     .providerId(providerId)
                     .role(Role.USER)
-                    .enabled(true) // 온보딩 단계에서 막고 싶으면 false로 바꾸고, 후속 활성화 로직 추가
+                    .enabled(true)
                     .build();
 
             user = userRepository.save(user);
@@ -76,6 +77,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             boolean changed = false;
             if (isBlank(user.getNickname()) && !isBlank(nickname)) { user.setNickname(nickname); changed = true; }
             if (user.getBirthDate() == null && birthDate != null) { user.setBirthDate(birthDate); changed = true; }
+            // 성별은 소셜에서 신뢰도 낮으니 자동 갱신 생략(원하면 여기서 보완 가능)
             if (changed) user = userRepository.save(user);
         }
 

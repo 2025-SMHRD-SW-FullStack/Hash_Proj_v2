@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name="피드백")
@@ -25,4 +27,15 @@ public class FeedbackController {
         return service.update(id, req);
     }
 
+    @Operation(summary="내 피드백 목록 (페이지네이션)")
+    @GetMapping("/me")
+    public Page<FeedbackResponse> myFeedbacks(Pageable pageable) {
+        return service.listMyFeedbacks(pageable);
+    }
+
+    @Operation(summary="상품 피드백 목록 (페이지네이션)")
+    @GetMapping("/products/{productId}")
+    public Page<FeedbackResponse> productFeedbacks(@PathVariable Long productId, Pageable pageable) {
+        return service.listByProduct(productId, pageable);
+    }
 }

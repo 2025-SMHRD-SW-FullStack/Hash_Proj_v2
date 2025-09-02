@@ -72,11 +72,11 @@ public class User {
     /* 필수: 성별 */
     public enum Gender { M, F, UNKNOWN }
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", nullable = false, length = 10)
+    @Column(name = "gender", length = 10)
     private Gender gender;
 
     /* 필수: 생년월일 */
-    @Column(name = "birth_date", nullable = false)
+    @Column(name = "birth_date")
     private LocalDate birthDate;
 
     /* 소셜/로컬 구분 */
