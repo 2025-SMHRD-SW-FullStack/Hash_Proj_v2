@@ -1,38 +1,52 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import TestImg from '../../../../assets/images/ReSsol_TestImg.png';
 
 const MyFeedbackCard = ({ feedback }) => {
   const navigate = useNavigate();
-  const [imgSrc, setImgSrc] = useState(feedback.productImageUrl || TestImg);
 
-  const handleImageError = () => setImgSrc(TestImg);
+  const handleClick = () => {
+    navigate(`/user/mypage/feedback/${feedback.id}`);
+  };
+  
+  const getDisplayOptionsText = () => {
+    if (!feedback.optionName || feedback.optionsCount === 0) {
+      return null;
+    }
+
+    if (feedback.optionsCount > 1) {
+      const firstOption = feedback.optionName.split(',')[0].trim();
+      return `${firstOption} 외 ${feedback.optionsCount - 1}건`;
+    }
+    
+    return feedback.optionName;
+  };
+
+  const optionsText = getDisplayOptionsText();
 
   return (
     <div
-      className="w-full bg-white border rounded-lg p-2 shadow-sm cursor-pointer
-                 hover:shadow-md hover:-translate-y-0.5 transition-all"
-      onClick={() => navigate(`/user/mypage/feedback/${feedback.id}`)}
+      className="cursor-pointer border rounded-lg overflow-hidden group flex flex-col"
+      onClick={handleClick}
     >
-      {/* 정사각형 이미지 */}
-      <div className="w-full aspect-square overflow-hidden rounded-md">
+      <div className="aspect-w-1 aspect-h-1 bg-gray-100">
         <img
-          src={imgSrc}
-          onError={handleImageError}
-          alt={feedback.productName || '상품 이미지'}
-          className="w-full h-full object-cover"
+          src={feedback.productImageUrl || TestImg} // [수정] productThumbnailUrl -> productImageUrl
+          alt={feedback.productName}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+           onError={(e) => { e.target.onerror = null; e.target.src = TestImg; }}
         />
       </div>
-
-      {/* 텍스트 영역 */}
-      <div className="mt-1 space-y-0.5">
-        <p className="text-sm font-medium truncate">{feedback.productName}</p>
-        {feedback.optionName && (
-          <p className="text-xs text-gray-500 truncate">{feedback.optionName}</p>
-        )}
-        <p className="text-xs text-gray-400">
-          {new Date(feedback.createdAt).toLocaleDateString('ko-KR')}
-        </p>
+      <div className="p-2 text-sm flex-grow flex flex-col justify-between">
+        <div>
+          <p className="font-bold truncate">{feedback.productName}</p>
+          {optionsText && (
+            <p className="text-xs text-gray-500 mt-1 truncate">
+              {optionsText}
+            </p>
+          )}
+        </div>
+        <p className="text-gray-600 truncate mt-2">{feedback.content}</p>
       </div>
     </div>
   );

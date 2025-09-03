@@ -80,7 +80,7 @@ const MyFeedbackDetailPage = () => {
       {/* --- 기본 정보 --- */}
        <div className="border rounded-lg p-6 bg-white shadow-sm">
         <h3 className="font-bold text-lg mb-2">{feedback.productName}</h3>
-        <p className="text-sm text-gray-500 mb-4">{feedback.optionName}</p>
+        <p className="text-sm text-gray-500 mb-4 whitespace-pre-wrap">{feedback.optionName}</p>
         <div className="flex items-center gap-2 mt-2 pb-2 border-b">
             <span className='font-semibold'>총점</span>
             <StarRating score={feedback.overallScore} />

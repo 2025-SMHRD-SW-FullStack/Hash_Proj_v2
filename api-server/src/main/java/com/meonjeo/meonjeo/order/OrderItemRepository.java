@@ -1,19 +1,33 @@
+// meonjeo/order/OrderItemRepository.java
+
 package com.meonjeo.meonjeo.order;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
-    // [NEW] 상세: 특정 주문에서 특정 셀러 아이템만
-    List<OrderItem> findByOrderIdAndSellerIdOrderByIdAsc(Long orderId, Long sellerId);
+    // (기존 메소드)
+    Optional<OrderItem> findByIdAndOrderUserId(Long orderItemId, Long userId);
 
-    // [NEW] 목록 페이지 최적화: 여러 주문에 대해 특정 셀러 아이템 한 번에
-    @Query("select oi from OrderItem oi where oi.order.id in :orderIds and oi.sellerId = :sellerId")
-    List<OrderItem> findByOrderIdInAndSellerId(@Param("orderIds") Collection<Long> orderIds,
-                                               @Param("sellerId") Long sellerId);
+    /**
+     * ID 목록으로 OrderItem을 조회할 때, 각 아이템의 Order 엔티티와
+     * 그 Order에 속한 모든 Item 목록까지 한번에 가져오는 메소드 (피드백 목록 N+1 문제 해결용)
+     */
+    @Query("SELECT oi FROM OrderItem oi " +
+            "LEFT JOIN FETCH oi.order o " +
+            "LEFT JOIN FETCH o.items " +
+            "WHERE oi.id IN :ids")
+    List<OrderItem> findAllByIdWithDetails(@Param("ids") List<Long> ids);
+
+    /**
+     * SellerOrderService의 컴파일 오류 해결을 위한 메소드.
+     * 여러 주문 ID와 셀러 ID를 기반으로 관련된 모든 주문 상품을 조회합니다.
+     */
+    @Query("SELECT oi FROM OrderItem oi WHERE oi.order.id IN :orderIds AND oi.sellerId = :sellerId")
+    List<OrderItem> findByOrderIdInAndSellerId(@Param("orderIds") List<Long> orderIds, @Param("sellerId") Long sellerId);
 }
