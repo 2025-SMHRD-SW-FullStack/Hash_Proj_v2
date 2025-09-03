@@ -60,6 +60,12 @@ export default function OrderDetailContent({ row }) {
     ['주문번호', <span className="font-mono">{row.id}</span>],
     ['주문일', row.orderedAt || '-'],
     ['상태', <StatusPill status={displayStatus} />],
+    ['판매자', (
+      <div className="text-sm">
+        <div className="font-medium">{row.sellerName || row.shopName || row.seller?.name || row.seller?.shopName || '-'}</div>
+        {row.sellerId && <div className="text-xs text-gray-500">ID: {row.sellerId}</div>}
+      </div>
+    )],
     ['피드백 마감', <DeadlinePill deliveredAt={row.deliveredAt} feedbackAt={row.feedbackAt} />],
     ['피드백 작성일', row.feedbackAt || '-'],
     ['택배사', carrierLabel(row.carrierCode || '') || '-'],

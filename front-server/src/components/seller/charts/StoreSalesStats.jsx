@@ -57,6 +57,8 @@ export default function StoreSalesStats({ from, to, className = '' }) {
         })
         setRows(Array.isArray(rows) ? rows : [])
       } catch (e) {
+        console.warn('매출 통계 로드 실패:', e)
+        setRows([]) // 에러 시 빈 배열로 설정
         setErr(e)
       } finally {
         setLoading(false)
@@ -65,6 +67,28 @@ export default function StoreSalesStats({ from, to, className = '' }) {
     run()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from, to, fromDef, toDef])
+
+  // 데이터가 없을 때 기본 차트 데이터 생성
+  const chartData = useMemo(() => {
+    if (rows.length > 0) return rows
+    
+    // 데이터가 없을 때 기본 14일 차트 생성
+    const defaultData = []
+    const end = new Date()
+    const start = new Date(end.getTime() - 13 * 86400000)
+    
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const ymd = d.toISOString().split('T')[0]
+      defaultData.push({
+        date: ymd,
+        itemTotal: 0,
+        ordersCount: 0,
+        payoutTotal: 0
+      })
+    }
+    
+    return defaultData
+  }, [rows])
 
   return (
     <section className={`rounded-xl border bg-white p-4 shadow-sm ${className}`}>
@@ -95,25 +119,43 @@ export default function StoreSalesStats({ from, to, className = '' }) {
           불러오는 중…
         </div>
       ) : err ? (
-        <div className="flex h-[260px] items-center justify-center rounded-md border border-red-300 bg-red-50 text-sm text-red-500">
-          통계 조회 실패: {err?.response?.data?.message || err.message}
+        <div className="flex h-[260px] items-center justify-center rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-500">
+          <div className="text-center">
+            <div>통계 데이터를 불러오지 못했습니다.</div>
+            <div className="mt-1 text-xs">기본 차트를 표시합니다.</div>
+          </div>
         </div>
-      ) : rows.length === 0 ? (
-        <div className="flex h-[260px] items-center justify-center rounded-md border text-sm text-gray-400">
-          데이터가 없습니다
+      ) : chartData.length === 0 ? (
+        <div className="flex h-[260px] items-center justify-center rounded-md border border-dashed text-sm text-gray-400">
+          데이터가 없습니다.
         </div>
       ) : (
-        <div className="h-[260px]">
-          <LineBase
-            data={rows.map((d) => ({
-              date: toMMDD(d.date),        // X축: MM/DD
-              value: Number(d[metric] ?? 0),
-            }))}
-            xKey="date"
-            yKey="value"
-            unit={unitOf[metric]}
-            title={labelOf[metric]}
-          />
+        <LineBase
+          data={chartData}
+          xKey="date"
+          yKey={metric}
+          xFormatter={toMMDD}
+          yFormatter={(v) => {
+            if (metric === 'ordersCount') return v.toLocaleString()
+            return `${v.toLocaleString()}원`
+          }}
+          height={260}
+        />
+      )}
+
+      {/* 하단 요약 */}
+      {!loading && chartData.length > 0 && (
+        <div className="mt-3 flex items-center justify-between rounded-md border bg-gray-50 px-3 py-2 text-xs">
+          <span className="text-gray-600">
+            {from || fromDef} ~ {to || toDef}
+          </span>
+          <span className="font-medium text-gray-900">
+            총 {labelOf[metric]}: {
+              metric === 'ordersCount' 
+                ? chartData.reduce((sum, r) => sum + (r[metric] || 0), 0).toLocaleString()
+                : `${chartData.reduce((sum, r) => sum + (r[metric] || 0), 0).toLocaleString()}원`
+            }
+          </span>
         </div>
       )}
     </section>

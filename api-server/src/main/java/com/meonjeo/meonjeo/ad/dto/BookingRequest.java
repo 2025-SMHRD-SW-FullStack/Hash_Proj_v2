@@ -22,5 +22,14 @@ public record BookingRequest(
         @NotNull LocalDate startDate,
 
         @Schema(description = "게재 종료일(포함)", requiredMode = Schema.RequiredMode.REQUIRED, example = "2025-09-07")
-        @NotNull LocalDate endDate
+        @NotNull LocalDate endDate,
+
+        @Schema(description = "배너 이미지 URL(MAIN_*에서 사용, 선택사항)", example = "https://cdn.meonjeo.dev/ads/banner123.jpg")
+        String bannerImageUrl,
+
+        @Schema(description = "광고 제목(선택사항)", example = "신제품 출시 기념 특가!")
+        String title,
+
+        @Schema(description = "광고 설명(선택사항)", example = "한정 수량 특가로 만나보세요")
+        String description
 ) {}

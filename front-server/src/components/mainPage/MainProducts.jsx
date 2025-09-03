@@ -19,7 +19,9 @@ const MainProducts = ({ label, category, limit }) => {
   useEffect(() => {
     const fetchProducts = async () => {
       const all = await getProducts()
+      console.log('전체 상품 데이터:', all) // 가격 데이터 확인용 로그
       const filtered = all.filter(p => p.category.toLowerCase() === category.toLowerCase())
+      console.log(`${category} 카테고리 상품 데이터:`, filtered) // 필터링된 데이터 확인
       setProducts(filtered)
     }
     fetchProducts()

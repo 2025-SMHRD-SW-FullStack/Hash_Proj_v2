@@ -2,6 +2,7 @@
 const sellerNav = [
   { label: '메인', to: '/seller' },
   { label: '주문관리', to: '/seller/orders' },
+  { label: '교환관리', to: '/seller/exchanges/pending' },
 
   // ▼ 그룹 (토글)
   {

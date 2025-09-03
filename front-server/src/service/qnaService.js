@@ -3,6 +3,24 @@ import axiosInstance from '../config/axiosInstance';
 
 // QnA 관련 API 서비스
 export const qnaService = {
+  // 이미지 업로드
+  uploadImage: async (imageFile) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      
+      const response = await axiosInstance.post('/api/qna/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data.imageUrl;
+    } catch (error) {
+      console.error('이미지 업로드 실패:', error);
+      throw error;
+    }
+  },
+
   // 문의 등록
   createQna: async (qnaData) => {
     try {

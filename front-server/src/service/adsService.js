@@ -47,13 +47,13 @@ export const fetchAdInventory = async ({ type, category, startDate, endDate }) =
 }
 
 /** 예약 생성(결제 전 선점 단계) */
-export const createAdBooking = async ({ slotId, productId, startDate, endDate, imageUrl, title, description }) => {
+export const createAdBooking = async ({ slotId, productId, startDate, endDate, bannerImageUrl, title, description }) => {
   const payload = { 
     slotId, 
     productId, 
     startDate, 
     endDate,
-    imageUrl,
+    bannerImageUrl,
     title,
     description
   }
@@ -76,7 +76,7 @@ export const createAdWithImage = async ({
   let imageUrl = null
   if (imageFile) {
     const { uploadImages } = await import('./uploadService')
-    const uploadResult = await uploadImages('AD_BANNER', [imageFile])
+    const uploadResult = await uploadImages('AD', [imageFile])
     imageUrl = uploadResult[0]?.url
     if (!imageUrl) throw new Error('이미지 업로드에 실패했습니다.')
   }
@@ -92,9 +92,9 @@ export const createAdWithImage = async ({
     productId,
     startDate,
     endDate,
-    imageUrl,
-    title,
-    description
+    bannerImageUrl: imageUrl,
+    title: title || undefined,
+    description: description || undefined
   })
 
   return { ...booking, imageUrl }

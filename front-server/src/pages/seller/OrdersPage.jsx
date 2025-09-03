@@ -6,20 +6,21 @@ import Button from '/src/components/common/Button'
 import Modal from '/src/components/common/Modal'
 import OrderDetailContent from '/src/components/seller/OrderDetailContent'
 import { carrierOptions, carrierLabel, resolveCarrier } from '/src/constants/carriers'
-import { fetchSellerOrders, registerShipment } from '/src/service/orderService'
+import { fetchSellerOrders, registerShipment, ORDER_STATUS_MAP, mapStatusForDisplay } from '/src/service/orderService'
 import { fmtYmd, toOrderNo, getAmount, truncate10, makeAndDownloadCSV } from '/src/util/orderUtils'
-import { listPendingExchanges, approveExchange, rejectExchange, shipExchange } from '/src/service/exchangeService'
+import { fetchPendingExchanges, approveExchange, rejectExchange, shipExchange } from '/src/service/exchangeService'
 import ExchangeShipDialog from '/src/components/seller/ExchangeShipDialog' 
 import BaseTable from '/src/components/common/table/BaseTable'
 import { TableToolbar } from '/src/components/common/table/TableToolbar'                 // ✅ 절대경로 통일
+import { useOrderStore } from '/src/stores/orderStore'
 
 // ---- UI 토큰
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 
-// 서버 enum에 맞춘 칩
+// 서버 enum에 맞춘 칩 (백엔드 OrderStatus와 일치)
 const STATUS_ITEMS = [
   { key: 'ALL', label: '전체' },
-  { key: 'PAID', label: '신규주문' },
+  { key: 'READY', label: '신규주문' },  // PAID → READY로 변경
   { key: 'READY', label: '배송준비중' },
   { key: 'IN_TRANSIT', label: '배송중' },
   { key: 'DELIVERED', label: '배송완료' },
@@ -38,6 +39,15 @@ export default function OrdersPage() {
   const to = searchParams.get('to') || ''
   const isExchange = status === 'EXCHANGE'
 
+  // 전역 주문 상태
+  const { 
+    orders: globalOrders, 
+    setOrders: setGlobalOrders, 
+    updateOrderStatus: updateGlobalOrderStatus,
+    upsertOrder: upsertGlobalOrder,
+    setForceRefresh: setGlobalForceRefresh
+  } = useOrderStore()
+
   // 검색 입력 상태(IME용)
   const [qInput, setQInput] = useState(q)
   const [isComp, setIsComp] = useState(false)
@@ -47,6 +57,12 @@ export default function OrdersPage() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [pagination, setPagination] = useState({
+    page: 0,
+    size: 20,
+    totalElements: 0,
+    totalPages: 0
+  })
 
   // 상세 모달
   const [detailOpen, setDetailOpen] = useState(false)
@@ -94,16 +110,42 @@ export default function OrdersPage() {
     setLoading(true); setError(null)
     try {
       if (isExchange) {
-        const { content } = await listPendingExchanges({ page: 0, size: 50 })
+        const content = await fetchPendingExchanges()
         const arr = content || []
         setRows(arr)
         setSelected(new Set(arr.map(r => r.id)))
         // 교환 목록은 운송장 편집 폼 사용 안함
       } else {
-        const st = status === 'ALL' ? undefined : status
-        const { items } = await fetchSellerOrders({ status: st, from, to, q, page: 0, size: 200 })
-        const arr = items || []
+        // 백엔드 API와 일치하는 상태값 사용
+        const apiStatus = status === 'ALL' ? undefined : ORDER_STATUS_MAP[status]
+        const response = await fetchSellerOrders({ 
+          status: apiStatus, 
+          from, 
+          to, 
+          q, 
+          page: 0, 
+          size: 200 
+        })
+        
+        // 백엔드 응답 구조에 맞춰 처리
+        const arr = response?.content || response?.items || []
         setRows(arr)
+        
+        // 전역 상태에도 저장 (메인페이지 동기화용)
+        if (arr.length > 0) {
+          setGlobalOrders(arr)
+        }
+        
+        // 페이지네이션 정보 설정
+        if (response?.page) {
+          setPagination({
+            page: response.page.number || 0,
+            size: response.page.size || 20,
+            totalElements: response.page.totalElements || arr.length,
+            totalPages: response.page.totalPages || 1
+          })
+        }
+        
         prefillShipFormFromRows(arr)
         // 선택 유지(페이지에 존재하는 것만)
         setSelected(prev => {
@@ -114,12 +156,13 @@ export default function OrdersPage() {
         })
       }
     } catch (e) {
-      console.error(e)
+      console.error('주문 목록 로드 실패:', e)
       setError(e?.response?.data?.message || e.message || '목록을 불러오지 못했습니다.')
+      setRows([])
     } finally {
       setLoading(false)
     }
-  }, [isExchange, status, from, to, q])
+  }, [isExchange, status, from, to, q, setGlobalOrders])
 
   useEffect(() => { load() }, [load])
 
@@ -130,23 +173,27 @@ export default function OrdersPage() {
       (gridRow.courierCode && { code: gridRow.courierCode }) ||
       resolveCarrier(gridRow.courierName || '')
 
+    // 백엔드 응답 구조에 맞춰 매핑
     const mapped = {
       id: gridRow.id,
-      orderedAt: gridRow.orderDate
-        ? new Date(gridRow.orderDate).toISOString().slice(0, 10)
+      orderedAt: gridRow.orderDate || gridRow.createdAt
+        ? new Date(gridRow.orderDate || gridRow.createdAt).toISOString().slice(0, 10)
         : null,
-      status: gridRow.statusText || gridRow.status || '',
+      status: mapStatusForDisplay(gridRow.status) || gridRow.statusText || '',
       deliveredAt: gridRow.deliveredAt ?? null,
       feedbackAt: gridRow.feedbackAt ?? null,
       carrierCode: carrier?.code || '',
       trackingNo: gridRow.trackingNo || '',
-      buyer: gridRow.receiver || gridRow.buyerName || '',
-      phone: gridRow.phone || '',
-      address: gridRow.address || gridRow.address1 || '',
-      product: gridRow.productName || gridRow.product || '',
+      buyer: gridRow.receiver || gridRow.buyerName || gridRow.buyer?.name || '',
+      phone: gridRow.phone || gridRow.receiverPhone || '',
+      address: gridRow.address || gridRow.address1 || gridRow.deliveryAddress || '',
+      product: gridRow.productName || gridRow.product?.name || gridRow.product || '',
       price: amt,
-      requestNote: gridRow.requestMemo || gridRow.requestNote || '',
+      requestNote: gridRow.requestMemo || gridRow.requestNote || gridRow.deliveryMemo || '',
       feedbackText: gridRow.feedbackText || gridRow.feedback || '',
+      // 셀러 정보 추가
+      sellerId: gridRow.sellerId || gridRow.seller?.id,
+      sellerName: gridRow.sellerName || gridRow.shopName || gridRow.seller?.name || gridRow.seller?.shopName,
     }
     setDetailRow(mapped)
     setDetailOpen(true)
@@ -179,14 +226,35 @@ export default function OrdersPage() {
         carrierName: carrierLabel(f.carrierCode) || '',
         trackingNo: f.trackingNo,
       })
+      
+      // 성공 시 로컬 상태 업데이트
+      const updatedOrder = { 
+        ...row, 
+        status: 'READY', // 배송준비중으로 상태 변경
+        statusText: '배송준비중',
+        courierName: carrierLabel(f.carrierCode), 
+        courierCode: f.carrierCode, 
+        trackingNo: f.trackingNo 
+      }
+      
       setRows((prev) => prev.map(r =>
-        r.id === id
-          ? { ...r, statusText: r.statusText || '배송준비중', courierName: carrierLabel(f.carrierCode), courierCode: f.carrierCode, trackingNo: f.trackingNo }
-          : r
+        r.id === id ? updatedOrder : r
       ))
+      
+      // 전역 상태도 업데이트 (메인페이지 동기화)
+      updateGlobalOrderStatus(id, 'READY', {
+        courierName: carrierLabel(f.carrierCode),
+        courierCode: f.carrierCode,
+        trackingNo: f.trackingNo
+      })
+      
+      // 강제 새로고침 플래그 설정하여 SellerMain에서 즉시 반영
+      setGlobalForceRefresh(true)
+      
       cancelEdit(id)
       alert('운송장이 등록되었습니다.')
     } catch (e) {
+      console.error('운송장 등록 실패:', e)
       alert(e?.response?.data?.message || '운송장 등록 실패')
     }
   }
@@ -197,16 +265,19 @@ export default function OrdersPage() {
     const data = picked.length ? picked : (rows ?? [])
     makeAndDownloadCSV(data, {
       filenamePrefix: 'orders',
-      columns: ['주문번호', '상품', '주소', '연락처', '배송요청사항', '상태', '피드백마감'],
+      columns: ['주문번호', '상품', '판매자', '주소', '연락처', '배송요청사항', '상태', '피드백마감'],
       mapRow: (r) => {
         const rawId = (r?.orderUid ?? r?.orderNo ?? r?.orderId ?? r?.id ?? '').toString().trim() || '-'
+        const sellerInfo = r?.sellerName || r?.shopName || r?.seller?.name || r?.seller?.shopName || r?.sellerId || '-'
+        
         return [
           rawId,
-          String(r?.productName ?? r?.product ?? ''),
-          String(r?.address ?? ''),
-          String(r?.phone ?? ''),
-          String(r?.requestMemo ?? r?.requestNote ?? ''),
-          String(r?.statusText ?? r?.status ?? '-'),
+          String(r?.productName ?? r?.product?.name ?? r?.product ?? ''),
+          String(sellerInfo),
+          String(r?.address ?? r?.deliveryAddress ?? ''),
+          String(r?.phone ?? r?.receiverPhone ?? ''),
+          String(r?.requestMemo ?? r?.requestNote ?? r?.deliveryMemo ?? ''),
+          String(mapStatusForDisplay(r?.status) ?? r?.statusText ?? '-'),
           fmtYmd(r?.feedbackDue),
         ]
       },
@@ -231,14 +302,33 @@ export default function OrdersPage() {
         </Button>
       ),
     },
-    { key: 'productName', header: '상품', width: 220, className: 'text-left',
-      render: (r) => truncate10(r?.productName ?? r?.product ?? '') },
-    { key: 'receiver', header: '받는이', width: 120, render: (r) => r.receiver || '-' },
-    { key: 'phone', header: '연락처', width: 130, render: (r) => r.phone || '-' },
-    { key: 'address', header: '주소', width: 320, className: 'text-left',
+    { 
+      key: 'productName', 
+      header: '상품', 
+      width: 220, 
+      className: 'text-left',
+      render: (r) => truncate10(r?.productName ?? r?.product?.name ?? r?.product ?? '') 
+    },
+    { 
+      key: 'receiver', 
+      header: '받는이', 
+      width: 120, 
+      render: (r) => r.receiver || r.buyer?.name || '-' 
+    },
+    { 
+      key: 'phone', 
+      header: '연락처', 
+      width: 130, 
+      render: (r) => r.phone || r.receiverPhone || '-' 
+    },
+    { 
+      key: 'address', 
+      header: '주소', 
+      width: 320, 
+      className: 'text-left',
       render: (r) => (
         <div>
-          <div title={r?.address}>{truncate10(r?.address)}</div>
+          <div title={r?.address || r?.deliveryAddress}>{truncate10(r?.address || r?.deliveryAddress)}</div>
           {(r.courierName && r.trackingNo && !editing.has(r.id)) && (
             <div className="mt-1 text-xs text-gray-500">
               {r.courierName} / {r.trackingNo}
@@ -247,16 +337,29 @@ export default function OrdersPage() {
         </div>
       ),
     },
-    { key: 'request', header: '배송요청사항', width: 240, className: 'text-left',
-      render: (r) => truncate10(r?.requestMemo ?? r?.requestNote ?? '') || '-' },
-    { key: 'status', header: '상태', width: 110,
+    { 
+      key: 'request', 
+      header: '배송요청사항', 
+      width: 240, 
+      className: 'text-left',
+      render: (r) => truncate10(r?.requestMemo ?? r?.requestNote ?? r?.deliveryMemo ?? '') || '-' 
+    },
+    { 
+      key: 'status', 
+      header: '상태', 
+      width: 110,
       render: (r) => (
         <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-[12px] font-medium text-gray-800">
-          {r.statusText || '-'}
+          {mapStatusForDisplay(r?.status) || r?.statusText || '-'}
         </span>
       )
     },
-    { key: 'due', header: '피드백 마감', width: 120, render: (r) => fmtYmd(r.feedbackDue) },
+    { 
+      key: 'due', 
+      header: '피드백 마감', 
+      width: 120, 
+      render: (r) => fmtYmd(r.feedbackDue) 
+    },
     {
       key: 'ship', header: '운송장', width: 260,
       render: (r) => {
@@ -318,11 +421,17 @@ export default function OrdersPage() {
             if (!reason) return
             await rejectExchange(r.id, reason)
             alert('반려 처리되었습니다.')
+            
+            // 전역 상태 강제 새로고침
+            setGlobalForceRefresh(true)
             load()
           })() }}>반려</Button>
           <Button size="sm" variant="admin" onClick={(e) => { e.stopPropagation(); (async () => {
             await approveExchange(r.id)
             alert('승인되었습니다. 발송 등록을 진행하세요.')
+            
+            // 전역 상태 강제 새로고침
+            setGlobalForceRefresh(true)
             setShipTarget(r)
             load()
           })() }}>승인</Button>
@@ -330,7 +439,7 @@ export default function OrdersPage() {
         </div>
       )
     },
-  ]), [load])
+  ]), [load, setGlobalForceRefresh])
 
   return (
     <div className="mx-auto w-full max-w-7xl">
@@ -412,6 +521,10 @@ export default function OrdersPage() {
           if (!shipTarget) return
           await shipExchange(shipTarget.id, { courierCode, trackingNumber })
           alert('교환 발송이 등록되었습니다.')
+          
+          // 전역 상태 강제 새로고침
+          setGlobalForceRefresh(true)
+          
           setShipTarget(null)
           load()
         }}

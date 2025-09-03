@@ -52,7 +52,7 @@ const ProductPage = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const containerRef = useRef(null);
-  const categories = ['전체', '전자제품', '화장품', '밀키트', '플랫폼'];
+  const categories = ['전체', '전자제품', '화장품', '밀키트', '플랫폼', '무형자산'];
 
   useEffect(() => {
     const fetchAllData = async () => {

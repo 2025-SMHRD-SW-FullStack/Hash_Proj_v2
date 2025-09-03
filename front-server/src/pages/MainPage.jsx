@@ -192,6 +192,7 @@ const MainPage = () => {
           <MainProducts label="💄 화장품" category="화장품" limit={isMobile ? 3 : undefined} />
           <MainProducts label="🍱 밀키트" category="밀키트" limit={isMobile ? 3 : undefined} />
           <MainProducts label="🖥 플랫폼" category="플랫폼" limit={isMobile ? 3 : undefined} />
+          <MainProducts label="💡 무형자산" category="무형자산" limit={isMobile ? 3 : undefined} />
         </div>
       </section>
 
