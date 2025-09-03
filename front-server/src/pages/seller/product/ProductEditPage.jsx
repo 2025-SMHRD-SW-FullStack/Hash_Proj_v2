@@ -21,6 +21,19 @@ const longW = 'w-full max-w-[750px]'
 const longW2 = 'w-full max-w-[721px]'
 const shortW = 'w-[224px]'
 
+// "옵션 값"이 실제로 있는 variant 인지(단일 SKU의 빈 variants 제외 기준)
+const hasOptionVariant = (v = {}) => {
+  const vals = [
+    v.option1Value ?? v.optionValue, // 서버가 optionValue만 주는 케이스 겸용
+    v.option2Value,
+    v.option3Value,
+    v.option4Value,
+    v.option5Value,
+  ];
+  return vals.some((x) => x !== undefined && x !== null && String(x).trim() !== '');
+};
+
+
 // blocks ⇄ html
 function blocksToHtml(blocks = []) {
   return blocks
@@ -202,7 +215,10 @@ export default function ProductEditPage() {
         serverSnapshotRef.current.saleEndAt = product?.saleEndAt || ''
 
         // OptionSection 초기 구성
-        if (Array.isArray(variants) && variants.length) {
+        // 배열 길이가 아니라, 옵션 값이 하나라도 "실제로" 있는지로 판단
+        const anyHasOptions = Array.isArray(variants) && variants.some(hasOptionVariant)
+
+        if (anyHasOptions) {
           const depth = Math.max(
             ...variants.map((v) => {
               let d = 0
@@ -212,7 +228,7 @@ export default function ProductEditPage() {
             optionNames.length || 0
           )
           const names = Array.from({ length: depth }).map((_, i) => optionNames[i] || `옵션${i + 1}`)
-          // 그룹 values 수집
+
           const valuesSet = Array.from({ length: depth }).map(() => new Set())
           variants.forEach((v) => {
             for (let i = 1; i <= depth; i++) {
@@ -221,7 +237,7 @@ export default function ProductEditPage() {
             }
           })
           const groups = valuesSet.map((s, i) => ({ name: names[i], values: Array.from(s) }))
-          // rows
+
           const rows = variants.map((v) => {
             const parts = Array.from({ length: depth }).map((_, i) => ({
               n: names[i],
@@ -236,6 +252,7 @@ export default function ProductEditPage() {
               enabled: true,
             }
           })
+
           setOptionInitial({
             enabled: true,
             composeType: depth === 1 ? 'single' : 'combo',
@@ -253,6 +270,7 @@ export default function ProductEditPage() {
           })
         }
 
+
         if (!alive) return
         setForm({
           category: product?.category || '',
@@ -266,7 +284,7 @@ export default function ProductEditPage() {
           saleEnd,
           feedbackPoint,
           stock: stockTotal,
-          useOptions: Array.isArray(variants) && variants.length > 0,
+          useOptions: anyHasOptions,
           optionGroups: [], // OptionSection에서 갱신
           options: [],       // OptionSection에서 갱신
           thumbnail: null,   // 파일은 UI 유지(서버엔 기존 URL 유지)
