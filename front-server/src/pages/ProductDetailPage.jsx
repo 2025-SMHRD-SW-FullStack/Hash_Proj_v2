@@ -18,7 +18,7 @@ import Minus from '../assets/icons/ic_minus.svg';
 import Plus from '../assets/icons/ic_plus.svg';
 import Close from '../assets/icons/ic_close.svg';
 import TestImg from '../assets/images/ReSsol_TestImg.png';
-import FeedbackItem from '../components/common/product/FeedbackItem.jsx';
+import FeedbackItem from '../components/product/FeedbackItem.jsx';
 
 const ProductDetailPage = () => {
   const { productId } = useParams();

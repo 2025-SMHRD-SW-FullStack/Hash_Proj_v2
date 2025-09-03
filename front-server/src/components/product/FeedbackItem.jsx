@@ -1,9 +1,8 @@
-// src/components/common/product/FeedbackItem.jsx
 import React, { useMemo, useState } from 'react';
-import PersonIcon from '../../../assets/icons/ic_person.svg';
-import useAuthStore from '../../../stores/authStore'; // useAuthStore 추가
-import { adminDeleteFeedback } from '../../../service/feedbackService'; // adminDeleteFeedback 추가
-import Button from '../Button'; // Button 컴포넌트 추가
+import PersonIcon from '../../assets/icons/ic_person.svg';
+import useAuthStore from '../../stores/authStore'; // useAuthStore 추가
+import { adminDeleteFeedback } from '../../service/feedbackService'; // adminDeleteFeedback 추가
+import Button from '../common/Button'; // Button 컴포넌트 추가
 
 const FeedbackItem = ({ feedback, onFeedbackDeleted }) => { // onFeedbackDeleted 콜백 추가
   const [isExpanded, setIsExpanded] = useState(false);

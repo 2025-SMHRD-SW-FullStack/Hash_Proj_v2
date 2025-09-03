@@ -2,11 +2,11 @@ import React, { useState, useMemo, useEffect } from 'react'
 import arrowLeft from '../../assets/icons/ic_arrow_left.svg'
 import arrowRight from '../../assets/icons/ic_arrow_right.svg'
 import useWindowWidth from '../../hooks/useWindowWidth.js'
-import Product from '../common/Product.jsx'
 import Icon from '../../components/common/Icon.jsx'
 import { useProductDetail } from '../../hooks/useProductDetail.js'
 import { getProducts } from '../../service/productService.js'
 import { useNavigate } from 'react-router-dom'
+import Product from '../product/Product.jsx'
 
 const MainProducts = ({ label, category, limit }) => {
   const width = useWindowWidth()
@@ -51,23 +51,45 @@ const MainProducts = ({ label, category, limit }) => {
 
   return (
     <div className="w-full mb-6">
-      {/* 카테고리 헤더 */}
-      <div className="flex w-full justify-between items-center mb-4">
-        <p className="text-base sm:text-lg font-bold">{label}</p>
-        <div
-          className="flex items-center gap-1 sm:gap-2 cursor-pointer"
-          onClick={() => navigate('/products', { state: { category } })}
-        >
-          <p className="text-xs sm:text-sm font-semibold">더보기</p>
-          <Icon src={arrowRight} alt="이동" className="w-4 h-4 sm:w-5 sm:h-5" />
-        </div>
+    {/* 카테고리 헤더 */}
+    <div className="max-w-6xl mx-auto flex justify-between items-center px-2 sm:px-4 mb-3 sm:mb-4">
+      <p className="text-base sm:text-lg font-bold">{label}</p>
+      <div
+        className="flex items-center gap-1 sm:gap-1.5 cursor-pointer"
+        onClick={() => navigate('/products', { state: { category } })}
+      >
+        <p className="text-xs sm:text-sm font-semibold">더보기</p>
+        <Icon src={arrowRight} alt="이동" className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
       </div>
+    </div>
 
-      {/* 상품 리스트 */}
-      {isMobile ? (
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide px-2">
+    {/* 상품 리스트 */}
+    {isMobile ? (
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide px-2">
+        {visibleProducts.length === 0 ? (
+          <p className="text-sm">해당 카테고리 상품이 없습니다.</p>
+        ) : (
+          visibleProducts.map((v) => (
+            <Product
+              key={v.id}
+              product={v}
+              onClick={goProductDetail}
+              isSimple={true}
+            />
+          ))
+        )}
+      </div>
+    ) : (
+      <div className="flex items-center justify-center gap-x-2">
+        <Icon
+          src={arrowLeft}
+          alt="이전"
+          className={`hidden sm:block cursor-pointer ${isFirstPage ? 'opacity-30' : ''}`}
+          onClick={!isFirstPage ? handlePrev : undefined}
+        />
+        <div className="flex gap-4 justify-center">
           {visibleProducts.length === 0 ? (
-            <p className="text-sm">해당 카테고리 상품이 없습니다.</p>
+            <p>해당 카테고리 상품이 없습니다.</p>
           ) : (
             visibleProducts.map((v) => (
               <Product
@@ -79,37 +101,16 @@ const MainProducts = ({ label, category, limit }) => {
             ))
           )}
         </div>
-      ) : (
-        <div className="flex items-center justify-center gap-x-2">
-          <Icon
-            src={arrowLeft}
-            alt="이전"
-            className={`hidden sm:block cursor-pointer ${isFirstPage ? 'opacity-30' : ''}`}
-            onClick={!isFirstPage ? handlePrev : undefined}
-          />
-          <div className="flex gap-4 justify-center">
-            {visibleProducts.length === 0 ? (
-              <p>해당 카테고리 상품이 없습니다.</p>
-            ) : (
-              visibleProducts.map((v) => (
-                <Product
-                  key={v.id}
-                  product={v}
-                  onClick={goProductDetail}
-                  isSimple={true}
-                />
-              ))
-            )}
-          </div>
-          <Icon
-            src={arrowRight}
-            alt="다음"
-            className={`hidden sm:block cursor-pointer ${isLastPage ? 'opacity-30' : ''}`}
-            onClick={!isLastPage ? handleNext : undefined}
-          />
-        </div>
-      )}
-    </div>
+        <Icon
+          src={arrowRight}
+          alt="다음"
+          className={`hidden sm:block cursor-pointer ${isLastPage ? 'opacity-30' : ''}`}
+          onClick={!isLastPage ? handleNext : undefined}
+        />
+      </div>
+    )}
+  </div>
+
   )
 }
 

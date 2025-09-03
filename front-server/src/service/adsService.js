@@ -5,6 +5,23 @@ import api from '../config/axiosInstance'
 //    서버가 '/api/ad' 라우트를 쓰면 아래를 '/api/ad' 로 바꿔주세요.
 const ADS_BASE = '/api/ads'
 
+/**
+ * 현재 활성화된 광고 목록을 가져옵니다. (빈 슬롯은 하우스 광고로 채워짐)
+ * @param {('MAIN_ROLLING'|'MAIN_SIDE'|'CATEGORY_TOP'|'ORDER_COMPLETE')} type - 가져올 광고 슬롯 타입
+ * @returns {Promise<Array<{productId: number, bannerImageUrl: string, house: boolean}>>}
+ */
+export const getActiveAds = async (type) => {
+  if (!type) return [];
+  try {
+    const { data } = await api.get(`${ADS_BASE}/active/filled`, { params: { type } });
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error(`Error fetching active ads for type ${type}:`, error);
+    return []; // 에러 발생 시 빈 배열 반환
+  }
+};
+
+
 /** 선택 불가 날짜(캘린더) 조회: from~to 범위 내에서 예약 불가 일자 세트 */
 export const fetchAdUnavailableDates = async ({ type, category, startDate, endDate }) => {
   const params = {
