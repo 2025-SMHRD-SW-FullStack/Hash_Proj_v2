@@ -108,7 +108,15 @@ const MyOrderDetailPage = () => {
           <h3 className="font-bold text-lg mb-2">주문 상품</h3>
           {order.items.map(item => (
             <div key={item.id} className="flex items-center border-b py-4">
-              <img src={TestImg} alt={item.productName} className="w-20 h-20 rounded-md object-cover mr-4" />
+              <img
+                src={item.thumbnailUrl || TestImg}
+                alt={item.productName}
+                className="w-20 h-20 rounded-md object-cover mr-4"
+                onError={(e) => {
+                  e.target.onerror = null; // 무한 루프 방지
+                  e.target.src = TestImg;
+                }}
+              />
               <div className="flex-grow">
                 <p className="font-semibold">{item.productName}</p>
                 <p className="text-sm text-gray-600">{formatOptions(item.optionSnapshotJson)}</p>

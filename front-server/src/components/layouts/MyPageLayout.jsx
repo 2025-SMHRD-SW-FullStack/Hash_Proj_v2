@@ -6,6 +6,7 @@ import { getMyPointBalance } from "../../service/pointService";
 import PersonIcon from "../../assets/icons/ic_person.svg";
 import { Listbox } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
+import PointIcon from '../../assets/icons/ic_point.svg'
 
 const MyPageLayout = () => {
   const { user } = useAuthStore();
@@ -77,6 +78,7 @@ const MyPageLayout = () => {
             className="w-full h-10 md:h-14 text-sm md:text-base"
             variant="blackWhite"
             onClick={() => navigate("/user/mypage/point-exchange")}
+            leftIcon={<img src={PointIcon} alt="포인트 교환"/>}
           >
             포인트 교환하기
           </Button>

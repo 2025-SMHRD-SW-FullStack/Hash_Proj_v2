@@ -320,11 +320,6 @@ export default function SellerMain() {
       {/* 상단 제목 */}
       <div className="mb-4">
         <h1 className="text-xl font-bold">셀러 대시보드</h1>
-        {dashboardStats && (
-          <p className="text-sm text-gray-600 mt-1">
-            기준일: {dashboardStats.targetDate} (신규 주문/피드백은 오늘 날짜 기준)
-          </p>
-        )}
         {statsErr && (
           <p className="text-sm text-red-600 mt-1">
             ⚠️ 통계 로드 실패 (기본값 표시)

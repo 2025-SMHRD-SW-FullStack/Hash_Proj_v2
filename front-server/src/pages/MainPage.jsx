@@ -10,6 +10,7 @@ import useAuthStore from '../stores/authStore';
 import { getMyPointBalance } from '../service/pointService';
 import { getActiveAds } from '../service/adsService';
 import { AD_SLOT_TYPES } from '../constants/ads';
+import PointIcon from '../assets/icons/ic_point.svg'
 
 const MainPage = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -231,6 +232,7 @@ const MainPage = () => {
               className="w-full h-10 sm:h-12 text-sm sm:text-base"
               variant="blackWhite"
               onClick={() => navigate('/user/mypage/point-exchange')}
+              leftIcon={<img src={PointIcon} alt="포인트 교환" />}
             >
               포인트 교환하기
             </Button>

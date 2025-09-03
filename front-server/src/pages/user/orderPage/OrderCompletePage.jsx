@@ -48,7 +48,7 @@ const OrderCompletePage = () => {
 
       try {
         // 1. Toss 결제 최종 승인 API 호출 (0원 결제 포함)
-        // ✅ [수정] 0원 결제 시에도 재고 차감이 제대로 되도록 confirmTossPayment 호출
+        // 0원 결제 시에도 재고 차감이 제대로 되도록 confirmTossPayment 호출
         console.log('결제 승인 요청:', { paymentKey, orderId: tossOrderId, amount: Number(amount) });
         const confirmResponse = await confirmTossPayment({
             paymentKey,
@@ -57,7 +57,7 @@ const OrderCompletePage = () => {
         });
         console.log('결제 승인 응답:', confirmResponse);
 
-        // ✅ [수정] 응답 객체에서 백엔드가 보내주는 실제 숫자 ID를 추출합니다.
+        // 응답 객체에서 백엔드가 보내주는 실제 숫자 ID를 추출합니다.
         // (TossConfirmResponse DTO에서 'orderDbId'로 되어있습니다)
         const dbOrderId = confirmResponse?.orderDbId;
         console.log('추출된 주문 ID:', { dbOrderId, fallbackId: confirmResponse?.orderId });
@@ -71,11 +71,11 @@ const OrderCompletePage = () => {
         }
 
         // 2. 최종 승인이 성공하면, 받은 '숫자 ID'로 주문 상세 정보를 가져옵니다.
-        // ✅ [수정] 0원 결제 시에도 재고 차감 후 주문 정보를 가져옵니다.
+        // 0원 결제 시에도 재고 차감 후 주문 정보를 가져옵니다.
         const finalOrderId = dbOrderId || confirmResponse.orderId;
         console.log('최종 사용할 주문 ID:', finalOrderId);
         
-        // ✅ [개선] 주문 정보를 여러 번 시도하여 상태 업데이트를 확인
+        // 주문 정보를 여러 번 시도하여 상태 업데이트를 확인
         let orderDetails = null;
         let retryCount = 0;
         const maxRetries = 3;
@@ -170,7 +170,7 @@ const OrderCompletePage = () => {
           <p className="text-gray-700 mt-1">{order.orderUid}</p>
         </div>
         
-        {/* ✅ [추가] 주문 상태 표시 */}
+        {/* 주문 상태 표시 */}
         <div>
           <span className="font-semibold text-lg">주문 상태</span>
           <div className="mt-1">
@@ -208,10 +208,14 @@ const OrderCompletePage = () => {
         <div>
           <h3 className="font-semibold text-lg mb-3">주문 상품</h3>
           <div className="flex gap-4">
-            <img 
-              src={TestImg} // 실제로는 representativeItem.thumbnailUrl 등을 사용
+            <img
+              src={representativeItem?.thumbnailUrl || TestImg}
               alt={representativeItem?.productNameSnapshot}
               className="w-24 h-24 rounded-lg object-cover bg-gray-100"
+              onError={(e) => {
+                e.target.onerror = null; // 무한 루프 방지
+                e.target.src = TestImg;
+              }}
             />
             <div className="flex flex-col justify-center">
               <p className="font-semibold">{representativeItem?.productNameSnapshot}</p>
