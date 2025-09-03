@@ -1,40 +1,81 @@
 // src/components/common/qna/QnAForm.jsx
 import React, { useState } from 'react';
 import Button from '../Button';
+import { qnaService } from '../../../service/qnaService';
 
 const QnAForm = ({ onSubmit, onCancel }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [images, setImages] = useState([]); // 첨부 이미지 상태
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false); // 제출 중 상태
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     setImages(files);
   };
 
-  const handleSubmit = (e) => {
+  const handleImageUpload = async (files) => {
+    const urls = [];
+    for (const file of files) {
+      try {
+        const imageUrl = await qnaService.uploadImage(file);
+        urls.push(imageUrl);
+      } catch (error) {
+        console.error('이미지 업로드 실패:', error);
+        setError('이미지 업로드에 실패했습니다.');
+        return null;
+      }
+    }
+    return urls;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) {
       setError('제목과 내용을 모두 입력해주세요.');
       return;
     }
 
-    // 실제 API 전송 시에는 FormData 사용
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('content', content);
-    images.forEach((file, idx) => formData.append(`images[${idx}]`, file));
-
-    console.log('제출 데이터:', { title, content, images });
-
-    // 초기화
-    setTitle('');
-    setContent('');
-    setImages([]);
+    setIsSubmitting(true);
     setError('');
 
-    onSubmit(formData);
+    try {
+      // 이미지 업로드
+      let imagesJson = null;
+      if (images.length > 0) {
+        const imageUrls = await handleImageUpload(images);
+        if (imageUrls) {
+          imagesJson = JSON.stringify(imageUrls);
+        } else {
+          return; // 이미지 업로드 실패 시 중단
+        }
+      }
+
+      // QnA 등록
+      const qnaData = {
+        title: title.trim(),
+        content: content.trim(),
+        imagesJson: imagesJson
+      };
+
+      console.log('QnA 등록 데이터:', qnaData);
+      const result = await qnaService.createQna(qnaData);
+      console.log('QnA 등록 결과:', result);
+
+      // 성공 시 초기화
+      setTitle('');
+      setContent('');
+      setImages([]);
+      setError('');
+
+      onSubmit();
+    } catch (error) {
+      console.error('QnA 등록 실패:', error);
+      setError('QnA 등록에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

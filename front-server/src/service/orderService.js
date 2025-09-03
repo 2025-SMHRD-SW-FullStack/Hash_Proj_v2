@@ -96,6 +96,7 @@ export const getConfirmWindow = (orderId) =>
 export const fetchSellerOrders = async ({
   status, from, to, q, page = 0, size = 20,
 } = {}) => {
+  console.log("fetchSellerOrders", status)
   const statusApi = mapStatusForApi(status)
   const params = { page, size }
   if (statusApi) params.status = statusApi     // 허용되지 않으면 아예 안 보냄
@@ -175,20 +176,43 @@ export const exportSellerOrdersCSV = async (params = {}) => {
 /** 배송 추적(주문ID 기준) — 기존 getTracking 재사용 */
 export const fetchTracking = (orderId) => getTracking(orderId)
 
-
-// UI 상태 → API 상태 매핑
-// 신규주문은 보통 결제완료(PAID)로 해석하는 게 자연스러워요.
-const STATUS_MAP = {
+// ===== 백엔드 OrderStatus enum과 일치하는 상태 매핑 =====
+// 백엔드: PENDING, PAID, READY, IN_TRANSIT, DELIVERED, CONFIRMED
+export const ORDER_STATUS_MAP = {
+  // UI 상태 → 백엔드 enum
   ALL: null,
-  NEW: 'PAID',             // ✅ 신규주문
-  READY: 'READY',          // 배송준비
-  SHIPPING: 'IN_TRANSIT',  // 배송중
-  DELIVERED: 'DELIVERED',  // 배송완료
-  CONFIRMED: 'CONFIRMED',  // 구매확정
+  PAID: 'READY',             // 신규주문 (결제완료 후 배송준비중)
+  READY: 'READY',            // 배송준비
+  SHIPPING: 'IN_TRANSIT',    // 배송중
+  DELIVERED: 'DELIVERED',    // 배송완료
+  CONFIRMED: 'CONFIRMED',    // 구매확정
+  PENDING: 'PENDING',        // 결제대기
+  NEW: 'READY',              // 신규주문 (READY와 동일)
 }
-const mapStatusForApi = (ui) => STATUS_MAP[ui?.toUpperCase?.()] ?? null
 
-// 그리드 조회 래퍼
+/** UI 상태를 백엔드 API 상태로 변환 */
+const mapStatusForApi = (uiStatus) => {
+  console.log("mapStatusForApi", uiStatus)
+  if (!uiStatus) return null
+  const upper = String(uiStatus).toUpperCase()
+  return ORDER_STATUS_MAP[upper] ?? null
+}
+
+/** 백엔드 상태를 UI 표시용으로 변환 */
+export const mapStatusForDisplay = (apiStatus) => {
+  if (!apiStatus) return ''
+  const statusMap = {
+    'PENDING': '결제대기',
+    'PAID': '결제완료',
+    'READY': '배송준비중',
+    'IN_TRANSIT': '배송중',
+    'DELIVERED': '배송완료',
+    'CONFIRMED': '구매확정',
+  }
+  return statusMap[apiStatus] || apiStatus
+}
+
+// 그리드 조회 래퍼 (하위호환)
 export async function fetchSellerOrdersGrid({ statusKey = 'ALL', page = 0, size = 20, q, from, to } = {}) {
   const params = { page, size }
   const mapped = ORDER_STATUS_MAP[statusKey] ?? null

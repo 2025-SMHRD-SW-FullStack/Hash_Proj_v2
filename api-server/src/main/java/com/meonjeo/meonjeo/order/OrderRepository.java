@@ -89,4 +89,36 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("fromTs") java.time.LocalDateTime fromTs,
             @Param("toTs")   java.time.LocalDateTime toTs
     );
+
+    // ====== [NEW] 셀러 대시보드 통계용 카운트 메서드들 ======
+    
+    // 특정 날짜 범위의 셀러 주문 개수 (특정 상태)
+    @Query("""
+        select count(distinct o.id)
+        from Order o
+        join o.items oi
+        where oi.sellerId = :sellerId
+          and o.status = :status
+          and o.createdAt >= :fromTs
+          and o.createdAt < :toTs
+    """)
+    long countSellerOrdersByStatusAndDate(
+            @Param("sellerId") Long sellerId,
+            @Param("status") OrderStatus status,
+            @Param("fromTs") LocalDateTime fromTs,
+            @Param("toTs") LocalDateTime toTs
+    );
+    
+    // 셀러의 전체 주문 개수 (특정 상태)
+    @Query("""
+        select count(distinct o.id)
+        from Order o
+        join o.items oi
+        where oi.sellerId = :sellerId
+          and o.status = :status
+    """)
+    long countSellerOrdersByStatus(
+            @Param("sellerId") Long sellerId,
+            @Param("status") OrderStatus status
+    );
 }

@@ -74,6 +74,12 @@ public class Qna {
     @Comment("답변 작성 시각")
     private LocalDateTime answeredAt;
 
+    /** 이미지 첨부 */
+    @Lob
+    @Comment("첨부된 이미지 URL 리스트 JSON")
+    @Column(name = "images_json", columnDefinition = "TEXT")
+    private String imagesJson;
+
     /** 생성/수정 시간 */
     @Comment("문의 작성 시각")
     private LocalDateTime createdAt;

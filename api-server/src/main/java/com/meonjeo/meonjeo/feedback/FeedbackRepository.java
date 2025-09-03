@@ -79,4 +79,22 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
           and (f.removed = false or f.removed is null)
     """)
     boolean existsForOrder(@Param("orderId") Long orderId);
+
+    // ====== [NEW] 셀러 대시보드 통계용 카운트 메서드 ======
+    
+    // 특정 날짜 범위에 생성된 셀러의 피드백 개수
+    @Query("""
+        select count(f)
+        from Feedback f
+        join OrderItem oi on oi.id = f.orderItemId
+        where oi.sellerId = :sellerId
+          and (f.removed = false or f.removed is null)
+          and f.createdAt >= :fromTs
+          and f.createdAt < :toTs
+    """)
+    long countSellerFeedbacksByDate(
+            @Param("sellerId") Long sellerId,
+            @Param("fromTs") LocalDateTime fromTs,
+            @Param("toTs") LocalDateTime toTs
+    );
 }

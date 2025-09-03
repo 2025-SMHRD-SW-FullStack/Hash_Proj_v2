@@ -11,7 +11,8 @@ public class QnaDtos {
     // 문의 생성 요청
     public record CreateRequest(
             String title,
-            String content
+            String content,
+            String imagesJson
     ) {}
 
     // 문의 응답
@@ -24,6 +25,7 @@ public class QnaDtos {
             QnaStatus status,
             String answerContent,
             LocalDateTime answeredAt,
+            String imagesJson,
             LocalDateTime createdAt
     ) {
         public static Response from(Qna qna) {
@@ -36,6 +38,7 @@ public class QnaDtos {
                     qna.getStatus(),
                     qna.getAnswerContent(),
                     qna.getAnsweredAt(),
+                    qna.getImagesJson(),
                     qna.getCreatedAt()
             );
         }
@@ -72,6 +75,7 @@ public class QnaDtos {
             QnaStatus status,
             String answerContent,
             LocalDateTime answeredAt,
+            String imagesJson,
             LocalDateTime createdAt
     ) {
         public static AdminDetailResponse from(Qna qna) {
@@ -84,6 +88,7 @@ public class QnaDtos {
                     qna.getStatus(),
                     qna.getAnswerContent(),
                     qna.getAnsweredAt(),
+                    qna.getImagesJson(),
                     qna.getCreatedAt()
             );
         }

@@ -87,6 +87,9 @@ public class AdService {
                 .productId(req.productId())
                 .startDate(req.startDate()).endDate(req.endDate())
                 .price(price).status(AdBookingStatus.RESERVED_UNPAID)
+                .bannerImageUrl(req.bannerImageUrl())
+                .title(req.title())
+                .description(req.description())
                 .build());
         return new BookingResponse(b.getId(), b.getPrice(), b.getStatus().name());
     }
