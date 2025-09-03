@@ -15,7 +15,7 @@ export const AD_STATUS = {
   CANCELLED: 'CANCELLED',  // 취소됨
 }
 
-// 이미지 업로드 타입
+// 이미지 업로드 타입 - 백엔드 ImageType enum과 일치
 export const UPLOAD_TYPE = {
-  AD_BANNER: 'AD_BANNER',
+  AD: 'AD',
 }

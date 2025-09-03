@@ -1,3 +1,4 @@
+// src/components/product/Product.jsx
 import React, { useState } from 'react';
 import testImg from '../../assets/images/ReSsol_TestImg.png';
 
@@ -10,57 +11,73 @@ const Product = ({ product, onClick, isSimple = false, isPowerAd = false }) => {
   const imgSrc = product.thumbnailUrl && !imgError ? product.thumbnailUrl : testImg;
   const handleImageError = () => setImgError(true);
 
+  // ★★★ 수정: 즉시 할인이 적용되었는지 여부를 확인하는 변수
+  const hasDiscount = product.salePrice > 0;
+
   return (
     <div
-      className="cursor-pointer w-[40%] max-w-[150px] sm:w-48 flex-shrink-0 relative"
+      className="group cursor-pointer w-full max-w-[200px] mx-auto"
       onClick={handleClick}
     >
-      {/* 이미지 영역 */}
-      <div className="relative w-full aspect-square">
-        {isPowerAd && (
-          <div className="absolute top-2 right-2 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-            파워광고
-          </div>
-        )}
+      {/* 광고 뱃지 */}
+      {isPowerAd && (
+        <div className="absolute top-2 right-2 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+          파워광고
+        </div>
+      )}
+
+      {/* 상품 이미지 (정사각형 비율 유지) */}
+      <div className="aspect-square w-full overflow-hidden rounded-xl border border-gray-200">
         <img
           src={imgSrc}
           alt={product.name}
           onError={handleImageError}
-          className="w-full h-full object-cover object-center rounded-xl"
+          className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
         />
       </div>
 
-      {/* 상품 정보 영역 */}
-      <div className="w-full mt-2 space-y-1 sm:space-y-2">
-        {/* 상품명 */}
-        <strong className="text-base sm:text-lg break-words line-clamp-2">
+      {/* 상품 정보 */}
+      <div className="w-full mt-3 space-y-1 overflow-hidden px-1">
+        <strong className="text-base font-semibold text-gray-800 break-words line-clamp-2 leading-tight">
           [{product.brand}] {product.name}
         </strong>
 
-        {/* 가격 */}
+        {/* ★★★ 수정: hasDiscount 값에 따라 가격 표시를 다르게 함 */}
         <div className="flex items-baseline gap-2">
-          <span className="text-base sm:text-lg text-[#5882F6]">
-            {product.salePrice.toLocaleString()}원
-          </span>
-          <span className="text-xs sm:text-sm line-through text-gray-600">
-            {product.basePrice.toLocaleString()}원
-          </span>
+          {hasDiscount ? (
+            <>
+              {/* 할인이 있을 경우: 할인가(파란색)와 원가(취소선) 표시 */}
+              <span className="text-lg font-bold text-primary">
+                {product.salePrice.toLocaleString()}원
+              </span>
+              <span className="text-sm text-gray-500 line-through">
+                {product.basePrice.toLocaleString()}원
+              </span>
+            </>
+          ) : (
+            <>
+              {/* 할인이 없을 경우: 원가만 표시 */}
+              <span className="text-lg font-bold text-primary">
+                {product.basePrice.toLocaleString()}원
+              </span>
+            </>
+          )}
         </div>
 
         {/* 상세 정보 */}
         {!isSimple && (
-          <>
-            <span className="text-xs sm:text-sm">
-              재고수 {product.stockTotal?.toLocaleString() || 0}개
+          <div className="text-sm text-gray-600 space-y-0.5 pt-1">
+            <span>
+              재고: {product.stockTotal?.toLocaleString() || 0}개
             </span>
-            <div className="text-xs sm:text-sm flex items-center gap-1">
-              <span>지급 포인트 {product.feedbackPoint?.toLocaleString() || 0}</span>
-              <span className="text-[#5882F6]">P</span>
+            <div className="flex items-center gap-1">
+              <span>포인트: {product.feedbackPoint?.toLocaleString() || 0}</span>
+              <span className="font-bold text-primary">P</span>
             </div>
-            <span className="text-xs sm:text-sm">
-              모집 기간 ~{product.saleEndAt?.slice(0, 10)}
+            <span>
+              ~{product.saleEndAt?.slice(0, 10)}
             </span>
-          </>
+          </div>
         )}
       </div>
     </div>

@@ -14,6 +14,7 @@ import InfoModal from "../../../components/common/InfoModal";
 import Button from "../../../components/common/Button";
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
 import { getMyExchanges } from "../../../service/exchangeService";
+import Modal from "../../../components/common/Modal";
 
 const statusLabel = (s) => ({
   READY: "배송 준비중",
@@ -35,11 +36,18 @@ function VariationRow({ variation }) {
 }
 
 function GroupedProductRow({ product }) {
-  const thumb = product.thumbnailUrl || TestImg;
   return (
     <div className="flex items-start gap-4">
       <div className="w-24 h-24 rounded-lg bg-gray-100 shrink-0 overflow-hidden">
-        <img src={thumb} alt={product.productName} className="w-full h-full object-cover" />
+        <img 
+          src={product.thumbnailUrl || TestImg} 
+          alt={product.productName} 
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.onerror = null; // 무한 루프 방지
+            e.target.src = TestImg;
+          }} 
+          />
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-base mb-2">{product.productName}</div>
@@ -165,11 +173,11 @@ const OrderCard = ({ order, onChanged }) => {
 
   return (
     <div className="rounded-2xl border border-gray-200 p-4 bg-white">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:justify-between gap-1 md:gap-0 text-sm text-gray-600">
         <div className="text-sm text-gray-600">{headerLeft}</div>
-        <div className="inline-flex items-center gap-2">
-          <span className="text-xs bg-gray-100 px-2.5 py-1 rounded-full">{statusLabel(order.status)}</span>
-          <span className="text-xs text-gray-400">{order.createdAt ? new Date(order.createdAt).toLocaleString() : ""}</span>
+        <div className="flex gap-2 flex-wrap">
+          <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">{statusLabel(order.status)}</span>
+          <span>{order.createdAt ? new Date(order.createdAt).toLocaleString() : ""}</span>
         </div>
       </div>
 
@@ -188,29 +196,21 @@ const OrderCard = ({ order, onChanged }) => {
           <b>{totalPrice.toLocaleString()}원</b>
         </div>
 
-        <div className="flex items-center gap-4">
-          {order.status === "PENDING" && <Button onClick={handleReorder}>다시 주문하기</Button>}
-          {order.status === "READY" && <Button variant="unselected" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
-          {order.status === "IN_TRANSIT" && <Button variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
-          {order.status === "DELIVERED" && (
-            <>
-              <Button onClick={() => setOpenConfirm(true)}>구매확정 후 피드백 작성</Button>
-              <Button variant="unselected" onClick={handleOpenExchangeModal}>교환 신청</Button>
-            </>
-          )}
-          {order.status === "CONFIRMED" && (
-            <>
-              {!feedbackDone ? (
-                <Button onClick={() => navi(`/user/mypage/orders/${order.id}?tab=feedback`)}>피드백 작성</Button>
-              ) : (
-                <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">
-                  포인트 지급 완료
-                </span>
-              )}
-            </>
-          )}
-          <Button variant="unselected" onClick={() => navi(`/user/mypage/orders/${order.id}`)}>주문 상세 보기</Button>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {order.status === "PENDING" && <Button className="flex-1">다시 주문하기</Button>}
+          {order.status === "READY" && <Button className="flex-1" variant="unselected" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
+          {order.status === "IN_TRANSIT" && <Button className="flex-1" variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
+          {order.status === "DELIVERED" && <>
+            <Button className="flex-1" onClick={() => setOpenConfirm(true)}>구매확정 후 피드백 작성</Button>
+            <Button className="flex-1" variant="unselected" onClick={handleOpenExchangeModal}>교환 신청</Button>
+          </>}
+          {order.status === "CONFIRMED" && <>
+            {!feedbackDone ? <Button className="flex-1" onClick={() => navi(`/user/mypage/orders/${order.id}?tab=feedback`)}>피드백 작성</Button>
+            : <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">포인트 지급 완료</span>}
+          </>}
+          <Button className="flex-1" variant="unselected" onClick={() => navi(`/user/mypage/orders/${order.id}`)}>주문 상세 보기</Button>
         </div>
+
       </div>
 
       <ConfirmPurchaseModal
@@ -223,7 +223,7 @@ const OrderCard = ({ order, onChanged }) => {
               const remain = typeof w?.remainingSeconds === "number"
                 ? ` (남은 시간: ${Math.floor(w.remainingSeconds / 3600)}시간 ${Math.floor((w.remainingSeconds % 3600) / 60)}분)`
                 : "";
-              alert(`지금은 구매확정을 할 수 없습니다.\\n(배송완료 후 7일 이내만 가능)${remain}`);
+              alert(`지금은 구매확정을 할 수 없습니다. (배송완료 후 7일 이내만 가능)${remain}`);
               setOpenConfirm(false);
               return;
             }
@@ -238,7 +238,14 @@ const OrderCard = ({ order, onChanged }) => {
         }}
       />
       <TrackingModal open={openTrack} onClose={() => setOpenTrack(false)} orderId={order.id} />
-      <InfoModal open={openReadyInfo} onClose={() => setOpenReadyInfo(false)} title="배송 조회" message={"현재 상태: 배송 준비중\\n집화가 시작되면 배송 조회가 가능합니다."} />
+      <Modal
+        isOpen={openReadyInfo}
+        onClose={() => setOpenReadyInfo(false)}
+        title="배송 조회"
+      >
+        <p>현재 상태: 배송 준비중</p>
+        <p> 집화가 시작되면 배송 조회가 가능합니다.</p>
+      </Modal>
       <ExchangeRequestModal
         open={openExchangeModal}
         onClose={() => setOpenExchangeModal(false)}

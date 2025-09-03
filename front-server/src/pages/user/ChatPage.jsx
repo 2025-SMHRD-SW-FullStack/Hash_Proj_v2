@@ -3,7 +3,7 @@ import ChatList from '../../components/chat/ChatList'
 const ChatRoom = React.lazy(() => import('../../components/chat/ChatRoom'))
 import useAppModeStore from '../../stores/appModeStore'
 
-export default function ChatPage() {
+const ChatPage = () => {
   const [selectedRoomId, setSelectedRoomId] = useState(null)
   const { setMode } = useAppModeStore()
 
@@ -42,3 +42,5 @@ export default function ChatPage() {
     </div>
   )
 }
+
+export default ChatPage

@@ -6,10 +6,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "QnA")
 @RestController
@@ -31,6 +34,18 @@ public class QnaController {
     @GetMapping("/me/qna")
     public List<Response> getMyQnaList() {
         return qnaService.getMyQnaList();
+    }
+
+    @Operation(summary = "QnA 이미지 업로드")
+    @PostMapping("/qna/upload-image")
+    public Map<String, String> uploadImage(@RequestParam("image") MultipartFile image) {
+        try {
+            // 이미지 업로드 처리 (실제 구현은 별도 서비스로 분리 권장)
+            String imageUrl = qnaService.uploadImage(image);
+            return Map.of("imageUrl", imageUrl);
+        } catch (Exception e) {
+            return Map.of("error", e.getMessage());
+        }
     }
 
     // ===== 관리자용 =====

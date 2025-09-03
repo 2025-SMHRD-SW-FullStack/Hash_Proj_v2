@@ -37,6 +37,12 @@ public class AdBooking {
     @Comment("배너 이미지 URL(MAIN_*에서 사용)")
     private String bannerImageUrl;
 
+    @Comment("광고 제목(선택사항)")
+    private String title;
+
+    @Comment("광고 설명(선택사항)")
+    private String description;
+
     @Comment("게재 시작일(포함)")
     private LocalDate startDate;
 

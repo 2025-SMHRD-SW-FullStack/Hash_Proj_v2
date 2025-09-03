@@ -13,4 +13,14 @@ public interface OrderExchangeRepository extends JpaRepository<OrderExchange, Lo
     Optional<OrderExchange> findByIdAndUserId(Long id, Long userId);
     Optional<OrderExchange> findByIdAndSellerId(Long id, Long sellerId);
 
+    // ====== [NEW] 셀러 대시보드 통계용 카운트 메서드들 ======
+    
+    // 셀러의 특정 상태 교환 개수
+    long countBySellerIdAndStatus(Long sellerId, ExchangeStatus status);
+    
+    // 셀러의 특정 날짜 범위에 생성된 교환 개수
+    long countBySellerIdAndCreatedAtBetween(Long sellerId, java.time.LocalDateTime fromTs, java.time.LocalDateTime toTs);
+    
+    // 셀러의 전체 교환 개수 (특정 상태)
+    long countBySellerIdAndStatusIn(Long sellerId, java.util.List<ExchangeStatus> statuses);
 }

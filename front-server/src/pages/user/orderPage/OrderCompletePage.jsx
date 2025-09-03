@@ -39,6 +39,7 @@ const OrderCompletePage = () => {
 
     const processOrder = async () => {
       if (!tossOrderId || !paymentKey || !amount) {
+        console.log('결제 정보가 올바르지 않습니다.');
         setStatus('fail');
         setError('결제 정보가 올바르지 않습니다.');
         setLoading(false);
@@ -46,19 +47,23 @@ const OrderCompletePage = () => {
       }
 
       try {
-        // 1. Toss 결제 최종 승인 API 호출
-        // ✅ [수정] API 응답에서 orderDbId를 포함한 전체 응답 객체를 받습니다.
+        // 1. Toss 결제 최종 승인 API 호출 (0원 결제 포함)
+        // 0원 결제 시에도 재고 차감이 제대로 되도록 confirmTossPayment 호출
+        console.log('결제 승인 요청:', { paymentKey, orderId: tossOrderId, amount: Number(amount) });
         const confirmResponse = await confirmTossPayment({
             paymentKey,
             orderId: tossOrderId, // 여기서는 UID를 보내는 것이 맞습니다.
             amount: Number(amount),
         });
+        console.log('결제 승인 응답:', confirmResponse);
 
-        // ✅ [수정] 응답 객체에서 백엔드가 보내주는 실제 숫자 ID를 추출합니다.
-        // (CheckoutResponse DTO를 확인해보니 'orderDbId'로 되어있습니다)
+        // 응답 객체에서 백엔드가 보내주는 실제 숫자 ID를 추출합니다.
+        // (TossConfirmResponse DTO에서 'orderDbId'로 되어있습니다)
         const dbOrderId = confirmResponse?.orderDbId;
+        console.log('추출된 주문 ID:', { dbOrderId, fallbackId: confirmResponse?.orderId });
+        
         if (!dbOrderId) {
-            // 호환성을 위해 orderId 필드도 확인
+            // 호환성을 위해 orderId 필드도 확인 (하지만 이는 UID일 가능성이 높음)
             const fallbackId = confirmResponse?.orderId;
             if(!fallbackId || typeof fallbackId !== 'number') {
                 throw new Error("서버로부터 주문 ID를 받지 못했습니다.");
@@ -66,8 +71,49 @@ const OrderCompletePage = () => {
         }
 
         // 2. 최종 승인이 성공하면, 받은 '숫자 ID'로 주문 상세 정보를 가져옵니다.
-        const orderDetails = await getMyOrderDetail(dbOrderId || confirmResponse.orderId);
-        setOrder(orderDetails);
+        // 0원 결제 시에도 재고 차감 후 주문 정보를 가져옵니다.
+        const finalOrderId = dbOrderId || confirmResponse.orderId;
+        console.log('최종 사용할 주문 ID:', finalOrderId);
+        
+        // 주문 정보를 여러 번 시도하여 상태 업데이트를 확인
+        let orderDetails = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        while (retryCount < maxRetries) {
+            try {
+                orderDetails = await getMyOrderDetail(finalOrderId);
+                console.log(`주문 정보 조회 시도 ${retryCount + 1}:`, orderDetails);
+                
+                // 주문 상태가 READY로 변경되었는지 확인
+                if (orderDetails && orderDetails.status === 'READY') {
+                    console.log('주문 상태가 READY로 정상 변경되었습니다.');
+                    break;
+                } else if (orderDetails) {
+                    console.log(`주문 상태가 아직 ${orderDetails.status}입니다. 재시도 중...`);
+                    // 잠시 대기 후 재시도
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    retryCount++;
+                } else {
+                    console.error('주문 정보를 가져올 수 없습니다.');
+                    break;
+                }
+            } catch (error) {
+                console.error(`주문 정보 조회 실패 (시도 ${retryCount + 1}):`, error);
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        }
+        
+        if (orderDetails) {
+            setOrder(orderDetails);
+            console.log('최종 주문 정보 설정 완료:', orderDetails);
+        } else {
+            throw new Error('주문 정보를 가져올 수 없습니다.');
+        }
+        
         setStatus('success');
       } catch (err) {
         setStatus('fail');
@@ -124,6 +170,25 @@ const OrderCompletePage = () => {
           <p className="text-gray-700 mt-1">{order.orderUid}</p>
         </div>
         
+        {/* 주문 상태 표시 */}
+        <div>
+          <span className="font-semibold text-lg">주문 상태</span>
+          <div className="mt-1">
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+              order.status === 'READY' 
+                ? 'bg-green-100 text-green-800' 
+                : order.status === 'PENDING' 
+                ? 'bg-yellow-100 text-yellow-800'
+                : 'bg-gray-100 text-gray-800'
+            }`}>
+              {order.status === 'READY' ? '배송 준비중' : 
+               order.status === 'PENDING' ? '결제 대기' : 
+               order.status === 'PAID' ? '결제 완료' : 
+               order.status}
+            </span>
+          </div>
+        </div>
+        
         <hr />
 
         {/* 배송지 정보 */}
@@ -143,10 +208,14 @@ const OrderCompletePage = () => {
         <div>
           <h3 className="font-semibold text-lg mb-3">주문 상품</h3>
           <div className="flex gap-4">
-            <img 
-              src={TestImg} // 실제로는 representativeItem.thumbnailUrl 등을 사용
+            <img
+              src={representativeItem?.thumbnailUrl || TestImg}
               alt={representativeItem?.productNameSnapshot}
               className="w-24 h-24 rounded-lg object-cover bg-gray-100"
+              onError={(e) => {
+                e.target.onerror = null; // 무한 루프 방지
+                e.target.src = TestImg;
+              }}
             />
             <div className="flex flex-col justify-center">
               <p className="font-semibold">{representativeItem?.productNameSnapshot}</p>

@@ -13,6 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
+import java.util.UUID;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +44,7 @@ public class QnaService {
                 .role(role)
                 .title(request.title())
                 .content(request.content())
+                .imagesJson(request.imagesJson())
                 .status(QnaStatus.WAITING)
                 .build();
 
@@ -105,5 +112,30 @@ public class QnaService {
                 .orElseThrow(() -> new IllegalArgumentException("QnA not found"));
         qna.setStatus(status);
         qnaRepository.save(qna);
+    }
+
+    // 이미지 업로드 (간단한 구현)
+    public String uploadImage(MultipartFile image) {
+        try {
+            // 업로드 디렉토리 생성
+            String uploadDir = "uploads/qna";
+            Path uploadPath = Paths.get(uploadDir);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            
+            // 파일명 생성
+            String originalFilename = image.getOriginalFilename();
+            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String filename = UUID.randomUUID().toString() + extension;
+            
+            // 파일 저장
+            Path filePath = uploadPath.resolve(filename);
+            Files.copy(image.getInputStream(), filePath);
+            
+            return "/uploads/qna/" + filename;
+        } catch (IOException e) {
+            throw new RuntimeException("이미지 업로드 실패: " + e.getMessage());
+        }
     }
 }

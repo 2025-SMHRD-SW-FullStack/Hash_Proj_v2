@@ -26,10 +26,10 @@ const Field = ({ label, children, hint, required = false }) => (
 
 // UI 라벨 ↔ 백엔드 enum 매핑
 const POSITIONS = [
-  { key: 'mainBanner',    label: '메인 롤링 배너',     type: AD_SLOT_TYPES.MAIN_ROLLING,  capacity: 10, price: { 7: 15000, 14: 25000, 30: 45000 }, requiresImage: true, requiresCategory: false },
-  { key: 'mainRight',     label: '메인 오른쪽 구좌',   type: AD_SLOT_TYPES.MAIN_SIDE,     capacity: 3,  price: { 7: 12000, 14: 20000, 30: 40000 }, requiresImage: true, requiresCategory: false },
+  { key: 'mainBanner',    label: '메인 롤링 배너',     type: AD_SLOT_TYPES.MAIN_ROLLING,  capacity: 10, price: { 7: 15000, 14: 25000, 30: 45000 }, requiresImage: true, requiresCategory: true },
+  { key: 'mainRight',     label: '메인 오른쪽 구좌',   type: AD_SLOT_TYPES.MAIN_SIDE,     capacity: 3,  price: { 7: 12000, 14: 20000, 30: 40000 }, requiresImage: true, requiresCategory: true },
   { key: 'productList',   label: '상품목록 (파워광고)', type: AD_SLOT_TYPES.CATEGORY_TOP,  capacity: 5,  price: { 7: 8000,  14: 15000, 30: 30000 }, requiresImage: false, requiresCategory: true },
-  { key: 'orderComplete', label: '주문완료',           type: AD_SLOT_TYPES.ORDER_COMPLETE, capacity: 5,  price: { 7: 5000,  14: 10000, 30: 20000 }, requiresImage: true, requiresCategory: false },
+  { key: 'orderComplete', label: '주문완료',           type: AD_SLOT_TYPES.ORDER_COMPLETE, capacity: 5,  price: { 7: 5000,  14: 10000, 30: 20000 }, requiresImage: true, requiresCategory: true },
 ]
 
 const PERIODS = [7, 14, 30]
@@ -79,8 +79,7 @@ export default function AdsPowerPage() {
 
   const [loading, setLoading] = useState(false)
   const [products, setProducts] = useState([])     // 내 상품 목록
-  const [inventory, setInventory] = useState([])   // (디버그) 최근 인벤토리
-  const [booking, setBooking] = useState(null)     // 예약 결과
+  const [unavailableSet, setUnavailableSet] = useState(new Set()) // 'YYYY-MM-DD' Set
 
   const positionConf = useMemo(() => POSITIONS.find((p) => p.key === form.position) || POSITIONS[0], [form.position])
   const price = positionConf?.price?.[form.period] || 0
@@ -89,7 +88,6 @@ export default function AdsPowerPage() {
   const today = useMemo(() => new Date(), [])
   const calendarFrom = today
   const calendarTo = useMemo(() => addDaysDate(today, 90), [today])
-  const [unavailableSet, setUnavailableSet] = useState(new Set()) // 'YYYY-MM-DD' Set
 
   // 카테고리 바뀌면 내 상품 로드
   useEffect(() => {
@@ -151,7 +149,9 @@ export default function AdsPowerPage() {
       const next = { ...s, [k]: v }
       if (k === 'period' || k === 'startDate') {
         const days = Number(k === 'period' ? v : next.period || 0)
-        next.endDate = addDaysStr(next.startDate, days)
+        if (next.startDate) {
+          next.endDate = addDaysStr(next.startDate, days)
+        }
       }
       return next
     })
@@ -196,15 +196,16 @@ export default function AdsPowerPage() {
   }, [products])
 
   const canSubmit = useMemo(() => {
-    const baseRequired = category && form.productId && form.position && form.period && form.startDate && form.endDate && form.agree
+    // 기본 필수값 체크
+    const baseRequired = form.position && form.period && form.startDate && form.endDate && form.agree
+    
+    // 카테고리가 필요한 광고 타입인 경우 카테고리와 상품 필수
+    if (positionConf.requiresCategory) {
+      if (!category || !form.productId) return false
+    }
     
     // 이미지가 필요한 광고 타입인 경우 이미지 필수
     if (positionConf.requiresImage && !imageFile) {
-      return false
-    }
-    
-    // 카테고리가 필요한 광고 타입인 경우 카테고리 필수
-    if (positionConf.requiresCategory && !category) {
       return false
     }
     
@@ -251,7 +252,7 @@ export default function AdsPowerPage() {
         startDate: form.startDate,
         endDate: form.endDate,
       })
-      setInventory(res || [])
+      // setInventory(res || []) // 가데이터 제거
       const available = (res || []).find((d) => d.available)
       alert(available ? `가용 슬롯 있음 (slotId=${available.slotId})` : '가용 슬롯이 없습니다.')
     } catch (e) {
@@ -265,7 +266,10 @@ export default function AdsPowerPage() {
   // ✅ 신청하기: 이미지 업로드 + 인벤토리 재조회 → 첫 가용 슬롯으로 예약 생성
   const submit = async (e) => {
     e.preventDefault()
-    if (!canSubmit) return alert('필수값을 모두 선택해 주세요.')
+    if (!canSubmit) {
+      alert('필수값을 모두 입력해 주세요.')
+      return
+    }
 
     try {
       setLoading(true)
@@ -281,8 +285,6 @@ export default function AdsPowerPage() {
         title: form.title || undefined,
         description: form.description || undefined,
       })
-      
-      setBooking(adResult)
 
       const finalPrice = adResult?.price ?? price
       const clientKey = (import.meta.env.VITE_TOSS_CLIENT_KEY || '').trim()
@@ -380,8 +382,7 @@ export default function AdsPowerPage() {
                   fromDate={calendarFrom}
                   toDate={calendarTo}
                   selected={form.startDate ? new Date(form.startDate) : undefined}
-                  onDayClick={(d, { disabled }) => {
-                    if (disabled) return
+                  onDayClick={(d) => {
                     const start = ymd(d)
                     const end = addDaysStr(start, Number(form.period))
                     setForm((s) => ({ ...s, startDate: start, endDate: end }))
@@ -512,7 +513,7 @@ export default function AdsPowerPage() {
           </ul>
 
           {/* (디버그) 최근 인벤토리 확인 결과 */}
-          {!!inventory?.length && (
+          {/* {!!inventory?.length && ( // 가데이터 제거
             <div className="mt-4 rounded-lg border p-2 text-xs text-gray-600">
               <div className="mb-1 font-medium">인벤토리 확인 결과</div>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
@@ -527,7 +528,7 @@ export default function AdsPowerPage() {
                 ))}
               </div>
             </div>
-          )}
+          )} */}
         </aside>
       </form>
 

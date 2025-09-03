@@ -1,9 +1,15 @@
 server:
   port: 7777
 
+logging:
+  level:
+    com.meonjeo.meonjeo.chat: DEBUG
+    org.springframework.messaging: DEBUG
+    org.springframework.web.socket: DEBUG
+
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/Meonjeo?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3306/meonjeo?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: Meonjeo
     password: ${PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -19,18 +25,34 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      # 업로드 모듈 가이드: 1파일 ≤10MB, 총합 ≤30MB
+      max-file-size: 12MB
+      max-request-size: 40MB
 
   jackson:
     serialization:
       fail-on-empty-beans: false
 
+# ===== 파일 스토리지 (DEV: S3 스토리지 사용) =====
+storage:
+  mode: s3
+  local:
+    base-dir: ./uploads
+  s3:
+    bucket: meonjeo                # 콘솔 버킷명과 정확히 일치
+    region: kr-standard
+    endpoint: https://kr.object.ncloudstorage.com
+    path-style: true
+    public-base-url: https://kr.object.ncloudstorage.com/meonjeo
+    acl-public-read: true          # ← 이거 켜면 객체에만 공개 ACL 붙임
+    accessKey: ${STORAGE_S3_ACCESS_KEY}
+    secretKey: ${STORAGE_S3_SECRET_KEY}
+
 phone:
   short-token:
-    validity-seconds: 600        # 단기 토큰 유효시간(10분)
+    validity-seconds: 600
   code:
-    ttl-seconds: 180             # 인증코드 유효시간(3분)
+    ttl-seconds: 180
     max-attempts: 5
 
 ai:
@@ -42,3 +64,12 @@ ai:
 COOLSMS_API_KEY: ${COOLSMS_API_KEY}
 COOLSMS_API_SECRET: ${COOLSMS_API_SECRET}
 COOLSMS_FROM_NUMBER: ${COOLSMS_FROM_NUMBER}
+
+toss:
+  successUrl: http://localhost:5173/pay/success
+  failUrl: http://localhost:5173/pay/fail
+
+sweettracker:
+  api-key: ${SWEETTRACKER_API_KEY}
+  base-url: https://info.sweettracker.co.kr
+  timeout-ms: 3000

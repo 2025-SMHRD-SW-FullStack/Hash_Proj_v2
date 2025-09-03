@@ -18,11 +18,9 @@ const SHIPPING_FEE = 3000;
 
 const OrderPage = () => {
   const [sp] = useSearchParams();
-
   const mode = (sp.get('mode') || sp.get('source') || '').toLowerCase();
   const isCartMode = mode === 'cart';
-  const addressIdParam = sp.get('addressId'); // ✅ 장바구니에서 전달된 addressId
-
+  const addressIdParam = sp.get('addressId');
   const productId = sp.get('productId');
   const itemsQuery = sp.get('items');
 
@@ -38,7 +36,6 @@ const OrderPage = () => {
   const [useAllPoint, setUseAllPoint] = useState(false);
   const [pointInput, setPointInput] = useState('0');
 
-  // cart 모드
   const [cartLoading, setCartLoading] = useState(isCartMode);
   const [cartData, setCartData] = useState({
     items: [],
@@ -47,13 +44,12 @@ const OrderPage = () => {
     payableBase: 0,
   });
 
-  // single 모드
   const [loading, setLoading] = useState(!isCartMode);
   const [error, setError] = useState('');
   const [productInfo, setProductInfo] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
 
-  // ✅ 주소/포인트 로드: addressIdParam 있으면 그 주소를 우선 선택
+  // 주소 및 포인트 불러오기
   useEffect(() => {
     (async () => {
       try {
@@ -64,13 +60,12 @@ const OrderPage = () => {
         if (targetId && Array.isArray(list)) {
           sel = list.find(a => Number(a.id) === targetId) || null;
         }
-        if (!sel) {
-          sel = list?.find(a => a.primaryAddress) || list?.[0] || null;
-        }
+        if (!sel) sel = list?.find(a => a.primaryAddress) || list?.[0] || null;
         setSelectedAddress(sel);
       } finally {
         setAddrLoading(false);
       }
+
       try {
         const bal = await getMyPointBalance();
         setPointBalance(bal);
@@ -139,14 +134,23 @@ const OrderPage = () => {
     if (!Array.isArray(orderItems)) return 0;
     return orderItems.reduce((acc, it) => {
       const unit = (singleBasePrice || 0) + (it?.variant?.addPrice || 0);
-      const qty  = Number(it?.quantity || 0);
-      return acc + unit * qty;
+      return acc + unit * Number(it?.quantity || 0);
     }, 0);
   }, [orderItems, singleBasePrice]);
 
+  const deliveryFee = useMemo(() => {
+    // 단건(바로구매) 모드이고, 상품 카테고리가 '무형자산'인 경우 배송비 0원
+    if (!isCartMode && productInfo?.category === '무형자산') {
+    return 0;
+    }
+      // 장바구니 모드이거나 그 외 모든 상품
+      return isCartMode ? (cartData.shippingFee ?? SHIPPING_FEE) : SHIPPING_FEE;
+  }, [isCartMode, productInfo, cartData.shippingFee]);
+
+
   const payableBase = isCartMode
-    ? (cartData?.payableBase || (cartData.totalPrice + (cartData.shippingFee ?? SHIPPING_FEE)))
-    : (singleItemsSum + SHIPPING_FEE);
+    ? (cartData?.payableBase || (cartData.totalPrice + deliveryFee))
+    : (singleItemsSum + deliveryFee);
 
   const desired       = useAllPoint ? payableBase : Math.max(0, Math.floor(Number(pointInput) || 0));
   const finalUsePoint = Math.max(0, Math.min(desired, Math.min(pointBalance, payableBase)));
@@ -200,6 +204,7 @@ const OrderPage = () => {
       return;
     }
 
+    // cart 모드
     if (isCartMode) {
       try {
         setBusy(true);
@@ -216,7 +221,7 @@ const OrderPage = () => {
           useAllPoint,
           usePoint: useAllPoint ? 0 : finalUsePoint,
           clearCartAfter: true,
-        }); // { orderId, payAmount, ... }
+        });
         const oid = String(res?.orderId || res?.orderUid || '').trim();
         if (!oid) throw new Error('주문번호 생성 실패');
 
@@ -294,15 +299,12 @@ const OrderPage = () => {
     }
   };
 
-  // 단건 모드만 로딩/에러 분기
   if (!isCartMode && loading) return <div className="px-4 py-6">주문 정보를 불러오는 중…</div>;
-  if (!isCartMode && error)   return <div className="px-4 py-6 text-red-600">오류: {error}</div>;
-  if (!isCartMode && (!productInfo || orderItems.length === 0)) {
-    return <div className="px-4 py-6">주문 상품 정보가 없습니다.</div>;
-  }
+  if (!isCartMode && error) return <div className="px-4 py-6 text-red-600">오류: {error}</div>;
+  if (!isCartMode && (!productInfo || orderItems.length === 0)) return <div className="px-4 py-6">주문 상품 정보가 없습니다.</div>;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
+    <div className="max-w-5xl mx-auto px-4 pb-36">
       <h1 className="text-2xl font-semibold mb-6">주문/결제</h1>
 
       {/* 배송지 */}
@@ -311,12 +313,10 @@ const OrderPage = () => {
         {addrLoading ? (
           <div className="text-sm text-gray-500">주소 불러오는 중…</div>
         ) : selectedAddress ? (
-          <div className="rounded-2xl border p-4 mb-4 bg-white">
+          <div className="rounded-2xl border p-4 mb-4 bg-white shadow-sm">
             <div className="flex items-start justify-between">
               <div>
-                <div className="font-medium">
-                  {selectedAddress.receiver} ({selectedAddress.phone})
-                </div>
+                <div className="font-medium">{selectedAddress.receiver} ({selectedAddress.phone})</div>
                 <div className="text-sm text-gray-600">
                   ({selectedAddress.zipcode}) {selectedAddress.addr1} {selectedAddress.addr2}
                 </div>
@@ -326,13 +326,19 @@ const OrderPage = () => {
                   </span>
                 )}
               </div>
-              <button className="h-9 px-4 rounded-lg border hover:bg-gray-50" onClick={() => setAddrModalOpen(true)}>
+              <button
+                className="h-9 px-4 rounded-lg border hover:bg-gray-50"
+                onClick={() => setAddrModalOpen(true)}
+              >
                 변경
               </button>
             </div>
           </div>
         ) : (
-          <button className="h-10 px-4 rounded-lg bg-gray-900 text-white text-sm hover:opacity-90" onClick={() => setAddrModalOpen(true)}>
+          <button
+            className="h-10 px-4 rounded-lg bg-gray-900 text-white text-sm hover:opacity-90"
+            onClick={() => setAddrModalOpen(true)}
+          >
             배송지 추가
           </button>
         )}
@@ -341,7 +347,7 @@ const OrderPage = () => {
       {/* 요청사항 */}
       <RequestMemoField value={requestMemo} onChange={setRequestMemo} />
 
-      {/* 주문 상품 정보 (cart / single) */}
+      {/* 주문 상품 정보 */}
       <section className="mb-8">
         <h2 className="text-lg font-semibold mb-3">주문 상품 정보</h2>
         {isCartMode ? (
@@ -352,7 +358,7 @@ const OrderPage = () => {
           ) : (
             <div className="space-y-4">
               {cartData.items.map(row => (
-                <div key={row.cartItemId} className="rounded-xl border p-4 bg-white">
+                <div key={row.cartItemId} className="rounded-xl border p-4 bg-white shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">{row.productName}</div>
@@ -394,8 +400,8 @@ const OrderPage = () => {
         )}
       </section>
 
-      {/* 요약/결제 */}
-      <section className="my-6 rounded-2xl border p-4 bg-white">
+      {/* 주문 요약 / 결제 */}
+      <section className="my-6 rounded-2xl border p-4 bg-white shadow-sm">
         <h2 className="text-lg font-semibold mb-4">주문 요약</h2>
         <div className="text-sm space-y-2">
           <div className="flex justify-between">
@@ -410,10 +416,7 @@ const OrderPage = () => {
           <div className="flex justify-between">
             <span>배송비</span>
             <b>
-              {isCartMode
-                ? (cartData.shippingFee ?? SHIPPING_FEE).toLocaleString()
-                : SHIPPING_FEE.toLocaleString()
-              }원
+              {deliveryFee.toLocaleString()}원
             </b>
           </div>
 
@@ -460,7 +463,10 @@ const OrderPage = () => {
         )}
 
         <div className="mt-6">
-          <Button disabled={busy || !selectedAddress || (isCartMode && cartLoading)} onClick={handlePay}>
+          <Button
+            disabled={busy || !selectedAddress || (isCartMode && cartLoading)}
+            onClick={handlePay}
+          >
             {busy ? '처리 중…' : '결제하기'}
           </Button>
         </div>
@@ -474,6 +480,6 @@ const OrderPage = () => {
       />
     </div>
   );
-}
+};
 
-export default OrderPage
+export default OrderPage;

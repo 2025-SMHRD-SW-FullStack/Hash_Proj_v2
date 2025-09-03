@@ -1,123 +1,168 @@
 // /src/service/statsService.js
 import api from '/src/config/axiosInstance'
-import { fetchSellerOrders } from '/src/service/orderService'
+import { fetchSellerOrders, ORDER_STATUS_MAP } from '/src/service/orderService'
 import { fetchSellerFeedbackGrid } from '/src/service/feedbackService'
+import { getAmount as _getAmount } from '/src/util/orderUtils' // ✅ 금액 파싱 강화
 
 /* ----------------------- 공통 유틸 ----------------------- */
 
-// 프론트/서드파티 상태명을 백엔드가 받는 값으로 통일
-const mapStatusForApi = (s = '') => {
-  const u = String(s).toUpperCase()
-  const M = {
-    PREPARING: 'READY',
-    READY_FOR_SHIPMENT: 'READY',
-    READY_FOR_DELIVERY: 'READY',
-    READY: 'READY',
+// Date → YYYY-MM-DD
+const ymd = (d) => {
+  const yy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yy}-${mm}-${dd}`
+}
 
-    IN_TRANSIT: 'SHIPPING',
-    SHIPPED: 'SHIPPING',
-    ON_DELIVERY: 'SHIPPING',
-    SHIPPING: 'SHIPPING',
-
-    DELIVERED: 'DELIVERED',
-    COMPLETE: 'DELIVERED',
-    COMPLETED: 'DELIVERED',
-
-    NEW: 'NEW',
-    EXCHANGE_REQUESTED: 'EXCHANGE_REQUESTED',
-    RETURN: 'RETURN',
-    CANCEL: 'CANCELLED',
-    CANCELLED: 'CANCELLED',
-  }
-  return M[u] || u
+// YYYY-MM-DD → Date
+const toDate = (ymdStr) => {
+  if (!ymdStr) return null
+  const d = new Date(ymdStr + 'T00:00:00')
+  return isNaN(d.getTime()) ? null : d
 }
 
 // YYYY-MM-DD -> MM/DD
-const toMMDD = (ymd) => {
-  const s = String(ymd || '').replace(/[^0-9]/g, '')
-  if (s.length >= 8) return `${s.slice(4, 6)}/${s.slice(6, 8)}`
-  return ymd || ''
+const toMMDD = (ymdStr) => {
+  if (!ymdStr) return ''
+  const [y, m, d] = String(ymdStr).split('-')
+  return `${m}/${d}`
 }
 
-const resolveDate = (r) =>
-  r?.deliveredAt?.slice(0, 10) ||
-  r?.paidAt?.slice(0, 10) ||
-  r?.createdAt?.slice(0, 10) ||
-  null
+// 날짜 해석 (여러 형식 지원)
+const resolveDate = (row) => {
+  // ✅ 그리드에서 실제로 자주 쓰는 키들을 넓게 커버
+  const candidates = [
+    row?.orderDate, row?.orderedAt, row?.orderAt,            // 주문일
+    row?.paidAt, row?.paymentAt, row?.paymentDate,           // 결제일
+    row?.createdAt, row?.createdDate,                        // 생성일
+    row?.orderTime,                                          // 기타
+  ]
+  for (const v of candidates) {
+    if (!v) continue
+    const d = new Date(v)
+    if (!Number.isNaN(d.getTime())) return ymd(d)
+  }
+  return null
+}
 
-const resolveAmount = (r) =>
-  r?.payAmount ?? r?.amount ?? r?.totalAmount ?? r?.paymentAmount ?? 0
+// 금액 해석 (여러 필드명 지원)
+// ✅ orderUtils.getAmount 우선 사용 → "352,000원" 같은 문자열·중첩 구조 모두 커버
+const resolveAmount = (row) => {
+  try {
+    const n = _getAmount?.(row)
+    if (Number.isFinite(n)) return n
+  } catch (_) {}
+  // 폴백: 흔한 키들만 숫자 추출
+  const keys = ['payAmount', 'totalAmount', 'amount', 'price']
+  for (const k of keys) {
+    const v = row?.[k]
+    const n = typeof v === 'string' ? Number(v.replace(/[^\d.-]/g, '')) : Number(v)
+    if (Number.isFinite(n)) return n
+  }
+  return 0
+}
 
-const normalizeStats = (arr) =>
-  arr.map((x) => ({
-    date: toMMDD(x.date || x.statDate || x.day || x.createdDate || x.deliveredDate),
-    amount: Number(x.amount ?? x.amountSum ?? x.totalAmount ?? 0),
-    orders: Number(x.orders ?? x.orderCount ?? 0),
-    payers: Number(x.payers ?? x.payerCount ?? x.distinctBuyerCount ?? 0),
-  }))
+// 현재 한국 시간 기준 YYYY-MM-DD
+const _nowKST = () => {
+  const now = new Date()
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+  return ymd(kst)
+}
 
-// 응답 모양이 레포마다 달라서 안전하게 total 뽑기
-const extractTotal = (res) => {
-  const d = res?.data ?? res
-  if (typeof d?.totalElements === 'number') return d.totalElements
-  if (typeof d?.total === 'number') return d.total
-  if (Array.isArray(d?.content)) return d.content.length
-  if (Array.isArray(d?.rows)) return d.rows.length
-  if (Array.isArray(d)) return d.length
-  return Number(d?.count ?? 0)
+// 날짜 범위 생성 (from ~ to)
+const _fmtYmd = (d) => {
+  if (d instanceof Date) return ymd(d)
+  if (typeof d === 'string') return d
+  return ymd(new Date())
 }
 
 /* ----------------------- 대시보드 메인 카운트 ----------------------- */
 /** 셀러 메인: 신규주문/교환요청/신규 피드백 카운트 */
 export async function fetchDashboardCounts() {
-  const [newOrdersRes, exchReqRes, newFbRes] = await Promise.all([
-    fetchSellerOrders({ status: 'NEW', page: 0, size: 1 }).catch(() => 0),
-    fetchSellerOrders({ status: 'EXCHANGE_REQUESTED', page: 0, size: 1 }).catch(() => 0),
-    fetchSellerFeedbackGrid({ status: 'NEW_WRITE', page: 0, size: 1 }).catch(() => 0),
-  ])
+  // 응답 모양이 레포마다 달라서 안전하게 total 뽑기
+  const extractTotal = (res) => {
+    const d = res?.data ?? res
+    if (typeof d?.totalElements === 'number') return d.totalElements
+    if (typeof d?.total === 'number') return d.total
+    if (Array.isArray(d?.content)) return d.content.length
+    if (Array.isArray(d?.rows)) return d.rows.length
+    if (Array.isArray(d)) return d.length
+    return Number(d?.count ?? 0)
+  }
 
-  return {
-    newOrders: typeof newOrdersRes === 'number' ? 0 : extractTotal(newOrdersRes),
-    exchangeRequests: typeof exchReqRes === 'number' ? 0 : extractTotal(exchReqRes),
-    newFeedbacks: typeof newFbRes === 'number' ? 0 : extractTotal(newFbRes),
+  try {
+    const [newOrdersRes, exchReqRes, newFbRes] = await Promise.all([
+      fetchSellerOrders({ status: 'PAID', page: 0, size: 1 }).catch(() => ({ content: [] })),
+      fetchSellerOrders({ status: 'EXCHANGE_REQUESTED', page: 0, size: 1 }).catch(() => ({ content: [] })),
+      fetchSellerFeedbackGrid({ status: 'NEW_WRITE', page: 0, size: 1 }).catch(() => ({ content: [] })),
+    ])
+
+    return {
+      newOrders: extractTotal(newOrdersRes),
+      exchangeRequests: extractTotal(exchReqRes),
+      newFeedbacks: extractTotal(newFbRes),
+    }
+  } catch (error) {
+    console.error('대시보드 카운트 로드 실패:', error)
+    return {
+      newOrders: 0,
+      exchangeRequests: 0,
+      newFeedbacks: 0,
+    }
   }
 }
 
-/* ----------------------- 상태별 주문 카운트 ----------------------- */
+/* ----------------------- 주문 통계 ----------------------- */
+
 /**
- * 상태별 주문 카운트
- *  - 더 이상 없는 /summary|/stats|/counts 호출하지 않음(404 없앰)
- *  - /grid?page=0&size=1의 totalElements 로 정확/저비용 집계
+ * 주문 상태별 개수 집계
+ * - 백엔드: /api/seller/orders/grid 사용
+ * - 상태: PENDING, PAID, READY, IN_TRANSIT, DELIVERED, CONFIRMED
  */
-// 상태별 카운트(사이드바 요약용)
-export async function fetchOrderStatusCounts() {
-  const safeTotal = (d) =>
-    typeof d?.totalElements === 'number' ? d.totalElements
-    : typeof d?.total === 'number' ? d.total
-    : Array.isArray(d?.content) ? d.content.length
-    : Array.isArray(d?.rows) ? d.rows.length
-    : 0
-
-  const get = async (key) => {
-    try {
-      const data = await fetchSellerOrdersGrid({ statusKey: key, page: 0, size: 1 })
-      return safeTotal(data)
-    } catch { return 0 }
+export async function fetchOrderStatusCounts({ from, to } = {}) {
+  try {
+    const res = await fetchSellerOrders({ from, to, size: 1000 })
+    const rows = res?.content || res?.list || res || []
+    
+    const counts = {
+      PENDING: 0,
+      PAID: 0,
+      READY: 0,
+      IN_TRANSIT: 0,
+      DELIVERED: 0,
+      CONFIRMED: 0,
+    }
+    
+    for (const row of rows) {
+      const status = row?.status || row?.orderStatus
+      if (status && counts.hasOwnProperty(status)) {
+        counts[status]++
+      }
+    }
+    
+    const all = Object.values(counts).reduce((sum, count) => sum + count, 0)
+    
+    return { ...counts, ALL: all }
+  } catch (error) {
+    console.error('주문 상태별 개수 집계 실패:', error)
+    return {
+      PENDING: 0,
+      PAID: 0,
+      READY: 0,
+      IN_TRANSIT: 0,
+      DELIVERED: 0,
+      CONFIRMED: 0,
+      ALL: 0
+    }
   }
-
-  const [ready, shipping, delivered, all] = await Promise.all([
-    get('READY'),
-    get('SHIPPING'),
-    get('DELIVERED'),
-    get('ALL'),
-  ])
-  return { READY: ready, SHIPPING: shipping, DELIVERED: delivered, ALL: all }
 }
 
 /* ----------------------- 매출 통계 ----------------------- */
 /**
- * 매출 통계: 더 이상 없는 /stats 엔드포인트를 치지 않고,
- * /grid 주문 목록으로 일자별 합산(404 콘솔 제거)
+ * 매출 통계: /api/seller/orders/grid 결과를 날짜별로 합산
+ * ✅ zero-fill: from~to 기간의 모든 날짜를 0으로 채워 반환
+ * ✅ 보강: 주문 그리드 집계 금액이 전부 0인데 건수는 있을 때,
+ *         일자별 정산 요약(/api/seller/settlements/daily/summary)으로 금액/건수를 보강
  */
 export const fetchSalesStats = async ({ from, to } = {}) => {
   // 주문목록 집계
@@ -126,18 +171,25 @@ export const fetchSalesStats = async ({ from, to } = {}) => {
     const res = await fetchSellerOrders?.({ from, to, size: 1000 })
     rows = res?.content || res?.list || res || []
   } catch (e) {
+    console.warn('주문 통계 로드 실패, 폴백 시도:', e)
     // 폴백: 옛날 호환용 /api/seller/orders (있을 수도)
-    const { data, status } = await api.get('/api/seller/orders', {
-      params: { from, to, size: 1000 },
-      validateStatus: () => true,
-    })
-    if (status >= 200 && status < 300) {
-      rows = data?.content || data?.list || data || []
-    } else {
-      throw e
+    try {
+      const { data, status } = await api.get('/api/seller/orders', {
+        params: { from, to, size: 1000 },
+        validateStatus: () => true,
+      })
+      if (status >= 200 && status < 300) {
+        rows = data?.content || data?.list || data || []
+      } else {
+        throw new Error(`API 호출 실패: ${status}`)
+      }
+    } catch (fallbackError) {
+      console.error('폴백 API도 실패:', fallbackError)
+      rows = []
     }
   }
 
+  // 1) 날짜별로 Map에 누적
   const byDate = new Map()
   for (const r of rows) {
     const dYmd = resolveDate(r)
@@ -145,61 +197,104 @@ export const fetchSalesStats = async ({ from, to } = {}) => {
     const key = dYmd
     const existing =
       byDate.get(key) || { date: toMMDD(key), amount: 0, orders: 0, payersSet: new Set() }
-    existing.amount += Number(resolveAmount(r) || 0)
+    existing.amount += Number(resolveAmount(r) || 0) // 강화된 금액 파싱 사용
     existing.orders += 1
     const buyer = r?.buyerId || r?.memberId || r?.userId || r?.buyer?.id || r?.customerId
     if (buyer) existing.payersSet.add(buyer)
     byDate.set(key, existing)
   }
 
-  return Array.from(byDate.values())
-    .map((it) => ({
-      date: it.date,
-      amount: it.amount,
-      orders: it.orders,
-      payers: it.payersSet.size,
-    }))
-    .sort((a, b) => (a.date > b.date ? 1 : -1))
+  // 2) ✅ zero-fill: from~to 전체 날짜 생성 후 Map 값으로 덮어쓰기
+  const start = toDate(from) || new Date(new Date().setDate(new Date().getDate() - 13))
+  const end   = toDate(to)   || new Date()
+  start.setHours(0, 0, 0, 0)
+  end.setHours(0, 0, 0, 0)
+
+  const dateRange = []
+  const result = []
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const key = ymd(d)
+    dateRange.push(key)
+    const mmdd = toMMDD(key)
+    const existing = byDate.get(key)
+    if (existing) {
+      result.push({
+        date: existing.date,              // 'MM/DD'
+        amount: existing.amount,
+        orders: existing.orders,
+        payers: existing.payersSet.size,
+      })
+    } else {
+      result.push({
+        date: mmdd,                       // 'MM/DD'
+        amount: 0,
+        orders: 0,
+        payers: 0,
+      })
+    }
+  }
+
+  // 3) ✅ 보강: 금액 합계가 0인데(=파싱 실패 가능성) 주문 건수는 있으면 정산 요약으로 보강
+  const amountSum = result.reduce((s, r) => s + (Number(r.amount) || 0), 0)
+  const orderSum  = result.reduce((s, r) => s + (Number(r.orders) || 0), 0)
+
+  if (amountSum === 0 && orderSum > 0) {
+    try {
+      const summaries = await _pMapLimited(dateRange, 5, _fetchDailySettlementSummary)
+      const map = new Map(summaries.map(s => [s.date, s]))
+      for (let i = 0; i < result.length; i++) {
+        const key = dateRange[i]
+        const s = map.get(key)
+        if (!s) continue
+        // itemTotal = 판매금액, ordersCount = 결제건수
+        result[i].amount = Number(s.itemTotal ?? result[i].amount ?? 0)
+        result[i].orders = Math.max(Number(result[i].orders ?? 0), Number(s.ordersCount ?? 0))
+      }
+    } catch (e) {
+      console.warn('정산 요약 보강 실패:', e)
+    }
+  }
+
+  return result
 }
+
 
 /* ----------------------- 보조 요약(선택) ----------------------- */
 export async function fetchOrdersSummary({ from, to } = {}) {
-  const res = await fetchSellerOrders({ from, to, size: 1000 })
-  const list = res?.content ?? res?.list ?? res ?? []
-  return list.reduce(
-    (a, o) => {
-      const v = Number(o?.payAmount ?? o?.amount ?? o?.totalAmount ?? 0)
-      a.orders += 1
-      a.sales += v
-      return a
-    },
-    { orders: 0, sales: 0 }
-  )
+  try {
+    const res = await fetchSellerOrders({ from, to, size: 1000 })
+    const rows = res?.content || res?.list || res || []
+    
+    const summary = {
+      totalOrders: rows.length,
+      totalAmount: 0,
+      avgAmount: 0,
+      statusBreakdown: {},
+    }
+    
+    for (const row of rows) {
+      const amount = resolveAmount(row)
+      summary.totalAmount += amount
+      
+      const status = row?.status || row?.orderStatus || 'UNKNOWN'
+      summary.statusBreakdown[status] = (summary.statusBreakdown[status] || 0) + 1
+    }
+    
+    summary.avgAmount = summary.totalOrders > 0 ? Math.round(summary.totalAmount / summary.totalOrders) : 0
+    
+    return summary
+  } catch (error) {
+    console.error('주문 요약 로드 실패:', error)
+    return {
+      totalOrders: 0,
+      totalAmount: 0,
+      avgAmount: 0,
+      statusBreakdown: {},
+    }
+  }
 }
 
 /* ----------------------- 메인 차트: 정산 요약 일별 ----------------------- */
-
-// KST 지금
-const _nowKST = () => new Date(Date.now() + 9 * 3600 * 1000)
-
-// Date -> 'YYYY-MM-DD'
-const _fmtYmd = (d) => {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-// from~to(포함) 날짜 배열
-const _rangeDays = (from, to) => {
-  const out = []
-  const s = new Date(`${from}T00:00:00+09:00`)
-  const e = new Date(`${to}T00:00:00+09:00`)
-  for (let d = s; d <= e; d = new Date(d.getTime() + 86400000)) {
-    out.push(_fmtYmd(d))
-  }
-  return out
-}
 
 // 병렬 처리(동시 limit)
 async function _pMapLimited(list, limit, worker) {
@@ -217,19 +312,24 @@ async function _pMapLimited(list, limit, worker) {
 
 // 단일 일자 요약: /api/seller/settlements/daily/summary?date=YYYY-MM-DD
 async function _fetchDailySettlementSummary(date) {
-  const { data, status } = await api.get('/api/seller/settlements/daily/summary', {
-    params: { date },
-    validateStatus: () => true,
-  })
-  // 실패(404 등)면 0 처리
-  if (status < 200 || status >= 300) {
+  try {
+    const { data, status } = await api.get('/api/seller/settlements/daily/summary', {
+      params: { date },
+      validateStatus: () => true,
+    })
+    // 실패(404 등)면 0 처리
+    if (status < 200 || status >= 300) {
+      return { date, ordersCount: 0, itemTotal: 0, payoutTotal: 0 }
+    }
+    return {
+      date: data?.day || date,
+      ordersCount: Number(data?.ordersCount ?? 0),
+      itemTotal: Number(data?.itemTotal ?? 0),
+      payoutTotal: Number(data?.payoutTotal ?? 0),
+    }
+  } catch (error) {
+    console.warn(`일별 정산 요약 로드 실패 (${date}):`, error)
     return { date, ordersCount: 0, itemTotal: 0, payoutTotal: 0 }
-  }
-  return {
-    date: data?.day || date,
-    ordersCount: Number(data?.ordersCount ?? 0),
-    itemTotal: Number(data?.itemTotal ?? 0),
-    payoutTotal: Number(data?.payoutTotal ?? 0),
   }
 }
 
@@ -237,78 +337,179 @@ async function _fetchDailySettlementSummary(date) {
  * [EXPORT] 셀러 메인 그래프 데이터(최근 30일 기본)
  */
 export async function fetchSellerMainStats({ from, to } = {}) {
-  const _to = to || _fmtYmd(_nowKST())
-  const _from = from || _fmtYmd(new Date(_nowKST().getTime() - 29 * 86400000))
-
-  const days = _rangeDays(_from, _to)
-
-  // 과호출 방지: 동시 6개
-  const daily = await _pMapLimited(days, 6, _fetchDailySettlementSummary)
-
-  // 순서 보정
-  const rows = days.map(
-    (d) => daily.find((x) => x.date === d) || { date: d, ordersCount: 0, itemTotal: 0, payoutTotal: 0 }
-  )
-
-  // 차트 포인트(MM/DD 라벨)
-  const points = rows.map((r) => ({
-    name: toMMDD(r.date),
-    itemTotal: r.itemTotal,
-    ordersCount: r.ordersCount,
-    payoutTotal: r.payoutTotal,
-  }))
-
-  // 합계
-  const summary = rows.reduce(
-    (acc, r) => {
-      acc.itemTotal += r.itemTotal
-      acc.ordersCount += r.ordersCount
-      acc.payoutTotal += r.payoutTotal
-      return acc
-    },
-    { itemTotal: 0, ordersCount: 0, payoutTotal: 0 }
-  )
-
-  const metrics = [
-    { key: 'itemTotal', label: '판매금액', unit: 'KRW', type: 'currency' },
-    { key: 'ordersCount', label: '주문건수', unit: 'count', type: 'number' },
-    { key: 'payoutTotal', label: '정산금액', unit: 'KRW', type: 'currency' },
-  ]
-
-  return {
-    range: { from: _from, to: _to, interval: 'daily' },
-    metrics,
-    rows,
-    points,
-    summary,
+  try {
+    const _to = to || _fmtYmd(_nowKST())
+    const baseTo = toDate(_to)
+    const _from = from || _fmtYmd(new Date(baseTo.getTime() - 29 * 86400000))
+    
+    // 1) 주문 통계 (그리드 API)
+    let rows = []
+    try {
+      rows = await fetchSellerOrders({ from: _from, to: _to, size: 1000 })
+      rows = rows?.content || rows?.list || rows || []
+    } catch (e) {
+      console.warn('주문 통계 로드 실패:', e)
+      rows = []
+    }
+    
+    // 2) 피드백 통계 (피드백 그리드 API)
+    let points = []
+    try {
+      points = await fetchSellerFeedbackGrid({ from: _from, to: _to, size: 1000 })
+      points = points?.content || points?.list || points || []
+    } catch (e) {
+      console.warn('피드백 통계 로드 실패:', e)
+      points = []
+    }
+    
+    // 3) 일별 정산 요약 (병렬 처리)
+    const dateRange = []
+    const fromDate = toDate(_from)
+    const toDateValue = toDate(_to)
+    
+    if (fromDate && toDateValue) {
+      for (let d = new Date(fromDate); d <= toDateValue; d.setDate(d.getDate() + 1)) {
+        dateRange.push(ymd(d))
+      }
+    }
+    
+    let summary = []
+    try {
+      summary = await _pMapLimited(
+        dateRange,
+        5, // 동시 5개 요청으로 제한
+        _fetchDailySettlementSummary
+      )
+    } catch (e) {
+      console.warn('정산 요약 로드 실패:', e)
+      // 기본 0값 데이터 생성
+      summary = dateRange.map(date => ({
+        date,
+        ordersCount: 0,
+        itemTotal: 0,
+        payoutTotal: 0
+      }))
+    }
+    
+    return {
+      from: _from,
+      to: _to,
+      rows,
+      points,
+      summary,
+    }
+  } catch (error) {
+    console.error('fetchSellerMainStats 전체 실패:', error)
+    
+    // 에러 시에도 기본 데이터 반환
+    const _to = to || _fmtYmd(_nowKST())
+    const baseTo = toDate(_to)
+    const _from = from || _fmtYmd(new Date(baseTo.getTime() - 29 * 86400000))
+    
+    // 기본 30일 데이터 생성
+    const defaultData = []
+    const fromDate = toDate(_from)
+    const toDateValue = toDate(_to)
+    
+    if (fromDate && toDateValue) {
+      for (let d = new Date(fromDate); d <= toDateValue; d.setDate(d.getDate() + 1)) {
+        defaultData.push({
+          date: ymd(d),
+          ordersCount: 0,
+          itemTotal: 0,
+          payoutTotal: 0
+        })
+      }
+    }
+    
+    return {
+      from: _from,
+      to: _to,
+      rows: [],
+      points: [],
+      summary: defaultData,
+    }
   }
-}
-
-// 프론트 키 → 서버 enum
-export const ORDER_STATUS_MAP = {
-  ALL: null,
-  READY: 'READY',
-  SHIPPING: 'IN_TRANSIT',   // 🔴 기존 SHIPPING -> IN_TRANSIT 로 교체
-  DELIVERED: 'DELIVERED',
-  CONFIRMED: 'CONFIRMED',
-  PENDING: 'PENDING',
-  PAID: 'PAID',
 }
 
 // 그리드 조회 래퍼
 export async function fetchSellerOrdersGrid({ statusKey='ALL', page=0, size=20, q, from, to } = {}) {
-  const params = { page, size }
-  const mapped = ORDER_STATUS_MAP[statusKey] ?? null
-  if (mapped) params.status = mapped       // ALL이면 status 생략
-  if (q) params.q = q
-  if (from) params.from = from
-  if (to) params.to = to
+  try {
+    const params = { page, size }
+    const mapped = ORDER_STATUS_MAP[statusKey] ?? null
+    if (mapped) params.status = mapped       // ALL이면 status 생략
+    if (q) params.q = q
+    if (from) params.from = from
+    if (to) params.to = to
 
-  const res = await api.get('/api/seller/orders/grid', {
-    params,
-    validateStatus: () => true,            // 4xx/5xx throw 금지
-  })
-  if (res.status < 200 || res.status >= 300) throw new Error(`orders/grid ${res.status}`)
-  return res.data
+    const res = await api.get('/api/seller/orders/grid', {
+      params,
+      validateStatus: () => true,            // 4xx/5xx throw 금지
+    })
+    if (res.status < 200 || res.status >= 300) throw new Error(`orders/grid ${res.status}`)
+    return res.data
+  } catch (error) {
+    console.error('주문 그리드 조회 실패:', error)
+    throw error
+  }
 }
 
+/* ----------------------- 신규: 셀러 대시보드 통계 API ----------------------- */
+/**
+ * 셀러 대시보드 통계 (백엔드 API 비활성 → 폴백만 사용)
+ * - 예전처럼 orders/grid 기반 집계만 사용하여 404 로그 제거
+ */
+export async function fetchSellerDashboardStats(targetDate = null) {
+  return await fetchDashboardCountsFallback()
+}
+
+/**
+ * 폴백: 기존 방식으로 대시보드 카운트 계산
+ */
+async function fetchDashboardCountsFallback() {
+  // 응답 모양이 레포마다 달라서 안전하게 total 뽑기
+  const extractTotal = (res) => {
+    const d = res?.data ?? res
+    if (typeof d?.totalElements === 'number') return d.totalElements
+    if (typeof d?.total === 'number') return d.total
+    if (Array.isArray(d?.content)) return d.content.length
+    if (Array.isArray(d?.rows)) return d.rows.length
+    if (Array.isArray(d)) return d.length
+    return Number(d?.count ?? 0)
+  }
+
+  try {
+    const [newOrdersRes, exchReqRes, newFbRes] = await Promise.all([
+      fetchSellerOrders({ status: 'PAID', page: 0, size: 1 }).catch(() => ({ content: [] })),
+      fetchSellerOrders({ status: 'EXCHANGE_REQUESTED', page: 0, size: 1 }).catch(() => ({ content: [] })),
+      fetchSellerFeedbackGrid({ status: 'NEW_WRITE', page: 0, size: 1 }).catch(() => ({ content: [] })),
+    ])
+
+    return {
+      targetDate: new Date().toISOString().split('T')[0], // 오늘 날짜
+      newOrders: extractTotal(newOrdersRes),
+      newFeedbacks: extractTotal(newFbRes),
+      shipReady: extractTotal(newOrdersRes), // READY 상태가 배송준비와 같음
+      shipping: 0, // 폴백에서는 계산하지 않음
+      shipped: 0,
+      exchange: extractTotal(exchReqRes),
+      returns: 0,
+      cancels: 0,
+      purchaseConfirmed: 0
+    }
+  } catch (error) {
+    console.error('대시보드 카운트 폴백도 실패:', error)
+    return {
+      targetDate: new Date().toISOString().split('T')[0],
+      newOrders: 0,
+      newFeedbacks: 0,
+      shipReady: 0,
+      shipping: 0,
+      shipped: 0,
+      exchange: 0,
+      returns: 0,
+      cancels: 0,
+      purchaseConfirmed: 0
+    }
+  }
+}
