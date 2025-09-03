@@ -238,11 +238,11 @@ const ProductDetailPage = () => {
             <div>
               {product.salePrice > 0 ? (
                 <>
-                  <span className='text-2xl text-[#5882F6] font-bold'>{product.salePrice.toLocaleString()}원&ensp;</span>
+                  <span className='text-2xl text-primary font-bold'>{product.salePrice.toLocaleString()}원&ensp;</span>
                   <span className='text-lg text-gray-500 line-through'>{product.basePrice.toLocaleString()}원</span>
                 </>
               ) : (
-                <span className='text-2xl font-bold'>{product.basePrice.toLocaleString()}원</span>
+                <span className='text-2xl text-primary font-bold'>{product.basePrice.toLocaleString()}원</span>
               )}
             </div>
             <div className="text-sm text-gray-600 space-y-1 mt-2">

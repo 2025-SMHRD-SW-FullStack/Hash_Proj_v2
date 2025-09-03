@@ -138,9 +138,19 @@ const OrderPage = () => {
     }, 0);
   }, [orderItems, singleBasePrice]);
 
+  const deliveryFee = useMemo(() => {
+    // 단건(바로구매) 모드이고, 상품 카테고리가 '무형자산'인 경우 배송비 0원
+    if (!isCartMode && productInfo?.category === '무형자산') {
+    return 0;
+    }
+      // 장바구니 모드이거나 그 외 모든 상품
+      return isCartMode ? (cartData.shippingFee ?? SHIPPING_FEE) : SHIPPING_FEE;
+  }, [isCartMode, productInfo, cartData.shippingFee]);
+
+
   const payableBase = isCartMode
-    ? (cartData?.payableBase || (cartData.totalPrice + (cartData.shippingFee ?? SHIPPING_FEE)))
-    : (singleItemsSum + SHIPPING_FEE);
+    ? (cartData?.payableBase || (cartData.totalPrice + deliveryFee))
+    : (singleItemsSum + deliveryFee);
 
   const desired       = useAllPoint ? payableBase : Math.max(0, Math.floor(Number(pointInput) || 0));
   const finalUsePoint = Math.max(0, Math.min(desired, Math.min(pointBalance, payableBase)));
@@ -406,10 +416,7 @@ const OrderPage = () => {
           <div className="flex justify-between">
             <span>배송비</span>
             <b>
-              {isCartMode
-                ? (cartData.shippingFee ?? SHIPPING_FEE).toLocaleString()
-                : SHIPPING_FEE.toLocaleString()
-              }원
+              {deliveryFee.toLocaleString()}원
             </b>
           </div>
 
