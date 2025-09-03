@@ -1,12 +1,13 @@
+// src/components/auth/LoginForm.jsx
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import SocialLoginButtons from './SocialLoginButtons';
 import TextField from '../common/TextField';
 import { useLoginForm } from '../../hooks/useLoginForm';
 import { loginRequest } from '../../service/authService';
 import useAuthStore from '../../stores/authStore';
 import Button from '../common/Button';
-import Logo from '../../assets/images/Meonjeo_Logo.png'; // ✅ 로고 이미지 변경
+import Logo from '../../assets/images/Meonjeo_Logo.png';
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -31,14 +32,21 @@ const LoginForm = () => {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
       <div className="mx-auto w-full max-w-sm">
-
-        {/* 로그인 타이틀 */}
-        <h2 className="mt-8 text-center text-2xl font-bold tracking-tight text-gray-900">
-          로그인
-        </h2>
+        {/* 로고 */}
+        <div className="text-center mb-8">
+            <img
+            className="mx-auto h-20 w-auto cursor-pointer"
+            src={Logo}
+            alt="먼저써봄 로고"
+            onClick={() => navigate('/')}
+            />
+            <h2 className="mt-6 text-2xl font-bold tracking-tight text-gray-900">
+            로그인
+            </h2>
+        </div>
 
         {/* 로그인 폼 */}
-        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <TextField
             id="email"
             label="아이디(이메일)"
@@ -55,28 +63,29 @@ const LoginForm = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <div className="pt-4">
-            <Button type="submit" size="lg" disabled={!isValid} className="w-full">
+          <div className="pt-2">
+            <Button type="submit" size="lg" disabled={!isValid} className="w-full h-12 text-base">
               로그인하기
             </Button>
           </div>
         </form>
 
         {/* 아이디/비밀번호 찾기 */}
-        <div className="mt-6 text-center text-sm">
-          <Link to="/find-auth" className="font-medium text-gray-600 hover:text-primary">
+        <div className="mt-4 text-center text-sm">
+          <button onClick={() => navigate('/find-auth')} className="font-medium text-gray-600 hover:text-blue-500 bg-transparent border-none">
             아이디/비밀번호 찾기
-          </Link>
+          </button>
         </div>
 
         {/* SNS 계정으로 로그인 */}
         <SocialLoginButtons title="SNS 계정으로 로그인" />
 
         {/* 회원가입 버튼 */}
-        <div className="mt-6">
-          <Button variant="outline" size="lg" onClick={() => navigate('/email_signup')} className="w-full">
-            회원가입
-          </Button>
+        <div className="mt-4 text-center">
+            <span className="text-sm text-gray-600">아직 회원이 아니신가요?</span>
+            <Button variant="outline" size="lg" onClick={() => navigate('/email_signup')} className="w-full mt-2 h-12 text-base">
+                회원가입
+            </Button>
         </div>
       </div>
     </div>

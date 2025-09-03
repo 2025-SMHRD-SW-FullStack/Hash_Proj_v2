@@ -131,7 +131,7 @@ const MainPage = () => {
   };
 
   return (
-    <div className="flex w-full gap-6 flex-col sm:flex-row">
+    <div className="flex gap-6 flex-col sm:flex-row py-6 px-4">
       <section className="min-w-0 flex-1">
         {/* 배너 */}
         <div className="mb-6 flex items-center">
@@ -191,61 +191,71 @@ const MainPage = () => {
           <MainProducts label="⚙ 전자제품" category="전자제품" limit={isMobile ? 3 : undefined} />
           <MainProducts label="💄 화장품" category="화장품" limit={isMobile ? 3 : undefined} />
           <MainProducts label="🍱 밀키트" category="밀키트" limit={isMobile ? 3 : undefined} />
-          <MainProducts label="🖥 플랫폼" category="플랫폼" limit={isMobile ? 3 : undefined} />
+          <MainProducts label="💡 무형자산" category="무형자산" limit={isMobile ? 3 : undefined} />
         </div>
       </section>
 
       {/* 사이드 영역 */}
       <aside className="top-8 hidden w-1/5 flex-shrink-0 sm:block space-y-4">
-        <div className="border-[#CCC] border-solid border-[1px] mb-12 flex h-[250px] flex-col items-center justify-center rounded-lg px-4 text-center">
-          {isLoggedIn ? (
-            <>
-              <p className="mb-4 font-bold">
-                {user?.nickname}님<br /> 오늘도 소중한 피드백 부탁드릴게요!
-              </p>
-              <div className="flex items-center">
-                <div className="flex items-center justify-center w-full p-3 rounded-lg text-center">
-                  <span className="text-sm sm:text-base text-gray-600">내 포인트 &ensp;</span>
-                  {loadingPoints ? (
-                    <p>조회 중...</p>
-                  ) : errorPoints ? (
-                    <p className="text-red-500">{errorPoints}</p>
-                  ) : (
-                    <div className="flex text-base sm:text-xl font-bold">
-                      {points.toLocaleString()}
-                      <span className="text-[#35A6CF]">P</span>
-                    </div>
-                  )}
-                </div>
-                <Button
-                  className="w-full h-10 text-sm sm:text-base mb-2"
-                  variant="blackWhite"
-                  onClick={() => navigate('/user/mypage/point-exchange')}
-                >
-                  포인트 교환하기
-                </Button>
-              </div>
-              <Button size="lg" className="w-full" onClick={logout}>
-                로그아웃
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="my-4 text-sm sm:text-base">
-                <span className="text-[#2A5FF2] font-semibold">혁신이 시작되는 곳! </span>
-                <br />
-                <span>
-                  아직 세상에 없는 신제품을 가장 먼저 써보고
-                  <br />
-                  당신의 솔직한 피드백으로 완성하세요.
+        <div className="border-[#CCC] border-solid border-[1px] mb-12 flex flex-col items-center justify-center rounded-lg p-4 text-center space-y-3 sm:space-y-4">
+        {isLoggedIn ? (
+          <>
+            {/* 프로필 사진 */}
+            <img
+              src={user?.profileImageUrl || '/default-profile.png'}
+              alt="프로필 사진"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover mb-2"
+            />
+            
+            <p className="font-bold text-sm sm:text-base">
+              {user?.nickname}님, 오늘도 소중한 피드백 부탁드릴게요!
+            </p>
+
+            {/* 포인트 */}
+            <div className="flex items-center justify-center space-x-2 text-sm sm:text-base">
+              <span className="text-gray-600">내 포인트</span>
+              {loadingPoints ? (
+                <span>조회 중...</span>
+              ) : errorPoints ? (
+                <span className="text-red-500">{errorPoints}</span>
+              ) : (
+                <span className="font-bold flex items-center text-base sm:text-lg">
+                  {points.toLocaleString()}
+                  <span className="text-primary ml-1">P</span>
                 </span>
-              </div>
-              <Button size="lg" className="w-full" onClick={() => navigate('/login')}>
-                로그인하기
-              </Button>
-            </>
-          )}
-        </div>
+              )}
+            </div>
+
+            {/* 포인트 교환 버튼 */}
+            <Button
+              className="w-full h-10 sm:h-12 text-sm sm:text-base"
+              variant="blackWhite"
+              onClick={() => navigate('/user/mypage/point-exchange')}
+            >
+              포인트 교환하기
+            </Button>
+
+            {/* 로그아웃 버튼 */}
+            <Button size="lg" className="w-full">
+              로그아웃
+            </Button>
+          </>
+        ) : (
+          <>
+            <div className="my-2 text-sm sm:text-base">
+              <span className="text-[#2A5FF2] font-semibold">혁신이 시작되는 곳! </span>
+              <br />
+              아직 세상에 없는 신제품을 가장 먼저 써보고
+              <br />
+              당신의 솔직한 피드백으로 완성하세요.
+            </div>
+            <Button size="lg" className="w-full" onClick={() => navigate('/login')}>
+              로그인하기
+            </Button>
+          </>
+        )}
+      </div>
+
 
         {/* ✅ 실제 광고 데이터로 고정 구좌 렌더링 */}
         {sideBanners.map((banner, i) => (

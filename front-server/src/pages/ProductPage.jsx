@@ -1,3 +1,4 @@
+// src/pages/ProductPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import Product from '../components/product/Product.jsx';
 import { useProductDetail } from '../hooks/useProductDetail.js';
@@ -9,6 +10,7 @@ import { useLocation } from 'react-router-dom';
 import { getActiveAds } from '../service/adsService.js';
 import { AD_SLOT_TYPES } from '../constants/ads.js';
 
+// PowerAdProduct 컴포넌트는 이전과 동일하게 유지합니다.
 const PowerAdProduct = ({ ad, onClick }) => {
   const handleClick = () => {
     if (!ad.house && ad.productId) onClick(ad.productId);
@@ -16,25 +18,28 @@ const PowerAdProduct = ({ ad, onClick }) => {
 
   return (
     <div
-      className={`relative cursor-${!ad.house && ad.productId ? 'pointer' : 'default'} w-[calc(50%-0.5rem)] sm:w-48 flex-shrink-0 group`}
+      className={`relative cursor-${!ad.house && ad.productId ? 'pointer' : 'default'} w-full max-w-[200px] mx-auto group`}
       onClick={handleClick}
     >
-      <div className="absolute top-2 left-2 z-10 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded">
-        Sponsored
+      <div className="absolute top-2 right-2 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+        파워광고
       </div>
-      <img
-        src={ad.bannerImageUrl || "https://via.placeholder.com/192"}
-        alt={ad.productName || '광고 상품'}
-        className="w-full sm:w-48 h-48 sm:h-48 border border-solid rounded-xl object-cover group-hover:opacity-80 transition-opacity"
-      />
-      <div className="w-full mt-2 space-y-1 sm:space-y-2">
-        <strong className="text-base sm:text-lg break-words">
+      <div className="aspect-square w-full overflow-hidden rounded-xl border border-gray-200">
+        <img
+          src={ad.bannerImageUrl || "https://via.placeholder.com/192"}
+          alt={ad.productName || '광고 상품'}
+          className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+        />
+      </div>
+      <div className="w-full mt-3 px-1">
+        <strong className="text-base break-words">
           {ad.productName || '특별한 상품을 만나보세요!'}
         </strong>
       </div>
     </div>
   );
 };
+
 
 const ProductPage = () => {
   const goProductDetail = useProductDetail();
@@ -52,7 +57,7 @@ const ProductPage = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const containerRef = useRef(null);
-  const categories = ['전체', '전자제품', '화장품', '밀키트', '플랫폼'];
+  const categories = ['전체', '전자제품', '화장품', '밀키트', '무형자산'];
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -61,10 +66,14 @@ const ProductPage = () => {
         const productData = await getProducts();
         setProducts(productData);
 
-        setLoadingAds(true);
-        const adData = await getActiveAds(AD_SLOT_TYPES.CATEGORY_TOP, selectedCategory);
-        setPowerAds(adData);
-        setLoadingAds(false);
+        if (selectedCategory !== '전체') {
+          setLoadingAds(true);
+          const adData = await getActiveAds(AD_SLOT_TYPES.CATEGORY_TOP, selectedCategory);
+          setPowerAds(adData);
+          setLoadingAds(false);
+        } else {
+          setPowerAds([]);
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -80,32 +89,32 @@ const ProductPage = () => {
     return true;
   });
 
-  // 무한 스크롤 처리
   useEffect(() => {
     const handleScroll = () => {
-      if (!containerRef.current) return;
-      const { scrollTop, clientHeight, scrollHeight } = document.documentElement;
-      if (scrollTop + clientHeight + 100 >= scrollHeight && displayCount < filteredProducts.length) {
-        setIsLoadingMore(true);
-        setTimeout(() => { // 로딩 표시를 위해 setTimeout 적용
-          setDisplayCount((prev) => Math.min(prev + 20, filteredProducts.length));
-          setIsLoadingMore(false);
-        }, 500);
+      if (window.innerHeight + document.documentElement.scrollTop + 100 >= document.documentElement.scrollHeight && !isLoadingMore) {
+        if (displayCount < filteredProducts.length) {
+            setIsLoadingMore(true);
+            setTimeout(() => {
+                setDisplayCount(prev => prev + 20);
+                setIsLoadingMore(false);
+            }, 500);
+        }
       }
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [displayCount, filteredProducts.length]);
+  }, [displayCount, filteredProducts.length, isLoadingMore]);
 
   if (loading) return <div>상품 목록을 불러오는 중...</div>;
   if (error) return <div>오류: {error}</div>;
 
   return (
-    <div ref={containerRef} className='w-full flex flex-col items-center px-4'>
+    // ✅ 이 div에 max-w-7xl mx-auto를 추가하여 전체 너비를 제한합니다.
+    <div ref={containerRef} className='max-w-7xl mx-auto flex flex-col items-center px-4'>
       {/* 모바일: select + 검색바 */}
       <div className="sm:hidden w-full my-4 flex flex-col gap-2">
         <select
-          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-1 focus:ring-primary"
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
         >
@@ -113,7 +122,7 @@ const ProductPage = () => {
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
-        <div className='flex items-center border border-solid border-[#C3C3C3] rounded-lg px-2'>
+        <div className='flex items-center border border-solid border-gray-300 rounded-lg px-2 focus-within:ring-1 focus-within:ring-primary'>
           <input
             type="text"
             className='border-none h-[32px] px-2 outline-none w-full'
@@ -137,7 +146,7 @@ const ProductPage = () => {
             {category}
           </Button>
         ))}
-        <div className='flex items-center border border-solid border-[#C3C3C3] rounded-lg px-2 ml-4 flex-1 max-w-sm'>
+        <div className='flex items-center border border-solid border-gray-300 rounded-lg px-2 ml-4 flex-1 max-w-sm focus-within:ring-1 focus-within:ring-primary'>
           <input
             type="text"
             className='border-none h-[32px] px-2 outline-none w-full'
@@ -153,10 +162,10 @@ const ProductPage = () => {
       {loadingAds ? (
         <p className="w-full text-center py-4">광고를 불러오는 중입니다...</p>
       ) : (
-        powerAds.length > 0 && (
+        powerAds.length > 0 && selectedCategory !== '전체' && (
           <div className="w-full mb-8">
             <h2 className="text-lg font-bold mb-4 border-b pb-2">🔥 추천 상품</h2>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {powerAds.map((ad, index) => (
                 <PowerAdProduct key={ad.slotId || index} ad={ad} onClick={goProductDetail} />
               ))}
@@ -167,14 +176,13 @@ const ProductPage = () => {
       )}
 
       {/* 일반 상품 목록 */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {filteredProducts.slice(0, displayCount).map((product) => (
           <Product key={product.id} product={product} onClick={goProductDetail} />
         ))}
       </div>
 
-      {/* 스크롤 끝 로딩 표시 */}
-      {isLoadingMore && <p className="w-full text-center py-4 text-gray-500">상품을 불러오는 중...</p>}
+      {isLoadingMore && <p className="w-full text-center py-4 text-gray-500">더 많은 상품을 불러오는 중...</p>}
     </div>
   );
 };

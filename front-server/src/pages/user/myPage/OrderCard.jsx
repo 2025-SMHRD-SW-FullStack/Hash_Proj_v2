@@ -165,11 +165,11 @@ const OrderCard = ({ order, onChanged }) => {
 
   return (
     <div className="rounded-2xl border border-gray-200 p-4 bg-white">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:justify-between gap-1 md:gap-0 text-sm text-gray-600">
         <div className="text-sm text-gray-600">{headerLeft}</div>
-        <div className="inline-flex items-center gap-2">
-          <span className="text-xs bg-gray-100 px-2.5 py-1 rounded-full">{statusLabel(order.status)}</span>
-          <span className="text-xs text-gray-400">{order.createdAt ? new Date(order.createdAt).toLocaleString() : ""}</span>
+        <div className="flex gap-2 flex-wrap">
+          <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">{statusLabel(order.status)}</span>
+          <span>{order.createdAt ? new Date(order.createdAt).toLocaleString() : ""}</span>
         </div>
       </div>
 
@@ -188,29 +188,21 @@ const OrderCard = ({ order, onChanged }) => {
           <b>{totalPrice.toLocaleString()}원</b>
         </div>
 
-        <div className="flex items-center gap-4">
-          {order.status === "PENDING" && <Button onClick={handleReorder}>다시 주문하기</Button>}
-          {order.status === "READY" && <Button variant="unselected" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
-          {order.status === "IN_TRANSIT" && <Button variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
-          {order.status === "DELIVERED" && (
-            <>
-              <Button onClick={() => setOpenConfirm(true)}>구매확정 후 피드백 작성</Button>
-              <Button variant="unselected" onClick={handleOpenExchangeModal}>교환 신청</Button>
-            </>
-          )}
-          {order.status === "CONFIRMED" && (
-            <>
-              {!feedbackDone ? (
-                <Button onClick={() => navi(`/user/mypage/orders/${order.id}?tab=feedback`)}>피드백 작성</Button>
-              ) : (
-                <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">
-                  포인트 지급 완료
-                </span>
-              )}
-            </>
-          )}
-          <Button variant="unselected" onClick={() => navi(`/user/mypage/orders/${order.id}`)}>주문 상세 보기</Button>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {order.status === "PENDING" && <Button className="flex-1">다시 주문하기</Button>}
+          {order.status === "READY" && <Button className="flex-1" variant="unselected" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
+          {order.status === "IN_TRANSIT" && <Button className="flex-1" variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
+          {order.status === "DELIVERED" && <>
+            <Button className="flex-1" onClick={() => setOpenConfirm(true)}>구매확정 후 피드백 작성</Button>
+            <Button className="flex-1" variant="unselected" onClick={handleOpenExchangeModal}>교환 신청</Button>
+          </>}
+          {order.status === "CONFIRMED" && <>
+            {!feedbackDone ? <Button className="flex-1" onClick={() => navi(`/user/mypage/orders/${order.id}?tab=feedback`)}>피드백 작성</Button>
+            : <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">포인트 지급 완료</span>}
+          </>}
+          <Button className="flex-1" variant="unselected" onClick={() => navi(`/user/mypage/orders/${order.id}`)}>주문 상세 보기</Button>
         </div>
+
       </div>
 
       <ConfirmPurchaseModal

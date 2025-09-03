@@ -69,122 +69,118 @@ const resizeImage = (file, maxWidth, maxHeight, quality) => {
 
 
 const EmailSignUpForm = () => {
-  const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const navigate = useNavigate();
+  const { login } = useAuthStore();
 
-  const {
-    email, setEmail,
-    password, setPassword,
-    confirmPassword, setConfirmPassword,
-    nickname, setNickname,
-    phoneNumber, setPhoneNumber,
-    phoneVerifyToken, setPhoneVerifyToken,
-    birthDate, setBirthDate,
-    gender, setGender,
-    agreements, setAgreements,
-    emailError, setEmailError,
-    passwordError, setPasswordError,
-    passwordConfirmError, setPasswordConfirmError,
-    isValid,
-  } = useSignUpForm();
+  const {
+    email, setEmail,
+    password, setPassword,
+    confirmPassword, setConfirmPassword,
+    nickname, setNickname,
+    phoneNumber, setPhoneNumber,
+    phoneVerifyToken, setPhoneVerifyToken,
+    birthDate, setBirthDate,
+    gender, setGender,
+    agreements, setAgreements,
+    emailError, setEmailError,
+    passwordError, setPasswordError,
+    passwordConfirmError, setPasswordConfirmError,
+    isValid,
+  } = useSignUpForm();
 
-  // --- 상태 관리 ---
-  const [emailId, setEmailId] = useState('');
-  const [emailDomain, setEmailDomain] = useState('');
-  const [selectedDomain, setSelectedDomain] = useState('');
-  const domainInputRef = useRef(null);
+  // --- 상태 관리 ---
+  const [emailId, setEmailId] = useState('');
+  const [emailDomain, setEmailDomain] = useState('');
+  const [selectedDomain, setSelectedDomain] = useState('');
+  const domainInputRef = useRef(null);
 
-  const [phone1, setPhone1] = useState('010');
-  const [phone2, setPhone2] = useState('');
-  const [phone3, setPhone3] = useState('');
-  
-  // ⭐️ 1. phone3 input에 대한 ref 생성
-  const phone3Ref = useRef(null);
+  const [phone1, setPhone1] = useState('010');
+  const [phone2, setPhone2] = useState('');
+  const [phone3, setPhone3] = useState('');
+  const phone3Ref = useRef(null);
 
-  const [isSending, setIsSending] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [phoneError, setPhoneError] = useState('');
-  const [otpError, setOtpError] = useState('');
-  const [infoMsg, setInfoMsg] = useState('');
-  const [leftSec, setLeftSec] = useState(0);
-  const timerRef = useRef(null);
-  
-  const [profileImageFile, setProfileImageFile] = useState(null);
-  const [profilePreview, setProfilePreview] = useState(PersonIcon);
-  const fileInputRef = useRef(null);
+  const [isSending, setIsSending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [infoMsg, setInfoMsg] = useState('');
+  const [leftSec, setLeftSec] = useState(0);
+  const timerRef = useRef(null);
 
-  const DOMAIN_OPTIONS = [
-    { value: '', label: '직접 입력' },
-    { value: 'naver.com', label: 'naver.com' },
-    { value: 'gmail.com', label: 'gmail.com' },
-    { value: 'daum.net', label: 'daum.net' },
-    { value: 'nate.com', label: 'nate.com' },
-    { value: 'kakao.com', label: 'kakao.com' },
-  ];
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [profilePreview, setProfilePreview] = useState(PersonIcon);
+  const fileInputRef = useRef(null);
 
-  // --- 유틸 및 핸들러 ---
-  const onlyDigits = (v) => v.replace(/\D/g, '');
+  const DOMAIN_OPTIONS = [
+    { value: '', label: '직접 입력' },
+    { value: 'naver.com', label: 'naver.com' },
+    { value: 'gmail.com', label: 'gmail.com' },
+    { value: 'daum.net', label: 'daum.net' },
+    { value: 'nate.com', label: 'nate.com' },
+    { value: 'kakao.com', label: 'kakao.com' },
+  ];
 
-  const domainSelected = (e) => {
-    const v = e.target.value;
-    setSelectedDomain(v);
-    setEmailDomain(v);
-    if (v === '') {
-      requestAnimationFrame(() => domainInputRef.current?.focus());
-    }
-  };
+  // --- 유틸 및 핸들러 ---
+  const onlyDigits = (v) => v.replace(/\D/g, '');
 
-  useEffect(() => {
-    if (emailId && emailDomain) {
-      const fullEmail = `${emailId}@${emailDomain}`;
-      setEmail(fullEmail);
-      setEmailError('');
-    } else {
-      setEmail('');
-    }
-  }, [emailId, emailDomain, setEmail, setEmailError]);
+  const domainSelected = (e) => {
+    const v = e.target.value;
+    setSelectedDomain(v);
+    setEmailDomain(v);
+    if (v === '') {
+      requestAnimationFrame(() => domainInputRef.current?.focus());
+    }
+  };
 
-  // ⭐️ 2. onPhone2 핸들러 수정
+  useEffect(() => {
+    if (emailId && emailDomain) {
+      const fullEmail = `${emailId}@${emailDomain}`;
+      setEmail(fullEmail);
+      setEmailError('');
+    } else {
+      setEmail('');
+    }
+  }, [emailId, emailDomain, setEmail, setEmailError]);
+
   const onPhone2 = (e) => {
     const value = onlyDigits(e.target.value).slice(0, 4);
     setPhone2(value);
-    // 4자리가 입력되면 phone3Ref(마지막 번호 칸)로 포커스를 이동시킵니다.
     if (value.length === 4) {
       phone3Ref.current?.focus();
     }
   };
 
-  const onPhone3 = (e) => setPhone3(onlyDigits(e.target.value).slice(0, 4));
+  const onPhone3 = (e) => setPhone3(onlyDigits(e.target.value).slice(0, 4));
 
-  useEffect(() => {
-    const joined = `${phone1}${phone2}${phone3}`;
-    setPhoneNumber(joined);
-  }, [phone1, phone2, phone3, setPhoneNumber]);
-  
-  const canSend = useMemo(() => leftSec === 0 && !isSending, [leftSec, isSending]);
+  useEffect(() => {
+    const joined = `${phone1}${phone2}${phone3}`;
+    setPhoneNumber(joined);
+  }, [phone1, phone2, phone3, setPhoneNumber]);
 
-  useEffect(() => {
-    if (leftSec === 0) return;
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setLeftSec((s) => {
-        if (s <= 1) {
-          clearInterval(timerRef.current);
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timerRef.current);
-  }, [leftSec]);
+  const canSend = useMemo(() => leftSec === 0 && !isSending, [leftSec, isSending]);
 
-  const mmss = useMemo(() => {
-    const m = Math.floor(leftSec / 60).toString().padStart(2, '0');
-    const s = (leftSec % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  }, [leftSec]);
+  useEffect(() => {
+    if (leftSec === 0) return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setLeftSec((s) => {
+        if (s <= 1) {
+          clearInterval(timerRef.current);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [leftSec]);
+
+  const mmss = useMemo(() => {
+    const m = Math.floor(leftSec / 60).toString().padStart(2, '0');
+    const s = (leftSec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }, [leftSec]);
 
   const onSendCode = async () => {
     // ... (onSendCode 로직은 기존과 동일)
@@ -365,164 +361,162 @@ const EmailSignUpForm = () => {
     };
   }, [datePickerRef]);
 
-  // ... (return JSX 부분은 이전 답변과 동일하게 유지)
   return (
-    <div className="flex flex-col items-center px-4 pb-28 pt-8">
-      <form className="mx-auto w-full max-w-[960px]" onSubmit={handleSubmit}>
-        <div>
-          <div className='flex'>
-            <h1 className="text-2xl font-bold text-[#5882F6]">먼저 써봄&ensp;</h1>
-            <h1 className="text-2xl font-bold">회원가입</h1>
-          </div>
-          <div>
-            <strong className='text-xl'>필수 기본 정보 입력</strong>
-            <hr />
-          </div>
-        </div>
+    <div className="bg-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-lg">
+        <h1 className="text-3xl font-bold text-center text-gray-900">회원가입</h1>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          먼저써봄과 함께 새로운 경험을 시작해보세요!
+        </p>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* 프로필 사진 */}
+          <div className="flex flex-col items-center">
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={handleProfileImageChange}
+              className="hidden"
+            />
+            <img
+              src={profilePreview}
+              alt="프로필 미리보기"
+              className="h-24 w-24 rounded-full object-cover cursor-pointer border-2 border-gray-200"
+              onClick={() => fileInputRef.current?.click()}
+            />
+            <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => fileInputRef.current?.click()}>
+              사진 선택
+            </Button>
+          </div>
 
-        <div className="my-6 flex flex-col items-center">
-            <input
-                type="file"
-                accept="image/*"
-                ref={fileInputRef}
-                onChange={handleProfileImageChange}
-                className="hidden"
-            />
-            <img
-                src={profilePreview}
-                alt="프로필 미리보기"
-                className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 cursor-pointer mb-3"
-                onClick={() => fileInputRef.current?.click()}
-            />
-            <Button type="button" variant="blackWhite" onClick={() => fileInputRef.current?.click()}>
-                프로필 사진 선택
-            </Button>
-        </div>
-        
-        <div className="space-y-3">
-          <div>
-            <div className="mt-1 flex flex-wrap items-center gap-2 md:flex-nowrap">
-              <div className="w-[220px] shrink-0 sm:w-[260px] md:w-[280px]">
-                <TextField id="emailId" label="이메일" required value={emailId} onChange={(e) => setEmailId(e.target.value.trim())}/>
-              </div>
-              <span className="shrink-0 select-none px-1 text-gray-600">@</span>
-              <div className="min-w-0 flex-1">
-                {selectedDomain === '' ? (
-                  <TextField id="email_domain" label="직접입력" value={emailDomain} onChange={(e) => setEmailDomain(e.target.value.trim())} inputRef={domainInputRef}/>
-                ) : (
-                  <TextField id="email_domain_ro" label="도메인" value={selectedDomain} readOnly />
-                )}
-              </div>
-              <select className="select-basic w-36 shrink-0 sm:w-40 md:w-44 h-11 rounded-lg border border-gray-200 px-3" value={selectedDomain} onChange={domainSelected} aria-label="도메인 선택">
-                {DOMAIN_OPTIONS.map(({ value, label }) => (
-                  <option key={label} value={value}>{label}</option>
-                ))}
-              </select>
-            </div>
-            {emailError && <span className="form-error"><img src={errorIcon} alt="에러 아이콘" className="mr-1.5 h-5" />{emailError}</span>}
-          </div>
+          {/* 이메일 */}
+          <div>
+            <label className="text-sm font-medium text-gray-700">이메일 *</label>
+            <div className="mt-1 flex flex-col sm:flex-row gap-2">
+              <TextField id="emailId" label="이메일" value={emailId} onChange={(e) => setEmailId(e.target.value.trim())} className="w-full" />
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">@</span>
+                <TextField id="email_domain" label="직접입력" value={emailDomain} onChange={(e) => setEmailDomain(e.target.value.trim())} inputRef={domainInputRef} className="w-full" />
+                <select className="h-14 rounded-lg border border-gray-300 px-3" value={selectedDomain} onChange={domainSelected}>
+                  {DOMAIN_OPTIONS.map(({ value, label }) => (
+                    <option key={label} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {emailError && <p className="mt-2 text-sm text-red-600">{emailError}</p>}
+          </div>
 
-          <TextField id="password" label="비밀번호" type="password" required value={password} onChange={(e) => { setPassword(e.target.value); validatePassword(e.target.value); }} icon={<img src={lockIcon} alt="비밀번호 아이콘" />} />
-          <TextField id="password_confirm" label="비밀번호 확인" type="password" required value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); validatePasswordConfirm(e.target.value); }} icon={<img src={checkIcon} alt="비밀번호 아이콘" />} />
-          {passwordConfirmError && <span className="mt-1 inline-flex items-center text-sm text-red-600"><img src={errorIcon} alt="에러 아이콘" className="mr-1.5 h-5 w-5"/>{passwordConfirmError}</span>}
-          <TextField id="user_name" label="닉네임" type="text" required value={nickname} onChange={(e) => setNickname(e.target.value)} />
-          
-          <div>
-            <label className="form-label">전화번호</label>
-            <div className="mt-1 grid grid-cols-1 items-center gap-2 md:[grid-template-columns:110px_auto_1fr_auto_1fr_auto]">
-              <select className="h-11 rounded-xl border border-gray-200 px-2" value={phone1} onChange={(e) => setPhone1(e.target.value)}>
-                {['010', '011', '016', '017', '018', '019'].map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-              <span className="hidden text-center text-gray-500 md:block">-</span>
-              <input className="h-11 rounded-xl border border-gray-200 px-3" inputMode="numeric" maxLength={4} placeholder="1234" value={phone2} onChange={onPhone2} />
-              <span className="hidden text-center text-gray-500 md:block">-</span>
-                  {/* ⭐️ 3. ref를 input 요소에 연결 */}
-              <input ref={phone3Ref} className="h-11 rounded-xl border border-gray-200 px-3" inputMode="numeric" maxLength={4} placeholder="5678" value={phone3} onChange={onPhone3} />
-              <Button type="button" onClick={onSendCode} disabled={!canSend || phoneVerified || !phone2 || !phone3} aria-disabled={!canSend || phoneVerified || !phone2 || !phone3} className="h-11">
-                {phoneVerified ? '인증완료' : leftSec > 0 ? `재전송(${mmss})` : isSending ? '발송중...' : '인증번호 발송'}
-              </Button>
-            </div>
-          </div>
+          {/* 비밀번호 */}
+          <TextField id="password" label="비밀번호" type="password" required value={password} onChange={(e) => { setPassword(e.target.value); validatePassword(e.target.value); }} />
+          {passwordError && <p className="mt-2 text-sm text-red-600">{passwordError}</p>}
 
-          {phoneError && <span className="mt-1 inline-flex items-center text-sm text-red-600"><img src={errorIcon} alt="에러" className="mr-1.5 h-5" />{phoneError}</span>}
-          {!phoneVerified && leftSec > 0 && (
-            <div className="mt-2 flex flex-col gap-2 md:flex-row">
-              <TextField id="otp" label="인증번호" type="text" value={otp} onChange={(e) => { const v = onlyDigits(e.target.value).slice(0, 6); setOtp(v); setOtpError(''); }} />
-              <button type="button" className="h-11 rounded-xl border border-gray-200 bg-indigo-50 px-4 disabled:opacity-60" onClick={onVerifyCode} disabled={isVerifying}>
-                {isVerifying ? '확인중...' : '인증확인'}
-              </button>
-            </div>
-          )}
-          {otpError && <span className="mt-1 inline-flex items-center text-sm text-red-600"><img src={errorIcon} alt="에러" className="mr-1.5 h-5" />{otpError}</span>}
-          {phoneVerified && <span className="mt-1 inline-flex items-center text-sm text-green-600"><img src={successIcon} alt="성공" className="mr-1.5 h-5" />휴대폰 인증이 완료되었습니다.</span>}
-          {infoMsg && !phoneVerified && <span className="mt-1 text-sm text-gray-500">{infoMsg}</span>}
+          {/* 비밀번호 확인 */}
+          <TextField id="password_confirm" label="비밀번호 확인" type="password" required value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); validatePasswordConfirm(e.target.value); }} />
+          {passwordConfirmError && <p className="mt-2 text-sm text-red-600">{passwordConfirmError}</p>}
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <label className="form-label">성별</label>
-              <div className="flex items-center gap-4 pt-2">
-                <label><input type="radio" name="gender" value="남자" checked={gender === '남자'} onChange={(e) => setGender(e.target.value)} /><span className="ml-2">남자</span></label>
-                <label><input type="radio" name="gender" value="여자" checked={gender === '여자'} onChange={(e) => setGender(e.target.value)} /><span className="ml-2">여자</span></label>
-              </div>
-            </div>
-            <div className="sm:col-span-3">
-              <label className="form-label">생년월일</label>
-              <div className="relative" ref={datePickerRef}>
-                <TextField
-                  id="birthDate"
-                  label="생년월일"
-                  value={birthDate}
-                  readOnly
-                  onClick={() => setIsDatePickerOpen(prev => !prev)}
-                  placeholder="YYYY-MM-DD"
-                  required
-                />
-                {isDatePickerOpen && (
-                  <div className="absolute top-full mt-2 z-10 bg-white border rounded-lg shadow-lg">
-                    <DayPicker
-                      mode="single"
-                      selected={birthDate ? new Date(birthDate) : undefined}
-                      onSelect={(date) => {
-                        if (date) {
-                          setBirthDate(ymd(date));
-                        }
-                        setIsDatePickerOpen(false);
-                      }}
-                      captionLayout="dropdown" 
-                      fromYear={1950}
-                      toYear={new Date().getFullYear()}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+          {/* 닉네임 */}
+          <TextField id="user_name" label="닉네임" type="text" required value={nickname} onChange={(e) => setNickname(e.target.value)} />
 
-        <div className="mb-2 mt-6 rounded-xl border border-dashed border-gray-200 p-4 text-gray-600">
-          <div className="flex items-center mb-2">
-            <input type="checkbox" id="agreement-all" name="all" className="w-5 h-5" onChange={handleAgreementChange} checked={agreements.termsOfService && agreements.privacyPolicy} />
-            <label htmlFor="agreement-all" className="ml-2 font-semibold">전체 동의</label>
-          </div>
-          <hr />
-          <div className="flex items-center mt-2">
-            <input type="checkbox" id="agreement-terms" name="termsOfService" className="w-5 h-5" onChange={handleAgreementChange} checked={agreements.termsOfService} />
-            <label htmlFor="agreement-terms" className="ml-2">[필수] 이용약관 동의</label>
-          </div>
-          <div className="flex items-center mt-2">
-            <input type="checkbox" id="agreement-privacy" name="privacyPolicy" className="w-5 h-5" onChange={handleAgreementChange} checked={agreements.privacyPolicy} />
-            <label htmlFor="agreement-privacy" className="ml-2">[필수] 개인정보 수집 및 이용 동의</label>
-          </div>
-        </div>
-        
-        <Button variant="signUp" size="lg" className="w-full" type="submit" disabled={!isValid || !phoneVerified}>
-          회원가입
-        </Button>
-      </form>
-    </div>
-  );
+          {/* 전화번호 */}
+          <div>
+            <label className="text-sm font-medium text-gray-700">전화번호 *</label>
+            <div className="mt-1 grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-2 items-center">
+              <select className="h-14 rounded-lg border border-gray-300 px-2" value={phone1} onChange={(e) => setPhone1(e.target.value)}>
+                {['010', '011', '016', '017', '018', '019'].map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+              <TextField id="phone2" label="1234" value={phone2} onChange={onPhone2} />
+              <TextField id="phone3" label="5678" value={phone3} onChange={onPhone3} inputRef={phone3Ref} />
+            </div>
+            <Button type="button" onClick={onSendCode} disabled={!canSend || phoneVerified || !phone2 || !phone3} className="mt-2 w-full">
+              {phoneVerified ? '인증완료' : leftSec > 0 ? `재전송(${mmss})` : isSending ? '발송중...' : '인증번호 발송'}
+            </Button>
+            {phoneError && <p className="mt-2 text-sm text-red-600">{phoneError}</p>}
+          </div>
+
+          {/* 인증번호 */}
+          {!phoneVerified && leftSec > 0 && (
+            <div className="flex gap-2">
+              <TextField id="otp" label="인증번호" type="text" value={otp} onChange={(e) => { const v = onlyDigits(e.target.value).slice(0, 6); setOtp(v); setOtpError(''); }} />
+              <Button type="button" onClick={onVerifyCode} disabled={isVerifying}>
+                {isVerifying ? '확인중...' : '인증확인'}
+              </Button>
+            </div>
+          )}
+          {otpError && <p className="mt-2 text-sm text-red-600">{otpError}</p>}
+          {infoMsg && <p className="mt-2 text-sm text-green-600">{infoMsg}</p>}
+
+          {/* 성별 및 생년월일 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">성별</label>
+              <div className="flex items-center gap-4 pt-2">
+                <label><input type="radio" name="gender" value="남자" checked={gender === '남자'} onChange={(e) => setGender(e.target.value)} /><span className="ml-2">남자</span></label>
+                <label><input type="radio" name="gender" value="여자" checked={gender === '여자'} onChange={(e) => setGender(e.target.value)} /><span className="ml-2">여자</span></label>
+              </div>
+            </div>
+            <div className="relative" ref={datePickerRef}>
+              <TextField
+                id="birthDate"
+                label="생년월일"
+                value={birthDate}
+                readOnly
+                onClick={() => setIsDatePickerOpen(prev => !prev)}
+                placeholder="YYYY-MM-DD"
+                required
+              />
+              {isDatePickerOpen && (
+                <div className="absolute top-full mt-2 z-10 bg-white border rounded-lg shadow-lg">
+                  <DayPicker
+                    mode="single"
+                    selected={birthDate ? new Date(birthDate) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        setBirthDate(ymd(date));
+                      }
+                      setIsDatePickerOpen(false);
+                    }}
+                    captionLayout="dropdown"
+                    fromYear={1950}
+                    toYear={new Date().getFullYear()}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+
+          {/* 약관 동의 */}
+          <div className="space-y-2">
+            <div>
+              <label className="flex items-center">
+                <input type="checkbox" name="all" className="h-4 w-4 rounded" onChange={handleAgreementChange} checked={agreements.termsOfService && agreements.privacyPolicy} />
+                <span className="ml-2 text-sm text-gray-900">전체 동의</span>
+              </label>
+            </div>
+            <div>
+              <label className="flex items-center">
+                <input type="checkbox" name="termsOfService" className="h-4 w-4 rounded" onChange={handleAgreementChange} checked={agreements.termsOfService} />
+                <span className="ml-2 text-sm text-gray-600">[필수] 이용약관 동의</span>
+              </label>
+            </div>
+            <div>
+              <label className="flex items-center">
+                <input type="checkbox" name="privacyPolicy" className="h-4 w-4 rounded" onChange={handleAgreementChange} checked={agreements.privacyPolicy} />
+                <span className="ml-2 text-sm text-gray-600">[필수] 개인정보 수집 및 이용 동의</span>
+              </label>
+            </div>
+          </div>
+
+          <Button variant="primary" size="lg" className="w-full" type="submit" disabled={!isValid || !phoneVerified}>
+            가입하기
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 export default EmailSignUpForm;
