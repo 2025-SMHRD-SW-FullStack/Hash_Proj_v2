@@ -61,4 +61,18 @@ public class FeedbackController {
     public Page<FeedbackResponse> productFeedbacks(@PathVariable Long productId, Pageable pageable) {
         return service.listByProduct(productId, pageable);
     }
+
+    @GetMapping("/product/{productId}/done")
+    public Map<String, Boolean> doneForProduct(@PathVariable Long productId) {
+        Long uid = auth.currentUserId();
+        boolean done = feedbackRepo.existsForUserAndProduct(uid, productId);
+        return Map.of("done", done);
+    }
+
+    @GetMapping("/eligibility")
+    public Map<String, Object> eligibility(@RequestParam Long orderItemId) {
+        // FeedbackService.create()와 동일 조건 평가 후
+        // ok / reason 리턴
+        return Map.of("ok", true);
+    }
 }

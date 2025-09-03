@@ -1,5 +1,0 @@
-platform: coupang
-language: ko
-defaults:
-  toneLabel: 담백
-files: []
