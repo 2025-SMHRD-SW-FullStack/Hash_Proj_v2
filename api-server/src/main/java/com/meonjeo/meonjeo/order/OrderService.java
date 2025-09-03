@@ -75,6 +75,21 @@ public class OrderService {
         // 배송 요청사항 서버측 방어
         String safeMemo = sanitizeMemo(req.requestMemo());
 
+        boolean allItemsAreIntangible = true; // 모든 상품이 무형자산인지 확인하는 플래그
+        for (CheckoutItem ci : req.items()) {
+            Product p = productRepo.findById(ci.productId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND: " + ci.productId()));
+
+            // '무형자산'이 아닌 상품이 하나라도 있으면 플래그를 false로 변경하고 반복 중단
+            if (!"무형자산".equals(p.getCategory())) {
+                allItemsAreIntangible = false;
+                break;
+            }
+        }
+
+        // 모든 상품이 무형자산일 경우 배송비를 0원으로, 그렇지 않으면 3000원으로 설정
+        int shippingFee = allItemsAreIntangible ? 0 : FLAT_SHIPPING_FEE;
+
         Order order = Order.builder()
                 .userId(userId)
                 .status(OrderStatus.PENDING)
@@ -85,7 +100,7 @@ public class OrderService {
                 .zipcode(addr.getZipcode())
                 .requestMemo(safeMemo)
                 .createdAt(LocalDateTime.now())
-                .shippingFee(FLAT_SHIPPING_FEE)
+                .shippingFee(shippingFee) // ⬅️ 계산된 배송비 적용
                 .build();
         if (order.getItems() == null) order.setItems(new ArrayList<>());
 
@@ -163,7 +178,6 @@ public class OrderService {
         }
 
         // 결제 대상: 상품합계 + 배송비
-        int shippingFee = FLAT_SHIPPING_FEE;
         int payableBase = total + shippingFee;
 
         int balance = pointLedger.getBalance(userId);

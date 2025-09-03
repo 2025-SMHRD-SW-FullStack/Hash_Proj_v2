@@ -14,6 +14,7 @@ import InfoModal from "../../../components/common/InfoModal";
 import Button from "../../../components/common/Button";
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
 import { getMyExchanges } from "../../../service/exchangeService";
+import Modal from "../../../components/common/Modal";
 
 const statusLabel = (s) => ({
   READY: "배송 준비중",
@@ -215,7 +216,7 @@ const OrderCard = ({ order, onChanged }) => {
               const remain = typeof w?.remainingSeconds === "number"
                 ? ` (남은 시간: ${Math.floor(w.remainingSeconds / 3600)}시간 ${Math.floor((w.remainingSeconds % 3600) / 60)}분)`
                 : "";
-              alert(`지금은 구매확정을 할 수 없습니다.\\n(배송완료 후 7일 이내만 가능)${remain}`);
+              alert(`지금은 구매확정을 할 수 없습니다. (배송완료 후 7일 이내만 가능)${remain}`);
               setOpenConfirm(false);
               return;
             }
@@ -230,7 +231,14 @@ const OrderCard = ({ order, onChanged }) => {
         }}
       />
       <TrackingModal open={openTrack} onClose={() => setOpenTrack(false)} orderId={order.id} />
-      <InfoModal open={openReadyInfo} onClose={() => setOpenReadyInfo(false)} title="배송 조회" message={"현재 상태: 배송 준비중\\n집화가 시작되면 배송 조회가 가능합니다."} />
+      <Modal
+        isOpen={openReadyInfo}
+        onClose={() => setOpenReadyInfo(false)}
+        title="배송 조회"
+      >
+        <p>현재 상태: 배송 준비중</p>
+        <p> 집화가 시작되면 배송 조회가 가능합니다.</p>
+      </Modal>
       <ExchangeRequestModal
         open={openExchangeModal}
         onClose={() => setOpenExchangeModal(false)}
