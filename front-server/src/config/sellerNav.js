@@ -16,7 +16,17 @@ const sellerNav = [
 
   { label: '상품관리', to: '/seller/products' },
   { label: '정산관리', to: '/seller/payouts' },
-  { label: '파워광고 신청', to: '/seller/ads/power' },
+  
+  // 광고 관리 그룹
+  {
+    label: '광고 관리',
+    to: '/seller/ads',
+    type: 'group',
+    children: [
+      { label: '파워광고 신청', to: '/seller/ads/power' },
+      { label: '광고 현황', to: '/seller/ads/management' },
+    ],
+  },
 ];
 
 export default sellerNav;

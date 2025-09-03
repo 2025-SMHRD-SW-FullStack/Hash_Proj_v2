@@ -42,6 +42,7 @@ public class Feedback {
 
     /** 세부 점수/설문 응답 JSON (프론트 전송 값 그대로 스냅샷) */
     @Lob
+    @Column(name = "scores_json", columnDefinition = "MEDIUMTEXT")
     private String scoresJson;
 
     /** 자유 후기 본문 */

@@ -1,7 +1,6 @@
 // src/components/common/qna/QnAList.jsx
 import React, { useEffect, useState } from 'react';
-import { getMyQnaList } from '../../../service/qnaService';
-import QnA_Mock from '../../../data/qna.mock';
+import { qnaService } from '../../../service/qnaService';
 
 const QnaList = ({ refreshTrigger }) => {
   const [qnaList, setQnaList] = useState([]);
@@ -13,8 +12,8 @@ const QnaList = ({ refreshTrigger }) => {
     setLoading(true);
     setError(null);
     try {
-      // TODO: 실제 API 연동 시 getMyQnaList 사용
-      setQnaList(QnA_Mock);
+      const data = await qnaService.getMyQnaList();
+      setQnaList(data);
     } catch (err) {
       setError('Q&A 목록을 불러오는 데 실패했습니다.');
       console.error(err);
@@ -54,10 +53,10 @@ const QnaList = ({ refreshTrigger }) => {
               <div className="mt-4 border-t pt-4" onClick={e => e.stopPropagation()}>
                 <p className="text-gray-700 whitespace-pre-wrap">{qna.content}</p>
 
-                {qna.answer ? (
+                {qna.answerContent ? (
                   <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-300 rounded-md">
                     <p className="font-semibold text-blue-800">관리자 답변:</p>
-                    <p className="text-blue-700 whitespace-pre-wrap">{qna.answer}</p>
+                    <p className="text-blue-700 whitespace-pre-wrap">{qna.answerContent}</p>
                   </div>
                 ) : (
                   <p className="mt-4 text-sm text-gray-400 flex items-center gap-1">

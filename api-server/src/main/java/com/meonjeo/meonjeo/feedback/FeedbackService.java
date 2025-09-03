@@ -122,7 +122,7 @@ public class FeedbackService {
             }
 
             Product product = (fb.getProductId() != null) ? productMap.get(fb.getProductId()) : null;
-            String productImageUrl = (product != null) ? product.getMainImageUrl() : null;
+            String productImageUrl = (product != null) ? product.getThumbnailUrl() : null;
 
             return new FeedbackResponse(
                     fb.getId(), fb.getOrderItemId(), fb.getProductId(), productName,

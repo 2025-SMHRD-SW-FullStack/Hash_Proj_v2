@@ -44,6 +44,7 @@ public class Product {
     private String thumbnailUrl;
 
     @Lob @Basic(fetch = FetchType.LAZY) @Comment("상세 HTML")
+    @Column(columnDefinition = "LONGTEXT")
     private String detailHtml;
 
     @PositiveOrZero @Comment("총 재고 수량(옵션이 있으면 variants 합계로 갱신)")

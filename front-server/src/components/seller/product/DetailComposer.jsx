@@ -1,6 +1,6 @@
 // src/components/seller/product/DetailComposer.jsx
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Button from '../../common/Button'
 
 /**
@@ -8,13 +8,16 @@ import Button from '../../common/Button'
  * 외부로는 HTML 없이 blocks(JSON)만 전달
  *
  * props
- * - initialBlocks: [{ type:'text'|'image', text?, src?, name? }]
+ * - initialBlocks: [{ type:'text'|'image', text?, src?, name?, file? }]
  * - onChange: (blocks) => void
  * - editorClass: 추가로 줄 클래스 (예: 고정 높이)
  */
 export default function DetailComposer({ initialBlocks = [], onChange, editorClass = 'h-60' }) {
   const editorRef = useRef(null)
   const fileRef = useRef(null)
+  
+  // 이미지 파일 매핑: blob URL -> File 객체
+  const [imageFiles, setImageFiles] = useState(new Map())
 
   // 초기: blocks -> DOM
   useEffect(() => {
@@ -50,7 +53,12 @@ export default function DetailComposer({ initialBlocks = [], onChange, editorCla
     for (const f of files) {
       if (!f.type.startsWith('image/')) continue
       const url = URL.createObjectURL(f)
-      insertImage(url, f.name)
+      
+      // 이미지 파일 매핑에 추가
+      setImageFiles(prev => new Map(prev).set(url, f))
+      
+      // 이미지를 에디터 끝에 추가
+      appendImageToEnd(url, f.name)
     }
     e.target.value = ''
     emit()
@@ -60,8 +68,10 @@ export default function DetailComposer({ initialBlocks = [], onChange, editorCla
     // 서식 제거 붙여넣기
     e.preventDefault()
     const text = e.clipboardData.getData('text/plain')
-    insertText(text)
-    emit()
+    if (text && text.trim()) {
+      insertText(text)
+      emit()
+    }
   }
 
   const handleInput = () => emit()
@@ -76,9 +86,23 @@ export default function DetailComposer({ initialBlocks = [], onChange, editorCla
     sel.removeAllRanges()
     sel.addRange(range)
   }
+  
   function insertText(text) {
+    if (!text || !text.trim()) return
+    
+    const el = editorRef.current
+    if (!el) return
+    
     const sel = window.getSelection()
-    if (!sel || !sel.rangeCount) return
+    if (!sel || !sel.rangeCount) {
+      // 선택된 범위가 없으면 에디터 끝에 추가
+      const p = document.createElement('p')
+      p.textContent = text
+      el.appendChild(p)
+      placeCaretAtEnd(el)
+      return
+    }
+    
     const range = sel.getRangeAt(0)
     const node = document.createTextNode(text)
     range.deleteContents()
@@ -88,9 +112,18 @@ export default function DetailComposer({ initialBlocks = [], onChange, editorCla
     sel.removeAllRanges()
     sel.addRange(range)
   }
+  
   function insertImage(src, name = '') {
+    const el = editorRef.current
+    if (!el) return
+    
     const sel = window.getSelection()
-    if (!sel || !sel.rangeCount) return
+    if (!sel || !sel.rangeCount) {
+      // 선택된 범위가 없으면 에디터 끝에 추가
+      appendImageToEnd(src, name)
+      return
+    }
+    
     const range = sel.getRangeAt(0)
     const img = document.createElement('img')
     img.src = src
@@ -109,22 +142,58 @@ export default function DetailComposer({ initialBlocks = [], onChange, editorCla
     sel.removeAllRanges()
     sel.addRange(r)
   }
+  
+  // 에디터 끝에 이미지 추가 (새로운 함수)
+  function appendImageToEnd(src, name = '') {
+    const el = editorRef.current
+    if (!el) return
+    
+    const img = document.createElement('img')
+    img.src = src
+    img.alt = name
+    img.style.maxWidth = '100%'
+    img.style.height = 'auto'
+    img.style.display = 'block'
+    img.style.margin = '8px 0'
+    
+    el.appendChild(img)
+    
+    // 커서를 이미지 뒤로 이동
+    placeCaretAtEnd(el)
+  }
 
-  // DOM -> blocks
+  // DOM -> blocks (File 객체 정보 포함)
   function emit() {
     const blocks = domToBlocks(editorRef.current)
     onChange?.(blocks)
   }
+  
   function domToBlocks(root) {
     const out = []
     if (!root) return out
+    
     // 블록 단위: 이미지=개별, 텍스트=줄 모아서
     for (const node of Array.from(root.childNodes)) {
       if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'IMG') {
-        out.push({ type: 'image', src: node.getAttribute('src') || '', name: node.getAttribute('alt') || '' })
-      } else {
+        const src = node.getAttribute('src') || ''
+        const name = node.getAttribute('alt') || ''
+        const file = imageFiles.get(src) // blob URL에 해당하는 File 객체
+        
+        out.push({ 
+          type: 'image', 
+          src, 
+          name,
+          file // File 객체 정보 추가
+        })
+      } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'P') {
         const txt = node.textContent || ''
-        if (txt.trim()) out.push({ type: 'text', text: txt })
+        // 텍스트가 null이거나 빈 문자열이어도 추가 (공백 줄도 유지)
+        out.push({ type: 'text', text: txt })
+      } else if (node.nodeType === Node.TEXT_NODE) {
+        const txt = node.textContent || ''
+        if (txt.trim()) {
+          out.push({ type: 'text', text: txt })
+        }
       }
     }
     return out
