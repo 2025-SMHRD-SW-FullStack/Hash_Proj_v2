@@ -241,6 +241,13 @@ public class OrderService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                         "PAID_FINALIZE_OUT_OF_STOCK_OR_RACE: " + snapshotKey(labels, vals));
             }
+            // ✅ 상품 총재고도 함께 감소
+            int updatedTotal = productRepo.decreaseStockTotalIfEnough(p.getId(), it.getQty());
+            if (updatedTotal != 1) {
+                // 여기로 오면 SKU는 줄었는데 총재고가 경합으로 실패 → 운영상 안전하게 롤백시키려면 RuntimeException 던져 트랜잭션 전체 롤백
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "PAID_FINALIZE_STOCKTOTAL_RACE_OR_INCONSISTENT");
+            }
         }
 
         // 승인 금액 반영 + READY로 승격
