@@ -36,11 +36,18 @@ function VariationRow({ variation }) {
 }
 
 function GroupedProductRow({ product }) {
-  const thumb = product.thumbnailUrl || TestImg;
   return (
     <div className="flex items-start gap-4">
       <div className="w-24 h-24 rounded-lg bg-gray-100 shrink-0 overflow-hidden">
-        <img src={thumb} alt={product.productName} className="w-full h-full object-cover" />
+        <img 
+          src={product.thumbnailUrl || TestImg} 
+          alt={product.productName} 
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.onerror = null; // 무한 루프 방지
+            e.target.src = TestImg;
+          }} 
+          />
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-base mb-2">{product.productName}</div>
