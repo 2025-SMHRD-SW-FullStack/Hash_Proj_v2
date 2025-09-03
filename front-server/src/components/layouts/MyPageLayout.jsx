@@ -1,10 +1,11 @@
-// src/components/layouts/MyPageLayout.jsx
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import useAuthStore from "../../stores/authStore";
 import { useState, useEffect } from "react";
 import Button from "../common/Button";
 import { getMyPointBalance } from "../../service/pointService";
 import PersonIcon from "../../assets/icons/ic_person.svg";
+import { Listbox } from "@headlessui/react";
+import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
 
 const MyPageLayout = () => {
   const { user } = useAuthStore();
@@ -13,7 +14,17 @@ const MyPageLayout = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 🔽 포인트 조회 로직
+  const navItems = [
+    { to: "/user/mypage/orders", label: "주문/배송 내역" },
+    { to: "/user/mypage/feedback-history", label: "작성한 피드백" },
+    { to: "/user/mypage/edit", label: "내 정보 수정" },
+    { to: "/user/mypage/cart", label: "장바구니" },
+    { to: "/user/mypage/support/qna", label: "문의내역" },
+    { to: "/user/mypage/seller-apply", label: "셀러 등록하기" },
+  ];
+
+  const [selected, setSelected] = useState(navItems[0]);
+
   useEffect(() => {
     const fetchPoints = async () => {
       if (!user) return;
@@ -31,39 +42,39 @@ const MyPageLayout = () => {
     fetchPoints();
   }, [user]);
 
-  // 🔽 NavLink 스타일 정의
   const baseLinkStyle =
-    "block w-full p-4 text-left text-base text-gray-600 rounded-lg hover:bg-gray-100 transition-colors no-underline";
+    "block w-full p-3 text-left text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors no-underline";
   const selectedLinkStyle = "bg-[#9FC5FB] text-white font-semibold";
 
   return (
-    <div className="flex p-8 gap-8 ">
+    <div className="flex flex-col md:flex-row bg-gray-50 min-h-screen p-4 md:p-8 gap-4 md:gap-8">
       {/* 왼쪽 사이드바 */}
-      <aside className="w-1/5 flex-shrink-0">
-        <div className="flex flex-col items-center p-4 border rounded-lg shadow">
+      <aside className="w-full md:w-1/5 flex-shrink-0">
+        <div className="flex flex-col items-center p-4 border rounded-lg shadow bg-white">
           <img
             src={user?.profileImageUrl || PersonIcon}
             alt="프로필 사진"
-            className="w-24 h-24 rounded-full object-cover mb-4"
+            className="w-16 h-16 md:w-24 md:h-24 rounded-full object-cover mb-2 md:mb-4"
           />
-          <strong className="text-xl font-bold mb-4">{user?.nickname}님</strong>
+          <strong className="text-base md:text-xl font-bold mb-1 md:mb-4">{user?.nickname}님</strong>
 
-          <div className="flex items-center justify-center w-full p-3 rounded-lg text-center">
-            <h4 className="text-sm text-gray-600">내 포인트 &ensp;</h4>
+          <div className="flex items-center justify-center w-full p-2 rounded-lg text-centermb-3 space-x-2">
+            <span className="text-sm text-gray-600">내 포인트</span>
             {loading ? (
-              <p>조회 중...</p>
+              <span className="text-sm">조회 중...</span>
             ) : error ? (
-              <p className="text-red-500">{error}</p>
+              <span className="text-sm text-red-500">{error}</span>
             ) : (
-              <div className="text-2xl font-bold">
+              <span className="text-lg md:text-2xl font-bold flex items-center">
                 {points.toLocaleString()}
-                <span className="text-[#5882F6]">P</span>
-              </div>
+                <span className="text-[#5882F6] font-bold ml-1">P</span>
+              </span>
             )}
           </div>
 
+
           <Button
-            className="w-full h-14 text-base"
+            className="w-full h-10 md:h-14 text-sm md:text-base"
             variant="blackWhite"
             onClick={() => navigate("/user/mypage/point-exchange")}
           >
@@ -71,75 +82,66 @@ const MyPageLayout = () => {
           </Button>
         </div>
 
-        {/* --- 내비게이션 메뉴 --- */}
-        <nav className="mt-6">
+
+
+        {/* 모바일 Listbox */}
+        <div className="md:hidden mt-4">
+          <Listbox value={selected} onChange={(val) => { setSelected(val); navigate(val.to); }}>
+            <div className="relative">
+              <Listbox.Button className="relative w-full cursor-pointer bg-white border border-gray-300 rounded-lg pl-3 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500">
+                <span className="block truncate">{selected.label}</span>
+                <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                </span>
+              </Listbox.Button>
+
+              <Listbox.Options className="absolute mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto z-10">
+                {navItems.map((item) => (
+                  <Listbox.Option
+                    key={item.to}
+                    value={item}
+                    className={({ active, selected }) =>
+                      `cursor-pointer select-none relative py-2 pl-4 pr-10 ${
+                        selected ? "bg-[#9FC5FB] text-white font-semibold" :
+                        active ? "bg-blue-100 text-blue-900" : "text-gray-700"
+                      }`
+                    }
+                  >
+                    {({ selected: isSelected }) => (
+                      <>
+                        <span className={`block truncate ${isSelected ? "font-semibold" : "font-normal"}`}>
+                          {item.label}
+                        </span>
+                        {isSelected && (
+                          <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-white">
+                            <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </Listbox.Option>
+                ))}
+              </Listbox.Options>
+            </div>
+          </Listbox>
+        </div>
+
+        {/* 데스크탑 nav */}
+        <nav className="hidden md:block mt-4">
           <ul className="space-y-2 p-0 list-none">
-            <li>
-              <NavLink
-                to="/user/mypage/orders"
-                end
-                className={({ isActive }) =>
-                  `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
-                }
-              >
-                주문/배송 내역
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/user/mypage/feedback-history"
-                end
-                className={({ isActive }) =>
-                  `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
-                }
-              >
-                작성한 피드백
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/user/mypage/edit"
-                end
-                className={({ isActive }) =>
-                  `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
-                }
-              >
-                내 정보 수정
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/user/mypage/cart"
-                end
-                className={({ isActive }) =>
-                  `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
-                }
-              >
-                장바구니
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/user/mypage/support/qna"
-                end
-                className={({ isActive }) =>
-                  `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
-                }
-              >
-                문의내역
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/user/mypage/seller-apply"
-                end
-                className={({ isActive }) =>
-                  `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
-                }
-              >
-                셀러 등록하기
-              </NavLink>
-            </li>
+            {navItems.map((item) => (
+              <li key={item.to}>
+                <NavLink
+                  to={item.to}
+                  end
+                  className={({ isActive }) =>
+                    `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              </li>
+            ))}
           </ul>
         </nav>
       </aside>

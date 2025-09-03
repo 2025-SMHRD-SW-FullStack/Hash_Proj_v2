@@ -11,9 +11,8 @@ const MyFeedbackHistoryPage = () => {
     const fetchFeedbacks = async () => {
       try {
         setLoading(true);
-        // 2. getMyFeedbacks는 Page 객체를 반환하므로 .content로 실제 목록에 접근
         const response = await getMyFeedbacks();
-        setFeedbacks(response.content || []); 
+        setFeedbacks(response.content || []);
       } catch (err) {
         setError('작성한 피드백을 불러오는 데 실패했습니다.');
         console.error(err);
@@ -35,9 +34,19 @@ const MyFeedbackHistoryPage = () => {
           작성한 피드백이 없습니다.
         </div>
       ) : (
-        <div>
-          {/* 3. 분리된 컴포넌트 사용 */}
-          {feedbacks.map(fb => <MyFeedbackCard key={fb.id} feedback={fb} />)}
+        <div
+          className="
+            grid gap-3
+            grid-cols-3       /* 모바일도 기본 3개 */
+            sm:grid-cols-3    /* 작은 화면 3개 */
+            md:grid-cols-4    /* 중간 화면 4개 */
+            lg:grid-cols-5    /* 큰 화면 5개 */
+            xl:grid-cols-6    /* 초대형 화면 6개 */
+          "
+        >
+          {feedbacks.map((fb) => (
+            <MyFeedbackCard key={fb.id} feedback={fb} />
+          ))}
         </div>
       )}
     </div>

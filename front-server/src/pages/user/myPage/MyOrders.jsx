@@ -20,18 +20,18 @@ const MyOrders = () => {
   useEffect(() => { refresh(); }, []);
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-xl font-semibold">내 주문/배송 내역</h1>
-
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <h1 className="text-lg md:text-xl font-semibold">내 주문/배송 내역</h1>
       {loading && <div>불러오는 중…</div>}
       {!loading && rows.length === 0 && <div className="text-gray-500">주문 내역이 없습니다.</div>}
 
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         {rows.map(o => (
-          <OrderCard key={o.id} order={o} onChanged={refresh} />
+          <OrderCard key={o.id} order={o} onChanged={refresh} className="w-full" />
         ))}
       </div>
     </div>
+
   );
 }
 
