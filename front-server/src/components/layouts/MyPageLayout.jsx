@@ -57,7 +57,7 @@ const MyPageLayout = () => {
             ) : (
               <div className="text-2xl font-bold">
                 {points.toLocaleString()}
-                <span className="text-[#35A6CF]">P</span>
+                <span className="text-[#5882F6]">P</span>
               </div>
             )}
           </div>

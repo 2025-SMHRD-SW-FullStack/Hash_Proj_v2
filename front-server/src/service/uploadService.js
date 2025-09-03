@@ -11,9 +11,14 @@ export async function uploadImages(type, files) {
   fd.append('type', type);
   for (const f of files) fd.append('files', f);
 
-  // FormData를 전송할 때는 Content-Type 헤더를 axios가 자동으로 설정하도록 비워둡니다.
-  const res = await api.post('/api/uploads/images', fd);
-  return res.data; // [{url, key, contentType, size}, ...]
+  //  FormData 전송 시 Content-Type을 null 또는 undefined로 설정하여
+  // axios가 자동으로 'multipart/form-data'와 boundary를 설정하도록 합니다.
+  const res = await api.post('/api/uploads/images', fd, {
+    headers: {
+      'Content-Type': null,
+    },
+  });
+  return res.data;
 }
 
 /**

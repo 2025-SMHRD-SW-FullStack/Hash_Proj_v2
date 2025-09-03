@@ -22,11 +22,17 @@ const shortW = 'w-[224px]'            // 판매가/날짜/포인트/재고
 // blocks -> html (서버는 detailHtml 문자열 수신)
 function blocksToHtml(blocks = []) {
   return blocks
-    .map((b) =>
-      b.type === 'image'
-        ? `<img src="${b.src || ''}" alt="${b.name || ''}" style="max-width:100%;height:auto;display:block;margin:8px 0;" />`
-        : `<p>${(b.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
-    )
+    .map((b) => {
+      if (b.type === 'image') {
+        return `<img src="${b.src || ''}" alt="${b.name || ''}" style="max-width:100%;height:auto;display:block;margin:8px 0;" />`
+      } else if (b.type === 'text') {
+        // 텍스트가 null이거나 빈 문자열이어도 처리
+        const text = b.text || ''
+        return `<p>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
+      }
+      return ''
+    })
+    .filter(Boolean) // 빈 문자열 제거
     .join('')
 }
 
@@ -67,6 +73,59 @@ export default function ProductNewPage() {
     return Math.max(0, Math.min(v, basePrice))
   }, [form.discountEnabled, form.discount, basePrice])
   const salePriceCalc = Math.max(0, basePrice - discountAmt)
+
+  // 상세페이지 이미지 파일 추출 및 업로드
+  const extractAndUploadDetailImages = async (blocks) => {
+    const imageBlocks = blocks.filter(b => b.type === 'image')
+    const uploadedBlocks = [...blocks]
+    
+    for (const block of imageBlocks) {
+      // File 객체가 있는 경우 직접 사용, blob URL인 경우에만 변환
+      if (block.file) {
+        try {
+          // File 객체를 직접 사용하여 업로드
+          const uploaded = await uploadImages('PRODUCT_CONTENT', [block.file])
+          if (uploaded?.[0]?.url) {
+            // 업로드된 URL로 블록 업데이트
+            const blockIndex = uploadedBlocks.findIndex(b => b === block)
+            if (blockIndex !== -1) {
+              uploadedBlocks[blockIndex] = {
+                ...block,
+                src: uploaded[0].url,
+                file: undefined // File 객체는 제거 (서버에 전송할 필요 없음)
+              }
+            }
+          }
+        } catch (err) {
+          console.error('상세페이지 이미지 업로드 실패:', err)
+          throw new Error('상세페이지 이미지 업로드에 실패했습니다.')
+        }
+      } else if (block.src && block.src.startsWith('blob:')) {
+        // File 객체가 없는 경우 blob URL을 File로 변환 (기존 로직 유지)
+        try {
+          const response = await fetch(block.src)
+          const blob = await response.blob()
+          const file = new File([blob], block.name || 'image.jpg', { type: blob.type })
+          
+          const uploaded = await uploadImages('PRODUCT_CONTENT', [file])
+          if (uploaded?.[0]?.url) {
+            const blockIndex = uploadedBlocks.findIndex(b => b === block)
+            if (blockIndex !== -1) {
+              uploadedBlocks[blockIndex] = {
+                ...block,
+                src: uploaded[0].url
+              }
+            }
+          }
+        } catch (err) {
+          console.error('상세페이지 이미지 업로드 실패:', err)
+          throw new Error('상세페이지 이미지 업로드에 실패했습니다.')
+        }
+      }
+    }
+    
+    return uploadedBlocks
+  }
 
   // 검증 + 등록
   const validateAndSubmit = async (e) => {
@@ -154,6 +213,15 @@ export default function ProductNewPage() {
       return alert('썸네일 이미지를 업로드하세요.')
     }
 
+    // 상세페이지 이미지 업로드
+    let finalDetailBlocks = form.detailBlocks
+    try {
+      finalDetailBlocks = await extractAndUploadDetailImages(form.detailBlocks)
+    } catch (err) {
+      alert(err.message)
+      return
+    }
+
     const payload = {
       name: form.name,
       brand: form.brand,
@@ -163,7 +231,7 @@ export default function ProductNewPage() {
       salePrice,
 
       thumbnailUrl,
-      detailHtml: blocksToHtml(form.detailBlocks),
+      detailHtml: blocksToHtml(finalDetailBlocks),
 
       saleStartAt: toLdt(form.saleStart, false),
       saleEndAt:   toLdt(form.saleEnd, true),

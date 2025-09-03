@@ -69,6 +69,12 @@ export const deleteMyProduct = async (id) => {
   return data
 }
 
+/** 상품 삭제(관리자 전용) */
+export const adminDeleteProduct = async (id) => {
+    const { data } = await api.delete(`/api/admin/products/${id}`);
+    return data;
+}
+
 /* 호환 alias (기존 코드가 쓰고 있을 수 있어 유지) */
 export const fetchProducts = getProducts
 export const createProduct = createMyProduct

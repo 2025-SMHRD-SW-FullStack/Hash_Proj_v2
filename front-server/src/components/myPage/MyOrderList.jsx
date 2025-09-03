@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Button from '../common/Button';
-import {getMyOrderList} from '../../service/myOrderListService'
+import { getMyOrders } from '../../service/orderService';
 import MyOrderItem from './MyOrderItem'
 
 // 주문 목록 전체를 관리하는 메인 컴포넌트
@@ -13,7 +13,7 @@ const MyOrderList = () => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const data = await getMyOrderList();
+        const data = await getMyOrders();
         setOrders(data);
       } catch (err) {
         setError('주문 내역을 불러오는데 실패했습니다.');

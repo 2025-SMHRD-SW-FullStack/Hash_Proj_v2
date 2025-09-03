@@ -7,6 +7,7 @@ import OrdersPage from '../pages/seller/OrdersPage'
 import PayoutsPage from '../pages/seller/PayoutsPage'
 import AdsPowerPage from '../pages/seller/AdsPowerPage'
 import AdsPayCompletePage from '../pages/seller/AdsPayCompletePage'
+import AdsManagementPage from '../pages/seller/AdsManagementPage'
 import FeedbacksManagePage from '../pages/seller/Feedbacks/FeedbacksManagePage'
 import FeedbacksStatsPage from '../pages/seller/Feedbacks/FeedbacksStatsPage'
 import ProductsPage from '../pages/seller/product/ProductsPage'
@@ -46,8 +47,11 @@ const SellerRouter = () => {
         {/* 주문/정산/광고 */}
         <Route path="orders" element={<OrdersPage />} />
         <Route path="payouts" element={<PayoutsPage />} />
-        <Route path="ads/power" element={<AdsPowerPage />} />
-        <Route path="ads/pay/complete" element={<AdsPayCompletePage />} />
+        <Route path="ads">
+          <Route path="power" element={<AdsPowerPage />} />
+          <Route path="management" element={<AdsManagementPage />} />
+          <Route path="pay/complete" element={<AdsPayCompletePage />} />
+        </Route>
       </Routes>
     </SellerLayout>
   )

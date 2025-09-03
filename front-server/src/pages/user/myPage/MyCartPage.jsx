@@ -2,9 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from "../../../components/common/Button";
 import Icon from '../../../components/common/Icon';
-import Minus from '../../../assets/icons/ic_minus.svg';
-import Plus from '../../../assets/icons/ic_plus.svg';
-import Delete from '../../../assets/icons/ic_delete.svg';
+import MinusIcon from '../../../assets/icons/ic_minus.svg';
+import PlusIcon from '../../../assets/icons/ic_plus.svg';
+import CloseIcon from '../../../assets/icons/ic_close.svg';
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
 // ✅ 서버 API 서비스를 사용하도록 수정
 import { getCart, updateCartItemQty, removeCartItem, clearCart } from '../../../service/cartService';

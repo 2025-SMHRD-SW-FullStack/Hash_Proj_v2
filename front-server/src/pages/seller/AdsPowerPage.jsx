@@ -1,10 +1,10 @@
 // /src/pages/seller/AdsPowerPage.jsx
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useMemo, useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../components/common/Button'
 import { CATEGORIES } from '../../constants/products'
 import { getMyProducts } from '/src/service/productService' // 셀러 소유 상품 전용
-import { fetchAdUnavailableDates, fetchAdInventory, createAdBooking, confirmAdPayment } from '/src/service/adsService'
+import { createAdWithImage, fetchAdUnavailableDates, fetchAdInventory } from '/src/service/adsService'
 import { AD_SLOT_TYPES } from '/src/constants/ads'
 import { loadTossPayments } from '@tosspayments/payment-sdk'
 
@@ -13,9 +13,12 @@ import 'react-day-picker/dist/style.css'
 
 const inputCls = 'w-full h-10 rounded-lg border px-3 text-sm box-border max-w-full'
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
-const Field = ({ label, children, hint }) => (
+const Field = ({ label, children, hint, required = false }) => (
   <label className="mb-3 block">
-    <div className="mb-1 text-sm font-medium text-gray-700">{label}</div>
+    <div className="mb-1 text-sm font-medium text-gray-700">
+      {label}
+      {required && <span className="text-red-500 ml-1">*</span>}
+    </div>
     {children}
     {hint ? <p className="mt-1 text-xs text-gray-500">{hint}</p> : null}
   </label>
@@ -23,10 +26,10 @@ const Field = ({ label, children, hint }) => (
 
 // UI 라벨 ↔ 백엔드 enum 매핑
 const POSITIONS = [
-  { key: 'mainBanner',    label: '메인 롤링 배너',     type: AD_SLOT_TYPES.MAIN_ROLLING,  capacity: 10, price: { 7: 15000, 14: 25000, 30: 45000 } },
-  { key: 'mainRight',     label: '메인 오른쪽 구좌',   type: AD_SLOT_TYPES.MAIN_SIDE,     capacity: 3,  price: { 7: 12000, 14: 20000, 30: 40000 } },
-  { key: 'productList',   label: '상품목록 (파워광고)', type: AD_SLOT_TYPES.CATEGORY_TOP,  capacity: 5,  price: { 7: 8000,  14: 15000, 30: 30000 } },
-  { key: 'orderComplete', label: '주문완료',           type: AD_SLOT_TYPES.ORDER_COMPLETE, capacity: 5,  price: { 7: 5000,  14: 10000, 30: 20000 } },
+  { key: 'mainBanner',    label: '메인 롤링 배너',     type: AD_SLOT_TYPES.MAIN_ROLLING,  capacity: 10, price: { 7: 15000, 14: 25000, 30: 45000 }, requiresImage: true, requiresCategory: false },
+  { key: 'mainRight',     label: '메인 오른쪽 구좌',   type: AD_SLOT_TYPES.MAIN_SIDE,     capacity: 3,  price: { 7: 12000, 14: 20000, 30: 40000 }, requiresImage: true, requiresCategory: false },
+  { key: 'productList',   label: '상품목록 (파워광고)', type: AD_SLOT_TYPES.CATEGORY_TOP,  capacity: 5,  price: { 7: 8000,  14: 15000, 30: 30000 }, requiresImage: false, requiresCategory: true },
+  { key: 'orderComplete', label: '주문완료',           type: AD_SLOT_TYPES.ORDER_COMPLETE, capacity: 5,  price: { 7: 5000,  14: 10000, 30: 20000 }, requiresImage: true, requiresCategory: false },
 ]
 
 const PERIODS = [7, 14, 30]
@@ -58,6 +61,7 @@ const truncate10 = (s = '') => {
 
 export default function AdsPowerPage() {
   const navigate = useNavigate()
+  const fileInputRef = useRef(null)
 
   const [form, setForm] = useState({
     productId: '',
@@ -65,9 +69,13 @@ export default function AdsPowerPage() {
     period: 7,
     startDate: '',
     endDate: '',
+    title: '',
+    description: '',
     agree: false,
   })
   const [category, setCategory] = useState('')
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [products, setProducts] = useState([])     // 내 상품 목록
@@ -111,16 +119,19 @@ export default function AdsPowerPage() {
 
   // 위치/카테고리 변경 시, 달력의 "선택 불가 날짜" 미리 로드
   useEffect(() => {
-    // CATEGORY_TOP은 category 필수. 없으면 비우고 대기
-    if (positionConf.type === AD_SLOT_TYPES.CATEGORY_TOP && !category) {
-      setUnavailableSet(new Set()); return
+    // 광고 타입별로 필요한 조건 확인
+    const needsCategory = positionConf.requiresCategory
+    if (needsCategory && !category) {
+      setUnavailableSet(new Set())
+      return
     }
+    
     ;(async () => {
       try {
         setLoading(true)
         const set = await fetchAdUnavailableDates({
           type: positionConf.type,
-          category,
+          category: needsCategory ? category : undefined,
           startDate: ymd(calendarFrom),
           endDate: ymd(calendarTo),
         })
@@ -132,7 +143,7 @@ export default function AdsPowerPage() {
         setLoading(false)
       }
     })()
-  }, [positionConf.type, category])
+  }, [positionConf.type, positionConf.requiresCategory, category])
 
   const on = (k) => (e) => {
     const v = e.target.value
@@ -146,18 +157,66 @@ export default function AdsPowerPage() {
     })
   }
 
+  // 이미지 파일 선택 처리
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    // 파일 크기 체크 (5MB 제한)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('이미지 파일 크기는 5MB 이하여야 합니다.')
+      return
+    }
+
+    // 파일 타입 체크
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 선택할 수 있습니다.')
+      return
+    }
+
+    setImageFile(file)
+    
+    // 미리보기 생성
+    const reader = new FileReader()
+    reader.onload = (e) => setImagePreview(e.target.result)
+    reader.readAsDataURL(file)
+  }
+
+  // 이미지 제거
+  const removeImage = () => {
+    setImageFile(null)
+    setImagePreview('')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
   const productOptions = useMemo(() => {
     return products.map((p) => ({ id: p.id, name: truncate10(p.name) }))
   }, [products])
 
   const canSubmit = useMemo(() => {
-    return !!(category && form.productId && form.position && form.period && form.startDate && form.endDate && form.agree)
-  }, [category, form])
+    const baseRequired = category && form.productId && form.position && form.period && form.startDate && form.endDate && form.agree
+    
+    // 이미지가 필요한 광고 타입인 경우 이미지 필수
+    if (positionConf.requiresImage && !imageFile) {
+      return false
+    }
+    
+    // 카테고리가 필요한 광고 타입인 경우 카테고리 필수
+    if (positionConf.requiresCategory && !category) {
+      return false
+    }
+    
+    return baseRequired
+  }, [category, form, positionConf.requiresImage, positionConf.requiresCategory, imageFile])
 
   // 시작일 비활성 판정: 선택한 period 동안 하루라도 막힌 날이 있으면 해당 시작일은 비활성
   const isStartDisabled = (dateObj) => {
     if (!dateObj) return true
-    if (positionConf.type === AD_SLOT_TYPES.CATEGORY_TOP && !category) return true
+    
+    // 카테고리가 필요한 광고 타입인데 카테고리가 없으면 비활성
+    if (positionConf.requiresCategory && !category) return true
 
     const days = Number(form.period || 0)
     if (!days) return true
@@ -175,12 +234,20 @@ export default function AdsPowerPage() {
 
   // 🔎 (선택) 인벤토리 확인 버튼 동작: 디버그용
   const checkInventory = async () => {
-    if (!category || !form.startDate || !form.endDate) return alert('카테고리/기간을 먼저 선택하세요.')
+    if (positionConf.requiresCategory && !category) {
+      alert('카테고리를 먼저 선택하세요.')
+      return
+    }
+    if (!form.startDate || !form.endDate) {
+      alert('기간을 먼저 선택하세요.')
+      return
+    }
+    
     try {
       setLoading(true)
       const res = await fetchAdInventory({
         type: positionConf.type,
-        category,
+        category: positionConf.requiresCategory ? category : undefined,
         startDate: form.startDate,
         endDate: form.endDate,
       })
@@ -195,50 +262,48 @@ export default function AdsPowerPage() {
     }
   }
 
-  // ✅ 신청하기: 인벤토리 재조회 → 첫 가용 슬롯으로 예약 생성
+  // ✅ 신청하기: 이미지 업로드 + 인벤토리 재조회 → 첫 가용 슬롯으로 예약 생성
   const submit = async (e) => {
     e.preventDefault()
     if (!canSubmit) return alert('필수값을 모두 선택해 주세요.')
 
     try {
       setLoading(true)
-      const res = await fetchAdInventory({
+      
+      // 광고 생성 (이미지 업로드 포함)
+      const adResult = await createAdWithImage({
         type: positionConf.type,
-        category,
-        startDate: form.startDate,
-        endDate: form.endDate,
-      })
-      const available = (res || []).find((d) => d.available)
-      if (!available) return alert('선택한 기간에는 가용 슬롯이 없습니다. 다른 날짜를 선택해 주세요.')
-
-      const bookingRes = await createAdBooking({
-        slotId: available.slotId,
+        category: positionConf.requiresCategory ? category : undefined,
         productId: Number(form.productId),
         startDate: form.startDate,
         endDate: form.endDate,
+        imageFile: positionConf.requiresImage ? imageFile : null,
+        title: form.title || undefined,
+        description: form.description || undefined,
       })
-      setBooking(bookingRes)
+      
+      setBooking(adResult)
 
-      const finalPrice = bookingRes?.price ?? price
+      const finalPrice = adResult?.price ?? price
       const clientKey = (import.meta.env.VITE_TOSS_CLIENT_KEY || '').trim()
       if (!clientKey) {
         alert('예약이 생성되었지만 결제 클라이언트 키가 없습니다. 관리자에게 문의하세요.')
         return
       }
 
-      const orderId = `ad-${bookingRes.bookingId}-${Date.now()}`
+      const orderId = `ad-${adResult.bookingId}-${Date.now()}`
       const toss = await loadTossPayments(clientKey)
       await toss.requestPayment('카드', {
         orderId,
         orderName: '파워광고 결제',
         amount: Number(finalPrice),
-        successUrl: `${window.location.origin}/seller/ads/pay/complete?bookingId=${encodeURIComponent(bookingRes.bookingId)}&orderId=${encodeURIComponent(orderId)}&amount=${encodeURIComponent(finalPrice)}`,
-        failUrl: `${window.location.origin}/seller/ads/pay/complete?status=fail&bookingId=${encodeURIComponent(bookingRes.bookingId)}`,
+        successUrl: `${window.location.origin}/seller/ads/pay/complete?bookingId=${encodeURIComponent(adResult.bookingId)}&orderId=${encodeURIComponent(orderId)}&amount=${encodeURIComponent(finalPrice)}`,
+        failUrl: `${window.location.origin}/seller/ads/pay/complete?status=fail&bookingId=${encodeURIComponent(adResult.bookingId)}`,
       })
 
     } catch (e) {
       console.error(e)
-      alert(e?.response?.data?.message || '광고 신청 처리 중 오류가 발생했습니다.')
+      alert(e?.response?.data?.message || e.message || '광고 신청 처리 중 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }
@@ -251,36 +316,42 @@ export default function AdsPowerPage() {
       <form onSubmit={submit} className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
         {/* 좌측 – 입력 */}
         <section className={`${box} lg:mb-0`}>
-          <Field label="카테고리">
-            <select value={category} onChange={(e)=>setCategory(e.target.value)} className={inputCls}>
-              <option value="">카테고리를 선택하세요</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </Field>
+          {/* 카테고리 선택 - 카테고리가 필요한 광고 타입일 때만 표시 */}
+          {positionConf.requiresCategory && (
+            <Field label="카테고리" required>
+              <select value={category} onChange={(e)=>setCategory(e.target.value)} className={inputCls}>
+                <option value="">카테고리를 선택하세요</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </Field>
+          )}
 
-          <Field label="상품 선택" hint="표시는 최대 10글자">
-            <select
-              value={form.productId}
-              onChange={on('productId')}
-              className={inputCls}
-              disabled={!category || loading}
-            >
-              <option value="">{category ? '상품을 선택하세요' : '카테고리를 먼저 선택하세요'}</option>
-              {productOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            {!category ? null : productOptions.length === 0 ? (
-              <p className="mt-2 text-xs text-gray-500">해당 카테고리에 등록된 상품이 없습니다.</p>
-            ) : null}
-          </Field>
+          {/* 상품 선택 - 카테고리가 필요한 광고 타입일 때만 표시 */}
+          {positionConf.requiresCategory && (
+            <Field label="상품 선택" hint="표시는 최대 10글자" required>
+              <select
+                value={form.productId}
+                onChange={on('productId')}
+                className={inputCls}
+                disabled={!category || loading}
+              >
+                <option value="">{category ? '상품을 선택하세요' : '카테고리를 먼저 선택하세요'}</option>
+                {productOptions.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              {!category ? null : productOptions.length === 0 ? (
+                <p className="mt-2 text-xs text-gray-500">해당 카테고리에 등록된 상품이 없습니다.</p>
+              ) : null}
+            </Field>
+          )}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="광고 위치" hint="동시 노출 가능 개수는 표 참고">
+            <Field label="광고 위치" hint="동시 노출 가능 개수는 표 참고" required>
               <select
                 value={form.position}
                 onChange={on('position')}
@@ -292,7 +363,7 @@ export default function AdsPowerPage() {
               </select>
             </Field>
 
-            <Field label="광고 기간">
+            <Field label="광고 기간" required>
               <select value={form.period} onChange={on('period')} className={inputCls}>
                 {PERIODS.map((d) => (
                   <option key={d} value={d}>{d}일</option>
@@ -301,7 +372,7 @@ export default function AdsPowerPage() {
             </Field>
 
             {/* ✅ 달력: 불가일은 아예 선택 비활성 */}
-            <Field label="시작일">
+            <Field label="시작일" required>
               <div className="rounded-lg border p-2">
                 <DayPicker
                   mode="single"
@@ -331,6 +402,62 @@ export default function AdsPowerPage() {
             </Field>
           </div>
 
+          {/* 이미지 업로드 - 이미지가 필요한 광고 타입일 때만 표시 */}
+          {positionConf.requiresImage && (
+            <Field label="이미지" hint="5MB 이하, JPG/PNG/GIF 파일" required>
+              <div className="space-y-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                
+                {imagePreview && (
+                  <div className="relative inline-block">
+                    <img 
+                      src={imagePreview} 
+                      alt="미리보기" 
+                      className="max-w-full h-32 object-cover rounded-lg border"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            </Field>
+          )}
+
+          {/* 광고 제목과 설명 */}
+          <div className="grid grid-cols-1 gap-3">
+            <Field label="광고 제목" hint="선택사항">
+              <input
+                type="text"
+                value={form.title}
+                onChange={on('title')}
+                className={inputCls}
+                placeholder="광고 제목을 입력하세요"
+                maxLength={50}
+              />
+            </Field>
+            
+            <Field label="광고 설명" hint="선택사항">
+              <textarea
+                value={form.description}
+                onChange={on('description')}
+                className={`${inputCls} h-20 resize-none`}
+                placeholder="광고 설명을 입력하세요"
+                maxLength={200}
+              />
+            </Field>
+          </div>
+
           {/* ✅ 동의 + 버튼 */}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <label className="flex items-center gap-2 text-sm">
@@ -338,6 +465,7 @@ export default function AdsPowerPage() {
                 type="checkbox"
                 checked={form.agree}
                 onChange={() => setForm((s) => ({ ...s, agree: !s.agree }))}
+                required
               />
               광고 운영 정책 및 결제에 동의합니다.
             </label>
@@ -355,12 +483,19 @@ export default function AdsPowerPage() {
         <aside className={`${box}`}>
           <h2 className="mb-2 text-base font-semibold">신청 요약</h2>
           <ul className="space-y-1 text-sm">
-            <li className="flex items-center justify-between"><span>카테고리</span><span>{category || '-'}</span></li>
-            <li className="flex items-center justify-between"><span>상품</span><span>{(productOptions.find((p)=>String(p.id)===String(form.productId))?.name) || '-'}</span></li>
+            {positionConf.requiresCategory && (
+              <>
+                <li className="flex items-center justify-between"><span>카테고리</span><span>{category || '-'}</span></li>
+                <li className="flex items-center justify-between"><span>상품</span><span>{(productOptions.find((p)=>String(p.id)===String(form.productId))?.name) || '-'}</span></li>
+              </>
+            )}
             <li className="flex items-center justify-between"><span>위치</span><span>{positionConf?.label}</span></li>
             <li className="flex items-center justify-between"><span>기간</span><span>{form.period}일</span></li>
             <li className="flex items-center justify-between"><span>시작일</span><span>{form.startDate || '-'}</span></li>
             <li className="flex items-center justify-between"><span>종료일</span><span>{form.endDate || '-'}</span></li>
+            {positionConf.requiresImage && (
+              <li className="flex items-center justify-between"><span>이미지</span><span>{imageFile ? '선택됨' : '미선택'}</span></li>
+            )}
             <li className="flex items-center justify-between font-semibold"><span>결제 예정 금액</span><span className="tabular-nums">{fmt(price)}원</span></li>
           </ul>
 
