@@ -19,6 +19,8 @@ __pycache__/
 .venv/
 *.pyc
 
+.elasticbeanstalk/app_versions/
+
 # Secrets
 application-secret-dev.yml
 application-secret-prod.yml
