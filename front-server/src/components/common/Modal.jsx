@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Button from "./Button";
+import CloseIcon from '../../assets/icons/ic_close.svg'
 
 const Modal = ({ 
   isOpen, 
@@ -37,18 +38,19 @@ const Modal = ({
 
           {/* 모달 컨테이너 */}
           <motion.div
-            className={`relative w-full ${maxWidth} rounded-2xl bg-white shadow-2xl p-6`}
+            className={`relative w-full ${maxWidth} rounded-2xl bg-white shadow-2xl 
+                        p-4 sm:p-6 mx-4 sm:mx-0`}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
           >
             {/* 헤더 */}
             {title && (
-              <div className="flex items-center justify-between border-b pb-3 mb-4">
+              <div className="flex items-center justify-between border-b px-4 mb-4">
                 <h3 className="text-lg font-semibold">{title}</h3>
-                <Button variant="signUp" size="sm" onClick={onClose}>
-                  닫기
-                </Button>
+                <button className="border-none bg-transparent" onClick={onClose}>
+                  <img src={CloseIcon} alt="닫기" className="w-6 h-6" />
+                </button>
               </div>
             )}
 
@@ -59,7 +61,7 @@ const Modal = ({
 
             {/* 푸터 */}
             {footer && (
-              <div className="flex justify-end gap-2 border-t pt-3 mt-4">
+              <div className="flex justify-end gap-2 border-t mt-4">
                 {footer}
               </div>
             )}

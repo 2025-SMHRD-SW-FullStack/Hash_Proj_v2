@@ -111,7 +111,7 @@ const MyFeedbackDetailPage = () => {
 
       {/* --- 작성 내용 및 사진 --- */}
       <div className="border rounded-lg p-6 bg-white shadow-sm">
-        <h3 className="font-bold text-lg mb-4 pb-2 border-b">작성한 피드백</h3>
+        <h1 className="hidden md:block text-xl font-semibold text-gray-800">작성한 피드백</h1>
         <p className="whitespace-pre-wrap p-4 bg-gray-50 rounded-md min-h-[100px]">{feedback.content}</p>
 
         {imageUrls.length > 0 && (

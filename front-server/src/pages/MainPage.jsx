@@ -213,32 +213,32 @@ const MainPage = () => {
             </p>
 
             {/* 포인트 */}
-            <div className="flex items-center justify-center space-x-2 text-sm sm:text-base">
-              <span className="text-gray-600">내 포인트</span>
-              {loadingPoints ? (
-                <span>조회 중...</span>
-              ) : errorPoints ? (
-                <span className="text-red-500">{errorPoints}</span>
-              ) : (
-                <span className="font-bold flex items-center text-base sm:text-lg">
-                  {points.toLocaleString()}
-                  <span className="text-primary ml-1">P</span>
-                </span>
-              )}
-            </div>
-
-            {/* 포인트 교환 버튼 */}
-            <Button
-              className="w-full h-10 sm:h-12 text-sm sm:text-base"
-              variant="blackWhite"
-              onClick={() => navigate('/user/mypage/point-exchange')}
-              leftIcon={<img src={PointIcon} alt="포인트 교환" />}
-            >
+            <div className="w-full flex items-center justify-between border-t">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">내 포인트</span>
+                {loadingPoints ? (
+                  <span className="text-sm">...</span>
+                ) : errorPoints ? (
+                  <span className="text-sm text-red-500">오류</span>
+                ) : (
+                  <span className="font-bold text-lg">
+                    {points.toLocaleString()}
+                    <span className="text-primary font-bold ml-1">P</span>
+                  </span>
+                )}
+              </div>
+              <Button
+                variant="blackWhite"
+                size="lg"
+                onClick={() => navigate("/user/mypage/point-exchange")}
+                leftIcon={<img src={PointIcon} alt="포인트 아이콘" className="h-6" />} // 아이콘 크기 지정
+              >
               포인트 교환하기
             </Button>
+            </div>
 
             {/* 로그아웃 버튼 */}
-            <Button size="lg" className="w-full">
+            <Button size="lg" className="w-full" onClick={logout}>
               로그아웃
             </Button>
           </>

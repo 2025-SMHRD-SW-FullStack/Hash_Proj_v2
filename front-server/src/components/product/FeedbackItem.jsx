@@ -1,5 +1,6 @@
 import React from 'react';
 import useAuthStore from '../../stores/authStore';
+import Button from '../common/Button';
 
 // [추가] 날짜 포맷팅을 위한 유틸리티 함수
 const formatDate = (dateString) => {
@@ -48,9 +49,7 @@ const FeedbackItem = ({ feedback, onFeedbackDeleted }) => {
               </div>
             </div>
             {(isAuthor || isAdmin) && (
-              <button onClick={handleDelete} className="text-xs text-gray-400 hover:text-red-500">
-                삭제
-              </button>
+              <Button variant='danger' size='sm' onClick={handleDelete}>삭제</Button>
             )}
           </div>
           

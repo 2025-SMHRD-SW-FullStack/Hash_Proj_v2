@@ -108,15 +108,23 @@ public class CartService {
         int total = 0;
         List<CartItemView> views = new ArrayList<>();
 
+        boolean allItemsAreIntangible = !items.isEmpty(); // 장바구니가 비어있지 않으면 일단 true로 시작
+
         for (CartItem it : items){
             Product p = productMap.get(it.getProductId());
             ProductVariant v = variantMap.get(it.getVariantId());
             if (p == null || v == null) {
-                // 상품/옵션이 삭제되었을 수 있음 → thumbnailUrl 자리에 null을 넣어줍니다.
+                // 상품/옵션이 삭제되었을 경우
                 CartItemView view = new CartItemView(it.getId(), it.getProductId(), "(삭제됨)", null, it.getVariantId(),
                         it.getSelectedOptionsJson(), 0, it.getQty(), 0, false);
                 views.add(view);
+                allItemsAreIntangible = false; // 삭제된 상품은 유형을 알 수 없으므로 배송비 부과
                 continue;
+            }
+
+            // '무형자산'이 아닌 상품이 하나라도 있으면 플래그를 false로 변경
+            if (!"무형자산".equals(p.getCategory())) {
+                allItemsAreIntangible = false;
             }
 
             int base = (p.getSalePrice() > 0 ? p.getSalePrice() : p.getBasePrice());
@@ -132,7 +140,9 @@ public class CartService {
             views.add(view);
         }
 
-        int shipping = items.isEmpty() ? 0 : FLAT_SHIPPING_FEE;
+        // 모든 상품이 무형자산일 경우 배송비를 0원으로, 그렇지 않으면 3000원으로 설정
+        int shipping = (items.isEmpty() || !allItemsAreIntangible) ? FLAT_SHIPPING_FEE : 0;
+        if(items.isEmpty()) shipping = 0; // 장바구니가 비었으면 배송비 0원
         return new CartViewResponse(views, total, shipping, total + shipping);
     }
 

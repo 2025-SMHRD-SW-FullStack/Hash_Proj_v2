@@ -7,7 +7,7 @@ const Icon = ({ src, alt, className, onClick }) => {
     src={src}
     alt={alt}
     onClick={onClick}
-    className={`w-8 h-8 cursor-pointer ${className}`}
+    className={`${className} w-8 h-8 cursor-pointer `}
     />
   )
 }

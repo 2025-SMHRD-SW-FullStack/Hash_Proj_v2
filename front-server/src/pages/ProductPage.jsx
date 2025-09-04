@@ -1,4 +1,3 @@
-// src/pages/ProductPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import Product from '../components/product/Product.jsx';
 import { useProductDetail } from '../hooks/useProductDetail.js';
@@ -9,6 +8,7 @@ import { getProducts } from '../service/productService.js';
 import { useLocation } from 'react-router-dom';
 import { getActiveAds } from '../service/adsService.js';
 import { AD_SLOT_TYPES } from '../constants/ads.js';
+import CategorySelect from '../components/common/CategorySelect.jsx';
 
 // PowerAdProduct 컴포넌트는 이전과 동일하게 유지합니다.
 const PowerAdProduct = ({ ad, onClick }) => {
@@ -45,19 +45,30 @@ const ProductPage = () => {
   const goProductDetail = useProductDetail();
   const location = useLocation();
   const categoryFromState = location.state?.category || '전체';
+  
 
   const [products, setProducts] = useState([]);
   const [displayCount, setDisplayCount] = useState(20);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(categoryFromState);
+  const [selectedCategory, setSelectedCategory] = useState({
+    value: categoryFromState,
+    label: categoryFromState,
+  });
   const [searchText, setSearchText] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [powerAds, setPowerAds] = useState([]);
   const [loadingAds, setLoadingAds] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const containerRef = useRef(null);
-  const categories = ['전체', '전자제품', '화장품', '밀키트', '무형자산'];
+  const categories = [
+    { value: "전체", label: "전체" },
+    { value: "전자제품", label: "전자제품" },
+    { value: "화장품", label: "화장품" },
+    { value: "밀키트", label: "밀키트" },
+    { value: "무형자산", label: "무형자산" },
+  ];
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -66,14 +77,15 @@ const ProductPage = () => {
         const productData = await getProducts();
         setProducts(productData);
 
-        if (selectedCategory !== '전체') {
+        if (selectedCategory.value !== '전체') {
           setLoadingAds(true);
-          const adData = await getActiveAds(AD_SLOT_TYPES.CATEGORY_TOP, selectedCategory);
+          const adData = await getActiveAds(AD_SLOT_TYPES.CATEGORY_TOP, selectedCategory.value);
           setPowerAds(adData);
           setLoadingAds(false);
         } else {
           setPowerAds([]);
         }
+
       } catch (err) {
         setError(err.message);
       } finally {
@@ -84,10 +96,11 @@ const ProductPage = () => {
   }, [selectedCategory]);
 
   const filteredProducts = products.filter((product) => {
-    if (selectedCategory !== '전체' && product.category !== selectedCategory) return false;
-    if (searchText && !product.name.toLowerCase().includes(searchText.toLowerCase())) return false;
-    return true;
-  });
+  // selectedCategory.value가 "전체"면 모든 카테고리 허용
+  if (selectedCategory.value !== '전체' && product.category !== selectedCategory.value) return false;
+  if (activeSearchTerm && !product.name.toLowerCase().includes(activeSearchTerm.toLowerCase())) return false;
+  return true;
+});
 
   useEffect(() => {
     const handleScroll = () => {
@@ -105,58 +118,102 @@ const ProductPage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [displayCount, filteredProducts.length, isLoadingMore]);
 
-  if (loading) return <div>상품 목록을 불러오는 중...</div>;
   if (error) return <div>오류: {error}</div>;
+
+  // 검색 실행 및 Enter 키 처리를 위한 함수들 (컴포넌트 내부에 위치)
+  const handleSearch = () => {
+    const term = searchText.trim();
+    setActiveSearchTerm(term);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   return (
     // ✅ 이 div에 max-w-7xl mx-auto를 추가하여 전체 너비를 제한합니다.
-    <div ref={containerRef} className='max-w-7xl mx-auto flex flex-col items-center px-4'>
-      {/* 모바일: select + 검색바 */}
-      <div className="sm:hidden w-full my-4 flex flex-col gap-2">
-        <select
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-1 focus:ring-primary"
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-        >
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
-        <div className='flex items-center border border-solid border-gray-300 rounded-lg px-2 focus-within:ring-1 focus-within:ring-primary'>
-          <input
-            type="text"
-            className='border-none h-[32px] px-2 outline-none w-full'
-            placeholder="검색"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+    <div ref={containerRef} className='max-w-7xl mx-auto flex flex-col px-4 mb-4'>
+      {/* 모바일: CategorySelect + 검색바  */}
+      <div className="sm:hidden my-4  flex items-center gap-2 ">
+          <CategorySelect
+            categories={categories}
+            selected={selectedCategory}
+            onChange={setSelectedCategory}
+            className="w-[40%]"
           />
-          <Icon src={magnifier} alt='검색' className='w-5 h-5 mr-2'/>
+
+        {/* 검색창, 내부 아이콘, 검색 버튼을 모두 포함하는 컨테이너 */}
+        <div className="relative flex-1 flex items-center">
+          <input
+          type="text"
+          className="w-full pr-2 py-2 border-0 border-b border-gray-300 bg-transparent
+             focus:outline-none focus:ring-0 focus:border-b-2 focus:border-transparent  focus:border-b-primary 
+             transition-all duration-200 placeholder-gray-400"
+          placeholder="상품명을 입력하세요"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onKeyDown={handleKeyDown}
+          />
+
+          {/* 3. 우측의 클릭 가능한 검색 버튼 */}
+          <button
+            onClick={handleSearch}
+            className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-full 
+                      bg-transparent transition-all duration-200 border-none
+                      hover:bg-gray-200 
+                      focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-500"
+          >
+            <Icon src={magnifier} alt="검색 실행" className="w-5 h-5 text-gray-600" />
+          </button>
+      </div>
+      </div>
+
+
+      {/* 데스크탑: 버튼 + 검색바 */}
+      <div className='hidden sm:flex flex-wrap items-center gap-2 my-4 w-full justify-between mx-4 '>
+        <div className='flex items-center gap-2'>
+          {categories.map((category) => (
+            <Button
+              key={category.value}
+              variant={selectedCategory.value === category.value ? 'primary' : 'unselected'}
+              className="px-4 py-2"
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category.label}
+            </Button>
+          ))}
+
+        </div>
+
+        {/* 검색바 */}
+        <div className="relative w-full max-w-sm flex items-center">
+          <input
+          type="text"
+          className="w-full pr-2 py-2 border-0 border-b border-gray-300 bg-transparent
+             focus:outline-none focus:ring-0 focus:border-b-2 focus:border-transparent  focus:border-b-primary 
+             transition-all duration-200 placeholder-gray-400"
+          placeholder="상품명을 입력하세요"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onKeyDown={handleKeyDown}
+          />
+
+          {/* 검색 버튼 */}
+          <button
+            onClick={handleSearch}
+            className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-full 
+                      bg-transparent transition-all duration-200 border-none
+                      hover:bg-gray-200 
+                      focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-500"
+          >
+            <Icon src={magnifier} alt="검색 실행" className="w-5 h-5 text-gray-600" />
+          </button>
         </div>
       </div>
 
-      {/* 데스크탑: 버튼 + 검색바 */}
-      <div className='hidden sm:flex flex-wrap items-center gap-2 my-4 w-full'>
-        {categories.map((category) => (
-          <Button
-            key={category}
-            variant={selectedCategory === category ? 'primary' : 'unselected'}
-            className='px-6 py-2'
-            onClick={() => setSelectedCategory(category)}
-          >
-            {category}
-          </Button>
-        ))}
-        <div className='flex items-center border border-solid border-gray-300 rounded-lg px-2 ml-4 flex-1 max-w-sm focus-within:ring-1 focus-within:ring-primary'>
-          <input
-            type="text"
-            className='border-none h-[32px] px-2 outline-none w-full'
-            placeholder="검색"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-          />
-          <Icon src={magnifier} alt='검색' className='w-5 h-5 mr-2'/>
-        </div>
-      </div>
+
 
       {/* 파워 광고 */}
       {loadingAds ? (
@@ -176,11 +233,12 @@ const ProductPage = () => {
       )}
 
       {/* 일반 상품 목록 */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 w-full">
         {filteredProducts.slice(0, displayCount).map((product) => (
           <Product key={product.id} product={product} onClick={goProductDetail} />
         ))}
       </div>
+
 
       {isLoadingMore && <p className="w-full text-center py-4 text-gray-500">더 많은 상품을 불러오는 중...</p>}
     </div>

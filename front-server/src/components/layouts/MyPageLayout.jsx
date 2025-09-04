@@ -1,16 +1,16 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import useAuthStore from "../../stores/authStore";
 import { useState, useEffect } from "react";
 import Button from "../common/Button";
 import { getMyPointBalance } from "../../service/pointService";
 import PersonIcon from "../../assets/icons/ic_person.svg";
-import { Listbox } from "@headlessui/react";
-import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import PointIcon from '../../assets/icons/ic_point.svg'
+import CategorySelect from "../common/CategorySelect";
 
 const MyPageLayout = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation(); 
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,8 +23,18 @@ const MyPageLayout = () => {
     { to: "/user/mypage/support/qna", label: "문의내역" },
     { to: "/user/mypage/seller-apply", label: "셀러 등록하기" },
   ];
+  
+  const [selectedNav, setSelectedNav] = useState(
+    () => navItems.find(item => location.pathname.startsWith(item.to)) || navItems[0]
+  );
 
-  const [selected, setSelected] = useState(navItems[0]);
+  useEffect(() => {
+    const currentNavItem = navItems.find(item => location.pathname.startsWith(item.to));
+    if (currentNavItem) {
+      setSelectedNav(currentNavItem);
+    }
+  }, [location.pathname]);
+
 
   useEffect(() => {
     const fetchPoints = async () => {
@@ -46,86 +56,71 @@ const MyPageLayout = () => {
   const baseLinkStyle =
     "block w-full p-3 text-left text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors no-underline";
   const selectedLinkStyle = "bg-[#9FC5FB] text-white font-semibold";
+  
+  const categorySelectItems = navItems.map(item => ({
+    value: item.to,
+    label: item.label,
+  }));
+
+  const handleCategoryChange = (selected) => {
+    navigate(selected.value);
+  };
+  
+  const selectedCategory = categorySelectItems.find(item => item.value === selectedNav.to);
 
   return (
-    <div className="flex flex-col md:flex-row bg-gray-50 min-h-screen p-4 md:p-8 gap-4 md:gap-8">
+    <div className="flex flex-col md:flex-row bg-gray-50 min-h-screen p-4 md:p-8 md:gap-8">
       {/* 왼쪽 사이드바 */}
       <aside className="w-full md:w-1/5 flex-shrink-0">
-        <div className="flex flex-col items-center p-4 border rounded-lg shadow bg-white">
-          <img
-            src={user?.profileImageUrl || PersonIcon}
-            alt="프로필 사진"
-            className="w-16 h-16 md:w-24 md:h-24 rounded-full object-cover mb-2 md:mb-4"
-          />
-          <strong className="text-base md:text-xl font-bold mb-1 md:mb-4">{user?.nickname}님</strong>
-
-          <div className="flex items-center justify-center w-full p-2 rounded-lg text-centermb-3 space-x-2">
-            <span className="text-sm text-gray-600">내 포인트</span>
-            {loading ? (
-              <span className="text-sm">조회 중...</span>
-            ) : error ? (
-              <span className="text-sm text-red-500">{error}</span>
-            ) : (
-              <span className="text-lg md:text-2xl font-bold flex items-center">
-                {points.toLocaleString()}
-                <span className="text-[#5882F6] font-bold ml-1">P</span>
-              </span>
-            )}
+        <div className="flex flex-col p-4 border rounded-lg shadow bg-white">
+          {/* 프로필 이미지와 닉네임 */}
+          <div className="flex items-center w-full md:flex-col">
+            <img
+              src={user?.profileImageUrl || PersonIcon}
+              alt="프로필 사진"
+              className="w-16 h-16 md:w-24 md:h-24 rounded-full object-cover mr-4 md:mr-0 md:mb-4"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = PersonIcon;
+              }}
+            />
+            <strong className="text-base md:text-xl font-bold md:mb-4">{user?.nickname}님</strong>
           </div>
 
-
-          <Button
-            className="w-full h-10 md:h-14 text-sm md:text-base"
-            variant="blackWhite"
-            onClick={() => navigate("/user/mypage/point-exchange")}
-            leftIcon={<img src={PointIcon} alt="포인트 교환"/>}
-          >
-            포인트 교환하기
-          </Button>
+          {/* 포인트와 교환 버튼 */}
+          <div className="w-full flex items-center justify-between mt-4 md:mt-0 md:border-t md:pt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">내 포인트</span>
+              {loading ? (
+                <span className="text-sm">...</span>
+              ) : error ? (
+                <span className="text-sm text-red-500">오류</span>
+              ) : (
+                <span className="font-bold text-lg">
+                  {points.toLocaleString()}
+                  <span className="text-primary font-bold ml-1">P</span>
+                </span>
+              )}
+            </div>
+            <Button
+              variant="blackWhite"
+              size="lg"
+              onClick={() => navigate("/user/mypage/point-exchange")}
+              leftIcon={<img src={PointIcon} alt="포인트 아이콘" className="h-6" />}
+            >
+              포인트 교환하기
+            </Button>
+          </div>
         </div>
 
-
-
-        {/* 모바일 Listbox */}
-        <div className="md:hidden mt-4">
-          <Listbox value={selected} onChange={(val) => { setSelected(val); navigate(val.to); }}>
-            <div className="relative">
-              <Listbox.Button className="relative w-full cursor-pointer bg-white border border-gray-300 rounded-lg pl-3 pr-10 py-2 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500">
-                <span className="block truncate">{selected.label}</span>
-                <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                  <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                </span>
-              </Listbox.Button>
-
-              <Listbox.Options className="absolute mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto z-10">
-                {navItems.map((item) => (
-                  <Listbox.Option
-                    key={item.to}
-                    value={item}
-                    className={({ active, selected }) =>
-                      `cursor-pointer select-none relative py-2 pl-4 pr-10 ${
-                        selected ? "bg-[#9FC5FB] text-white font-semibold" :
-                        active ? "bg-blue-100 text-blue-900" : "text-gray-700"
-                      }`
-                    }
-                  >
-                    {({ selected: isSelected }) => (
-                      <>
-                        <span className={`block truncate ${isSelected ? "font-semibold" : "font-normal"}`}>
-                          {item.label}
-                        </span>
-                        {isSelected && (
-                          <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-white">
-                            <CheckIcon className="h-5 w-5" aria-hidden="true" />
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </Listbox.Option>
-                ))}
-              </Listbox.Options>
-            </div>
-          </Listbox>
+        {/* 모바일 카테고리 선택바 */}
+        <div className="md:hidden my-4">
+            <CategorySelect
+              categories={categorySelectItems}
+              selected={selectedCategory}
+              onChange={handleCategoryChange}
+              className="max-w-none"
+            />
         </div>
 
         {/* 데스크탑 nav */}
@@ -135,7 +130,7 @@ const MyPageLayout = () => {
               <li key={item.to}>
                 <NavLink
                   to={item.to}
-                  end
+                  end={item.to === '/user/mypage/orders'}
                   className={({ isActive }) =>
                     `${baseLinkStyle} ${isActive ? selectedLinkStyle : ""}`
                   }

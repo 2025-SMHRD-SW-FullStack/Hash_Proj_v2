@@ -28,10 +28,10 @@ const QnAPage = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
+    <div className="h-full mx-auto px-6 bg-white rounded-xl shadow-md">
       {isLoggedIn && (
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Q&A (1:1 문의)</h2>
+          <h2 className="text-2xl font-bold">Q&A (1:1 문의 내역)</h2>
           <Button onClick={handleToggleForm}>
             {showForm ? '목록 보기' : '질문 등록'}
           </Button>

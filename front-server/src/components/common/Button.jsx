@@ -5,7 +5,6 @@ import { twMerge } from 'tailwind-merge'
 import clsx from 'clsx'
 
 const buttonVariants = cva(
-  // [수정] 아이콘과 글자를 정렬하기 위해 flex 속성 추가
   'inline-flex items-center justify-center rounded-lg border-none font-medium transition-colors duration-200 disabled:opacity-60 hover:drop-shadow cursor-pointer',
   {
     variants: {
@@ -16,8 +15,8 @@ const buttonVariants = cva(
         admin: 'bg-[#D6BAE9] text-white',
         unselected: 'bg-white border-[#C3C3C3] border-solid border-[1px] text-[#C3C3C3]',
         blackWhite: 'bg-white text-[#222] border-[#CCCCCC] border-solid border-[1px] ',
-        // [추가] 시안과 유사한 회색 테두리 버튼 스타일
         outline: 'bg-white text-gray-800 border border-solid border-gray-300 hover:bg-gray-50',
+        danger: 'bg-red-500 text-white'
       },
       size: {
         sm: 'px-3 py-1.5 text-xs',
@@ -47,11 +46,17 @@ const Button = ({
 
   return (
     <button className={finalClassName} {...props}>
-      {/* [추가] leftIcon이 있으면 렌더링 */}
-      {leftIcon && <span className="mr-2">{leftIcon}</span>}
+      {leftIcon && (
+        <span className="mr-2 flex shrink-0">
+          {leftIcon}
+        </span>
+      )}
       {children}
-      {/* [추가] rightIcon이 있으면 렌더링 */}
-      {rightIcon && <span className="ml-2">{rightIcon}</span>}
+      {rightIcon && (
+        <span className="ml-2 flex shrink-0">
+          {rightIcon}
+        </span>
+      )}
     </button>
   )
 }

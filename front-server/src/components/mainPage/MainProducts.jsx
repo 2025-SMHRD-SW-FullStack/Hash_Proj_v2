@@ -63,7 +63,7 @@ const MainProducts = ({ label, category, limit }) => {
           onClick={() => navigate('/products', { state: { category } })}
         >
           <p className="text-sm font-semibold text-gray-600 group-hover:text-black">더보기</p>
-          <Icon src={arrowRight} alt="더보기" className="w-4 h-4" />
+          <Icon src={arrowRight} alt="더보기" className="!w-6 !h-6" />
         </div>
       </div>
 
