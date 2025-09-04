@@ -8,9 +8,41 @@ import { getCart, updateCartItemQty, removeCartItem, clearCart } from '../../../
 
 const SHIPPING_FEE = 3000;
 
+// 빈 옵션이면 공백, 있으면 "(색상: 핑크 · 사이즈: M)" 형태로
+const formatOptionsText = (optionsJson) => {
+  if (!optionsJson) return ''
+  try {
+    const data = typeof optionsJson === 'string' ? JSON.parse(optionsJson) : optionsJson
+    if (!data) return ''
+
+    if (Array.isArray(data)) {
+      const parts = data.map(it => {
+        if (!it) return ''
+        if (typeof it === 'string') return it
+        const name = it.name ?? it.optionName ?? it.key ?? ''
+        const value = it.value ?? it.optionValue ?? ''
+        const text = [name, value].filter(Boolean).join(': ')
+        return text
+      }).filter(Boolean)
+      return parts.length ? `(${parts.join(' · ')})` : ''
+    }
+
+    if (typeof data === 'object') {
+      const keys = Object.keys(data)
+      if (!keys.length) return ''
+      const parts = keys.map(k => (data[k] ? `${k}: ${data[k]}` : '')).filter(Boolean)
+      return parts.length ? `(${parts.join(' · ')})` : ''
+    }
+
+    return ''
+  } catch {
+    return ''
+  }
+}
+
 const MyCartPage = () => {
   const navi = useNavigate();
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cartData, setCartData] = useState({ items: [], totalPrice: 0, shippingFee: 0 });
@@ -105,8 +137,10 @@ const MyCartPage = () => {
 
   const onCheckout = () => {
     if (!canCheckout) return;
-    navi('/user/order?mode=cart');
-  };
+    const ids = Array.from(selectedIds)            // Set → Array
+    const qs = ids.length ? `&items=${ids.join(',')}` : ''
+    navi(`/user/order?mode=cart${qs}`)
+  }
 
   if (loading) return <div className="p-4">장바구니를 불러오는 중...</div>;
   if (error) return <div className="p-4 text-red-500">{error}</div>;
@@ -173,7 +207,7 @@ const MyCartPage = () => {
                       <div className="ml-4 flex flex-col">
                         <div className="font-medium text-sm">{row.productName}</div>
                         <div className="text-xs text-gray-500 break-words">
-                          {row.optionsJson}
+                          {formatOptionsText(row.optionsJson)}
                         </div>
                         {!row.inStock && (
                           <div className="text-xs text-red-600 mt-1">

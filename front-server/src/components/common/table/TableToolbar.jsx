@@ -1,5 +1,5 @@
 import React from 'react'
-import Button from '/src/components/common/Button'
+import Button from '../Button'
 
 export function TableToolbar({
   children,
@@ -27,7 +27,6 @@ export function TableToolbar({
         />
 
         <div className="flex shrink-0 items-center gap-2">
-          <Button variant="admin" size="md" onClick={onSubmitSearch}>조회</Button>
           <Button variant="whiteBlack" size="md" onClick={onReset}>초기화</Button>
         </div>
       </div>

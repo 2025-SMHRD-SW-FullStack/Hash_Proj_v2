@@ -1,5 +1,5 @@
 // /src/service/productService.js
-import api from '/src/config/axiosInstance'
+import api from '../config/axiosInstance'
 
 /** 공개 상품 목록 */
 export const getProducts = async (params = {}) => {

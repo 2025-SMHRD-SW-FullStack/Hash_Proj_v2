@@ -5,7 +5,7 @@ import useAuthStore from '../stores/authStore'
 
 // ───── URL 구성 (기존 로직 유지) ─────
 const API_BASE =
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE) ||
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
   (window.__API_BASE__) ||
   'http://localhost:7777'
 

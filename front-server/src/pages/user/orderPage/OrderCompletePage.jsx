@@ -16,9 +16,9 @@ const CheckCircleIcon = () => (
 
 // 엑스 아이콘 SVG
 const ExclamationCircleIcon = () => (
-    <svg className="w-12 h-12 text-red-500 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
+  <svg className="w-12 h-12 text-red-500 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
 );
 
 const OrderCompletePage = () => {
@@ -33,12 +33,14 @@ const OrderCompletePage = () => {
 
   useEffect(() => {
     const isSuccess = searchParams.get('status') === 'success';
-    const tossOrderId = searchParams.get('orderId'); // Toss가 보내준 주문 UID
+    const tossOrderId = searchParams.get('orderId'); // Toss UID (ORD-...)
+    const orderDbIdParam = searchParams.get('orderDbId'); // 숫자 ID (우리가 추가)
     const paymentKey = searchParams.get('paymentKey');
-    const amount = searchParams.get('amount');
+    const amount = Number(searchParams.get('amount') || 0);
+    const isZeroPayment = paymentKey === 'ZERO' && amount === 0;
 
     const processOrder = async () => {
-      if (!tossOrderId || !paymentKey || !amount) {
+      if (!tossOrderId || paymentKey == null || Number.isNaN(amount)) {
         console.log('결제 정보가 올바르지 않습니다.');
         setStatus('fail');
         setError('결제 정보가 올바르지 않습니다.');
@@ -47,78 +49,61 @@ const OrderCompletePage = () => {
       }
 
       try {
-        // 1. Toss 결제 최종 승인 API 호출 (0원 결제 포함)
-        // 0원 결제 시에도 재고 차감이 제대로 되도록 confirmTossPayment 호출
-        console.log('결제 승인 요청:', { paymentKey, orderId: tossOrderId, amount: Number(amount) });
-        const confirmResponse = await confirmTossPayment({
-            paymentKey,
-            orderId: tossOrderId, // 여기서는 UID를 보내는 것이 맞습니다.
-            amount: Number(amount),
-        });
-        console.log('결제 승인 응답:', confirmResponse);
+        // --- 결제 승인/조회 엔트리 ---
+        let finalOrderId; // 숫자 주문 ID만 여기 담아 씀
 
-        // 응답 객체에서 백엔드가 보내주는 실제 숫자 ID를 추출합니다.
-        // (TossConfirmResponse DTO에서 'orderDbId'로 되어있습니다)
-        const dbOrderId = confirmResponse?.orderDbId;
-        console.log('추출된 주문 ID:', { dbOrderId, fallbackId: confirmResponse?.orderId });
-        
-        if (!dbOrderId) {
-            // 호환성을 위해 orderId 필드도 확인 (하지만 이는 UID일 가능성이 높음)
-            const fallbackId = confirmResponse?.orderId;
-            if(!fallbackId || typeof fallbackId !== 'number') {
-                throw new Error("서버로부터 주문 ID를 받지 못했습니다.");
-            }
+        if (isZeroPayment) {
+          // ✅ 0원 결제: OrderPage에서 이미 confirm 완료. 여기서 다시 호출 금지
+          if (!orderDbIdParam) {
+            throw new Error('주문 ID가 없습니다. (orderDbId 누락)');
+          }
+          finalOrderId = Number(orderDbIdParam);
+        } else {
+          // ✅ 유료 결제만 여기서 최종 승인
+          const confirmResponse = await confirmTossPayment({
+            paymentKey,
+            orderId: tossOrderId,
+            amount,
+          });
+          const dbId = confirmResponse?.orderDbId ?? confirmResponse?.orderId;
+          if (!dbId || Number.isNaN(Number(dbId))) {
+            throw new Error('서버로부터 주문 ID를 받지 못했습니다.');
+          }
+          finalOrderId = Number(dbId);
         }
 
-        // 2. 최종 승인이 성공하면, 받은 '숫자 ID'로 주문 상세 정보를 가져옵니다.
-        // 0원 결제 시에도 재고 차감 후 주문 정보를 가져옵니다.
-        const finalOrderId = dbOrderId || confirmResponse.orderId;
-        console.log('최종 사용할 주문 ID:', finalOrderId);
-        
-        // 주문 정보를 여러 번 시도하여 상태 업데이트를 확인
+        // --- 주문 상세 조회(최대 3회 폴링) ---
         let orderDetails = null;
         let retryCount = 0;
         const maxRetries = 3;
-        
+
         while (retryCount < maxRetries) {
-            try {
-                orderDetails = await getMyOrderDetail(finalOrderId);
-                console.log(`주문 정보 조회 시도 ${retryCount + 1}:`, orderDetails);
-                
-                // 주문 상태가 READY로 변경되었는지 확인
-                if (orderDetails && orderDetails.status === 'READY') {
-                    console.log('주문 상태가 READY로 정상 변경되었습니다.');
-                    break;
-                } else if (orderDetails) {
-                    console.log(`주문 상태가 아직 ${orderDetails.status}입니다. 재시도 중...`);
-                    // 잠시 대기 후 재시도
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    retryCount++;
-                } else {
-                    console.error('주문 정보를 가져올 수 없습니다.');
-                    break;
-                }
-            } catch (error) {
-                console.error(`주문 정보 조회 실패 (시도 ${retryCount + 1}):`, error);
-                retryCount++;
-                if (retryCount < maxRetries) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
+          try {
+            const d = await getMyOrderDetail(finalOrderId);
+            if (d) {
+              orderDetails = d;
+              // READY 또는 PAID면 충분
+              if (d.status === 'READY' || d.status === 'PAID') break;
             }
+            await new Promise(res => setTimeout(res, 1000));
+            retryCount++;
+          } catch (e) {
+            retryCount++;
+            if (retryCount < maxRetries) {
+              await new Promise(res => setTimeout(res, 1000));
+            }
+          }
         }
-        
-        if (orderDetails) {
-            setOrder(orderDetails);
-            console.log('최종 주문 정보 설정 완료:', orderDetails);
-        } else {
-            throw new Error('주문 정보를 가져올 수 없습니다.');
+
+        if (!orderDetails) {
+          throw new Error('주문 정보를 가져올 수 없습니다.');
         }
-        
+
+        setOrder(orderDetails);
         setStatus('success');
       } catch (err) {
         setStatus('fail');
         setError(err?.response?.data?.message || err.message || '주문 처리 중 오류가 발생했습니다.');
-        console.error("주문 처리 실패:", err);
       } finally {
         setLoading(false);
       }
@@ -145,8 +130,8 @@ const OrderCompletePage = () => {
         <h1 className="text-2xl font-bold mt-4 mb-4">결제에 실패했습니다</h1>
         <p className="text-red-600 bg-red-50 p-4 rounded-lg mb-8">{error}</p>
         <div className="flex gap-4">
-            <Button variant="blackWhite" className="flex-1" onClick={() => navigate('/')}>홈으로</Button>
-            <Button className="flex-1" onClick={() => navigate(-1)}>다시 결제하기</Button>
+          <Button variant="blackWhite" className="flex-1" onClick={() => navigate('/')}>홈으로</Button>
+          <Button className="flex-1" onClick={() => navigate(-1)}>다시 결제하기</Button>
         </div>
       </div>
     );
@@ -169,26 +154,25 @@ const OrderCompletePage = () => {
           <span className="font-semibold text-lg">주문 번호</span>
           <p className="text-gray-700 mt-1">{order.orderUid}</p>
         </div>
-        
+
         {/* 주문 상태 표시 */}
         <div>
           <span className="font-semibold text-lg">주문 상태</span>
           <div className="mt-1">
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-              order.status === 'READY' 
-                ? 'bg-green-100 text-green-800' 
-                : order.status === 'PENDING' 
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${order.status === 'READY'
+              ? 'bg-green-100 text-green-800'
+              : order.status === 'PENDING'
                 ? 'bg-yellow-100 text-yellow-800'
                 : 'bg-gray-100 text-gray-800'
-            }`}>
-              {order.status === 'READY' ? '배송 준비중' : 
-               order.status === 'PENDING' ? '결제 대기' : 
-               order.status === 'PAID' ? '결제 완료' : 
-               order.status}
+              }`}>
+              {order.status === 'READY' ? '배송 준비중' :
+                order.status === 'PENDING' ? '결제 대기' :
+                  order.status === 'PAID' ? '결제 완료' :
+                    order.status}
             </span>
           </div>
         </div>
-        
+
         <hr />
 
         {/* 배송지 정보 */}
@@ -225,16 +209,16 @@ const OrderCompletePage = () => {
               <p className="text-xs text-gray-500 mt-1">배송 소요일 3일 (예상)</p>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            className="w-full mt-4" 
+          <Button
+            variant="outline"
+            className="w-full mt-4"
             onClick={() => navigate(`/user/mypage/orders/${order.id}`)}
           >
             주문 상세보기
           </Button>
         </div>
       </div>
-      
+
       {/* 하단 버튼 */}
       <div className="flex gap-4 mt-8">
         <Button variant="blackWhite" className="flex-1" onClick={() => navigate('/')}>홈으로</Button>

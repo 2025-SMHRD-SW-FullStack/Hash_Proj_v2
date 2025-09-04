@@ -1,13 +1,17 @@
+// src/pages/seller/Feedbacks/FeedbacksManagePage.jsx
+
 import React, { useEffect, useMemo, useState, memo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import Button from '/src/components/common/Button';
-import Modal from '/src/components/common/Modal';
-import OrderDetailContent from '/src/components/seller/OrderDetailContent';
-import FeedbackRow from '/src/components/seller/feedbacks/FeedbackRow';
-import ReportModal from '/src/components/seller/feedbacks/ReportModal';
-import { fetchSellerFeedbackGrid } from '/src/service/feedbackService';
-import useFeedbackFilters from '/src/components/seller/feedbacks/useFeedbackFilters';
-import FeedbackFilterChips from '/src/components/seller/feedbacks/FeedbackFilterChips';
+import Button from '../../../components/common/Button'
+import Modal from '../../../components/common/Modal'
+import OrderDetailContent from '../../../components/seller/OrderDetailContent'
+import ReportModal from '../../../components/seller/feedbacks/ReportModal'
+// import BaseTable from '../../../components/common/table/BaseTable'
+// import TableToolbar from '../../../components/common/table/TableToolbar'
+import FeedbackRow from '../../../components/seller/feedbacks/FeedbackRow';
+import { fetchSellerFeedbackGrid } from '../../../service/feedbackService';
+import useFeedbackFilters from '../../../components/seller/feedbacks/useFeedbackFilters';
+import FeedbackFilterChips from '../../../components/seller/feedbacks/FeedbackFilterChips';
 
 // --- UI 상수 ---
 const box = 'rounded-xl border bg-white p-4 shadow-sm';
@@ -41,7 +45,7 @@ export default function FeedbacksManagePage() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const [reportOpen, setReportOpen] = useState(false);
@@ -87,7 +91,8 @@ export default function FeedbacksManagePage() {
   };
 
   const onRequestReport = (row) => {
-    const feedbackId = row.feedbackId ?? row.id;
+    // feedbackId 우선, 없으면 중첩 객체/대체 키도 시도
+    const feedbackId = row?.feedbackId ?? row?.feedback?.id ?? row?.id;
     setReportTarget({ ...row, feedbackId });
     setReportOpen(true);
   };
@@ -139,11 +144,11 @@ export default function FeedbacksManagePage() {
             <thead className="sticky top-0 z-10 border-b bg-gray-50 text-[13px] text-gray-600">
               <tr className="h-11">
                 <th className="px-3 font-medium">주문번호</th>
-                <th className="px-3 font-medium text-left">상품명</th>
+                <th className="px-3 font-medium text-center">상품명</th>
                 <th className="px-3 font-medium">구매자</th>
                 <th className="px-3 font-medium">피드백 작성일</th>
                 <th className="px-3 font-medium">상태</th>
-                <th className="px-3 font-medium text-left">피드백 내용</th>
+                <th className="px-3 font-medium text-center">피드백 내용</th>
                 <th className="px-3 font-medium text-center">신고</th>
               </tr>
             </thead>
