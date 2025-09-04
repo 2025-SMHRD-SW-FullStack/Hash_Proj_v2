@@ -11,6 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.services.state import init_session, get_user_context, update_user_context
 # 여기에서 edit_summary를 import해도, 위 __all__ 덕분에 항상 성공
 from app.services.chatbot import reply_once, accept_now, edit_summary
+from app.core.gpt_client import call_chatgpt  # ⬅️ AI 요약 엔드포인트용
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,7 +32,7 @@ async def lifespan(app: FastAPI):
         print(f"❌ lifespan 초기화 실패: {e}")
         raise
 
-app = FastAPI(title="Meonjeo Interview Chatbot", version="0.3.4", lifespan=lifespan)
+app = FastAPI(title="Meonjeo Interview Chatbot", version="0.3.5", lifespan=lifespan)
 
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -111,3 +112,73 @@ def accept(req: AcceptReq, authorization: str | None = Header(default=None)):
 @app.post("/api/ai/chat/edit")
 def edit_summary_api(req: EditReq):
     return edit_summary(user_id=str(req.user_id), instructions=req.instructions)
+
+# ======================
+# ✅ 전날 데이터 AI 요약
+# ======================
+
+class DailyPayload(BaseModel):
+    date: str
+    productId: int
+    productName: str | None = None
+    category: str | None = None
+    overallAvg: float | None = None
+    stars: dict | None = None               # { "1": n, "2": n, ... }
+    demographics: dict | None = None        # { "20대": n, ... }
+    buyerSample: int | None = None
+    byQuestionAvg: list | None = None       # [{questionId,label,average}]
+    byQuestionChoice: list | None = None    # [{questionId,label,buckets}]
+    feedbackTexts: list[str] | None = None  # 전날 텍스트 n개
+    previousSummary: str | None = None      # 전전일 요약 전문
+
+@app.post("/api/ai/summary/daily")
+def ai_daily_summary(p: DailyPayload):
+    """Spring이 보낸 전일 집계 JSON을 받아 LLM 요약을 생성"""
+    system_prompt = """너는 전일 데이터를 바탕으로 전자상거래 셀러에게
+핵심 인사이트를 간결하게 전달하는 분석가다.
+출력은 JSON 한 줄 ONLY:
+{"headline":"...", "keyPoints":["..."], "actions":["..."], "fullSummary":"...", "model":"gpt-4.1"}
+- headline: 1줄(핵심 수치/경향)
+- keyPoints: 3~5개 bullet (수치/변화/원인/경고)
+- actions: 2~3개 실천 가이드
+- fullSummary: Markdown(짧은 단락 2~4개)
+수치/해석은 입력만 근거. 과장/추정 금지.
+"""
+
+    user_prompt = f"""
+[일자] {p.date}
+[상품] {p.productName or ''} / 카테고리={p.category or ''}
+[구매자 표본] {p.buyerSample or 0}
+[연령 분포] {p.demographics or {}}
+[별점] 평균={p.overallAvg} / 분포={p.stars or {}}
+[문항 평균] {p.byQuestionAvg or []}
+[선택형 버킷] {p.byQuestionChoice or []}
+[전날 요약] {p.previousSummary or '(없음)'}
+[피드백 샘플 일부] {(p.feedbackTexts or [])[:10]}
+"""
+
+    try:
+        txt = call_chatgpt(
+            user_id=p.productId,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=0.3,
+            max_tokens=800,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"LLM 호출 실패: {e}")
+
+    # JSON 안전 파싱 (비정상 응답 대비)
+    import json
+    try:
+        obj = json.loads(txt)
+    except Exception:
+        obj = {
+            "headline": (txt or "").strip()[:120],
+            "keyPoints": [],
+            "actions": [],
+            "fullSummary": txt,
+            "model": "gpt-4.1",
+        }
+    obj.setdefault("model", "gpt-4.1")
+    return obj
