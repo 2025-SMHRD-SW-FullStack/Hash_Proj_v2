@@ -238,7 +238,7 @@ const MainPage = () => {
             </Button>
 
             {/* 로그아웃 버튼 */}
-            <Button size="lg" className="w-full">
+            <Button size="lg" className="w-full" onClick={logout}>
               로그아웃
             </Button>
           </>

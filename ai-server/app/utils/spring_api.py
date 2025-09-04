@@ -13,6 +13,7 @@ CREATE_PATH = "/api/feedbacks"
 DONE_PRODUCT_PATH_TMPL = "/api/feedbacks/product/{productId}/done"
 DONE_ORDERITEM_PATH_TMPL = "/api/feedbacks/order-item/{orderItemId}/done"
 ELIGIBILITY_PATH = "/api/feedbacks/eligibility"
+ME_PATH = "/api/me"  # 👈 추가
 
 def _hdr(token: Optional[str]):
     """Authorization 헤더 생성: 빈/잘못된 값이면 아예 보내지 않음"""
@@ -139,6 +140,36 @@ def get_product_meta(product_id: Optional[int], bearer_token: Optional[str], *,
 
     logger.info("[spring] product_meta not found")
     return {}
+
+# ---------- 현재 사용자(퍼소나) ----------
+def get_me(bearer_token: Optional[str]) -> Dict[str, Any]:
+    """
+    현재 로그인한 사용자 정보를 반환.
+    기대 키: gender(F/M/...), birthDate(YYYY-MM-DD), nickname 등.
+    백엔드에서 data 래핑/중첩을 유연하게 처리.
+    """
+    url = f"{BASE.rstrip('/')}{ME_PATH}"
+    try:
+        r = requests.get(url, headers=_hdr(bearer_token), timeout=5.0)
+        logger.info("[spring] GET %s -> %s", url, r.status_code)
+        if r.status_code != 200:
+            return {}
+        data = r.json() if r.text else {}
+        obj: Dict[str, Any] = data.get("data", data) if isinstance(data, dict) else {}
+
+        # Me 응답에 user 필드가 중첩되는 경우
+        if isinstance(obj, dict) and isinstance(obj.get("user"), dict):
+            obj = obj["user"]
+
+        out = {
+            "gender": obj.get("gender"),
+            "birthDate": obj.get("birthDate") or obj.get("birth_date"),
+            "nickname": obj.get("nickname"),
+        }
+        return {k: v for k, v in out.items() if v is not None}
+    except Exception as e:
+        logger.warning("[spring] get_me error: %s", e)
+        return {}
 
 # ---------- 게시 ----------
 def post_feedback_to_spring(payload: dict, token: Optional[str] = None) -> Tuple[bool, Optional[str]]:

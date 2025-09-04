@@ -23,7 +23,7 @@ if not logger.handlers:
                         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
 MAX_HISTORY = 10
-REASK_LIMIT = 1
+REASK_LIMIT = 3   # ← 증가
 
 REVIEW_JSON_PROMPT = """
 다음 정보를 바탕으로 '사용자가 직접 쓴 후기 댓글 본문'을 만들고 JSON 한 줄로만 반환하라.
@@ -31,7 +31,10 @@ REVIEW_JSON_PROMPT = """
 {"content":"...", "overall_score": 1, "price_feel":"CHEAP|FAIR|EXPENSIVE", "recommend":"YES|NO|UNKNOWN"}
 작성 지침:
 - 1인칭, 한국어, 일상적인 구어체.
-- 길이 6~9문장. ...
+- 길이 6~9문장.
+- 답변으로 제공된 Q/A 내용만 근거로 사용. 없는 사실은 추정/창작 금지.
+- 제품명/카테고리를 자연스레 포함 가능.
+- 맞춤법 준수, 광고문구 지양.
 """
 
 def parse_review_json(raw: str):
@@ -53,7 +56,6 @@ _POSITIVE_HINTS = [
     "속도","배터리","소음","발열","포장","배송","편리","불편","추천","비추천","비교","비해서","보다",
     "떨어졌","필요","선물","할인","세일","행사","브랜드","리뷰","재구매","가격","품질"
 ]
-# '네/예'는 잡담으로 간주(문맥 밖에서의 게시 방지)
 _NEGATIVE_NOISE = ["몰라","모르겠","글쎄","ㅎㅎ","ㅋㅋ","ㅠㅠ","^^","ㅇㅇ","응","네","예"]
 
 def _soft_meaningful(question: str, text: str) -> bool:
@@ -65,8 +67,18 @@ def _soft_meaningful(question: str, text: str) -> bool:
         return any(k in s for k in _POSITIVE_HINTS) or len(s) >= 4
     return len(s) >= 6 and any(k in s for k in _POSITIVE_HINTS)
 
+def _ui_step_from_stage(stage: str) -> str:
+    mapping = {
+        "start": "INIT",
+        "qna": "QNA",
+        "compose": "COMPOSING",
+        "confirm": "EDIT_OR_ACCEPT",
+        "done": "DONE",
+    }
+    return mapping.get(stage or "qna", "QNA")
+
 class ChatbotService:
-    logger.info("✅ ChatbotService (dual-LLM, human-review) 로딩됨")
+    logger.info("✅ ChatbotService (validated flow) 로딩됨")
 
     def handle(self, db: Session, user_id: str, message: str) -> dict:
         msg = (message or "").strip()
@@ -91,14 +103,13 @@ class ChatbotService:
             q0 = (q_flow or ["가장 인상 깊었던 점을 알려주세요."])[0]
             return self._say(db, user_id, f"처음부터 다시 진행할게요.\n\nQ1) {q0}")
 
-        # start -> qna
         if stage == "start":
             q_flow = build_question_flow(ctx.get("category"))
             update_user_context(user_id, {"stage":"qna","q_idx":0,"q_flow":q_flow,"answers":[],"reask_counts":{}})
             first_q = q_flow[0] if q_flow else "가장 인상 깊었던 점을 알려주세요."
             return self._say(db, user_id, f"바로 시작해볼게요.\n\nQ1) {first_q}")
 
-        # Q&A
+        # Q&A 단계
         if stage == "qna":
             q_flow = ctx.get("q_flow") or []
             if not q_flow or q_idx >= len(q_flow):
@@ -109,32 +120,40 @@ class ChatbotService:
             reask_counts: Dict[str, int] = ctx.get("reask_counts") or {}
             prev_for_this_q = [a["a"] for a in (ctx.get("answers") or []) if a.get("q") == cur_q]
 
+            # 1차 휴리스틱, 2차 LLM 판정
             if _soft_meaningful(cur_q, msg):
-                ok, move_on = True, True
+                ok = True
             else:
                 verdict = judge_answer(cur_q, msg, prev_answers=prev_for_this_q)
-                ok, move_on = bool(verdict.get("ok")), bool(verdict.get("move_on"))
+                ok = bool(verdict.get("ok"))
+                reask = verdict.get("reask") or cur_q
+                tips  = verdict.get("tips") or ""
 
-            if not ok and not move_on:
+            if not ok:
                 count = int(reask_counts.get(str(q_idx), 0))
                 if count < REASK_LIMIT:
                     reask_counts[str(q_idx)] = count + 1
                     update_user_context(user_id, {"reask_counts": reask_counts})
-                    reask = (verdict.get("reask") if 'verdict' in locals() else None) or cur_q
-                    tip = (verdict.get("tips") if 'verdict' in locals() else "") or ""
-                    suffix = f"\n{tip}" if tip else ""
+                    suffix = f"\n{tips}" if tips else ""
                     return self._say(
                         db, user_id,
                         answer_and_refocus(user_text=msg, next_question=reask, ctx_snapshot=get_user_context(user_id)) + suffix
                     )
-                move_on = True
+                # 리밋 초과: 여전히 같은 질문을 유지(다음으로 넘어가지 않음)
+                return self._say(
+                    db, user_id,
+                    answer_and_refocus(
+                        user_text=msg,
+                        next_question=f"조금만 더 구체적으로 부탁드려요. {cur_q}",
+                        ctx_snapshot=get_user_context(user_id)
+                    )
+                )
 
-            # save
+            # 저장 후 다음 질문
             ans = {"q": cur_q, "a": msg}
             answers: List[Dict[str, str]] = (ctx.get("answers") or []) + [ans]
             update_user_context(user_id, {"answers": answers})
 
-            # next or compose
             q_idx += 1
             if q_idx < len(q_flow):
                 update_user_context(user_id, {"q_idx": q_idx})
@@ -143,17 +162,16 @@ class ChatbotService:
                     db, user_id,
                     answer_and_refocus(user_text=msg, next_question=next_q, ctx_snapshot=get_user_context(user_id))
                 )
+
             update_user_context(user_id, {"stage":"compose"})
             return self._compose_and_preview(db, user_id)
 
-        # compose
         if stage == "compose":
             if msg:
                 answers: List[Dict[str, str]] = (ctx.get("answers") or []) + [{"q":"자유 서술","a":msg}]
                 update_user_context(user_id, {"answers": answers})
             return self._compose_and_preview(db, user_id)
 
-        # confirm
         if stage == "confirm":
             if msg_l.startswith("수정:"):
                 inst = message.split("수정:", 1)[1].strip()
@@ -167,7 +185,6 @@ class ChatbotService:
 
             return self._say(db, user_id, "게시하시려면 '네', 수정은 '수정: ~~~' 형태로 알려주세요.")
 
-        # done
         if stage == "done":
             if any(k in msg_l for k in ["다시","처음","리셋"]):
                 update_user_context(user_id, {"stage":"start","q_idx":0,"review":None,"answers":[],"q_flow":[],"reask_counts":{}})
@@ -182,19 +199,30 @@ class ChatbotService:
         category = normalize_category(ctx.get("category"))
         item = ctx.get("item") or ""
         answers: List[Dict[str, str]] = ctx.get("answers") or []
+        persona = ctx.get("persona") or {"gender":"U","ageRange":"U"}
 
-        hist = get_chat_history(user_id)[:MAX_HISTORY]
-        formatted_hist = self._to_gpt_history(hist)
-        qa_txt = "\n".join([f"- Q: {x.get('q')}\n  A: {x.get('a')}" for x in answers])
+        # 오직 answers 기반으로만 생성
+        qa_txt = "\n".join([f"- Q: {x.get('q')}\n  A: {x.get('a')}" for x in answers if (x.get('a') or '').strip()])
+
+        # 퍼소나 힌트
+        tone_hint = f"(말투 퍼소나: 성별={persona.get('gender','U')}, 연령대={persona.get('ageRange','U')}. 과도한 유행어/반말 금지, 정중하고 담백하게.)"
 
         user_prompt = (
             f"[제품 카테고리] {category}\n"
             f"[제품명] {item}\n"
-            f"[질문과 답변]\n{qa_txt}\n\n"
+            f"[질문과 답변]\n{qa_txt if qa_txt else '- (아직 유의미한 답변 없음)'}\n\n"
+            f"{tone_hint}\n"
             f"위 자료를 바탕으로 지시된 JSON 한 줄을 만들어 주세요."
         )
-        raw = call_chatgpt(user_id=user_id, system_prompt=REVIEW_JSON_PROMPT, user_prompt=user_prompt, chat_history=formatted_hist, temperature=0.6)
+
+        # 히스토리는 미사용(오염 방지)
+        raw = call_chatgpt(user_id=user_id, system_prompt=REVIEW_JSON_PROMPT, user_prompt=user_prompt, chat_history=[], temperature=0.4)
         review = parse_review_json(str(raw))
+
+        # 유의미한 본문 없으면 작성 중지하고 보완 요구
+        if not review.get("content"):
+            return self._say(db, user_id, "아직 본문을 만들기 어렵습니다. 조금 더 구체적으로 답변 부탁드려요.")
+
         update_user_context(user_id, {"review": review, "stage": "confirm"})
 
         preview = (
@@ -210,17 +238,21 @@ class ChatbotService:
         r = ctx.get("review") or {}
         category = normalize_category(ctx.get("category"))
         item = ctx.get("item") or ""
+        persona = ctx.get("persona") or {"gender":"U","ageRange":"U"}
 
         edit_prompt = f"""
 다음 리뷰 본문을 지시에 맞춰 자연스럽게 손봐라. JSON 한 줄만 반환.
 카테고리: {category}
 제품명: {item}
+퍼소나: 성별={persona.get('gender','U')}, 연령대={persona.get('ageRange','U')}
 지시: {instructions}
 원문: {r}
 형식: {{"content":"...", "overall_score": 1, "price_feel":"CHEAP|FAIR|EXPENSIVE", "recommend":"YES|NO|UNKNOWN"}}
 """
-        raw = call_chatgpt(user_id=user_id, system_prompt="", user_prompt=edit_prompt, chat_history=[], temperature=0.6)
+        raw = call_chatgpt(user_id=user_id, system_prompt="", user_prompt=edit_prompt, chat_history=[], temperature=0.4)
         review = parse_review_json(str(raw))
+        if not review.get("content"):
+            return self._say(db, user_id, "수정 결과가 비어있어요. 다른 방식으로 지시해 주세요.")
         update_user_context(user_id, {"review": review})
 
         msg = (
@@ -236,7 +268,6 @@ class ChatbotService:
         order_item_id = ctx.get("orderItemId") or ctx.get("order_item_id")
         token = ctx.get("access_token")
 
-        # 필수 가드
         if not token:
             return self._say(db, user_id, "로그인이 만료된 것 같아요. 새로고침 후 다시 시도해 주세요.")
         if not order_item_id:
@@ -254,11 +285,6 @@ class ChatbotService:
             "imagesJson": ctx.get("imagesJson") or "[]",
         }
 
-        logger.debug(
-            f"[submit-debug] uid={user_id} orderItemId={order_item_id} "
-            f"token_present={bool(token)} token_preview={(token[:12]+'...') if token else None}"
-        )
-
         ok, api_msg = post_feedback_to_spring(payload, token=token)
         update_user_context(user_id, {"stage": "done"})
         done = "✅ 피드백 게시 완료! 감사합니다 😊" if ok else f"❌ 게시 실패: {api_msg}"
@@ -267,21 +293,16 @@ class ChatbotService:
     def _say(self, db: Session, user_id: str, text: str) -> dict:
         save_chat_message(db, user_id, RoleEnum.assistant, text)
         add_chat_to_redis(user_id, "assistant", text)
-        return {"messages": [{"role": "assistant", "type": "text", "content": text}]}
+        # 응답에 현재 스테이지/요약 준비 여부 포함 (프런트 요구)
+        ctx = get_user_context(user_id) or {}
+        stage = ctx.get("stage") or "qna"
+        return {
+            "messages": [{"role": "assistant", "type": "text", "content": text}],
+            "step": _ui_step_from_stage(stage),
+            "summary_ready": (stage == "confirm"),
+        }
 
-    @staticmethod
-    def _to_gpt_history(history):
-        out = []
-        for h in history:
-            if isinstance(h, dict):
-                out.append({"role": h.get("role"), "content": h.get("content")})
-            else:
-                role = h.role.value if hasattr(h.role, "value") else (h.role if isinstance(h.role, str) else "user")
-                out.append({"role": role, "content": h.content})
-        return out
-
-
-# ---------- FastAPI 엔드포인트용 래퍼 (반드시 export) ----------
+# ---------- FastAPI 엔드포인트용 래퍼 ----------
 _service_singleton = ChatbotService()
 
 def _with_db(fn):
@@ -295,7 +316,6 @@ def _with_db(fn):
 
 @_with_db
 def reply_once(db: Session, user_id: str, user_text: str, bearer: str | None = None):
-    # 안전망: 토큰 싱크
     if bearer:
         b = bearer.strip()
         if b.lower().startswith("bearer "):
@@ -322,8 +342,6 @@ def accept_now(db: Session, user_id: str, bearer: str | None = None):
 
 @_with_db
 def edit_summary(db: Session, user_id: str, instructions: str):
-    """호환 이름 유지: 내부적으로 리뷰 수정."""
     return _service_singleton._edit_review(db, user_id=user_id, instructions=instructions)
 
-# ▶ 이 줄이 있으면 reloader/부분초기화 타이밍에도 심볼 export가 안정적임
 __all__ = ("reply_once", "accept_now", "edit_summary", "ChatbotService")

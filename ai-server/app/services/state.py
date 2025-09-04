@@ -1,5 +1,6 @@
 import os, json, redis, logging
 from typing import Dict, Any, List, Optional
+from datetime import date, datetime
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,8 @@ DEFAULT: Dict[str, Any] = {
     "q_flow": [],               # 질문 플로우
     "q_idx": 0,
     "summary": None,
+    "reask_counts": {},         # {"0": 1, ...} 각 질문 재질문 횟수
+    "persona": None,            # {"gender": "F|M|U", "ageRange": "20s|30s|U"}
 }
 
 def get_user_context(uid: str) -> Dict[str, Any]:
@@ -79,8 +82,27 @@ from app.utils.spring_api import (
     check_done_for_order_item,
     check_eligibility,
     get_product_meta,
+    get_me,   # ← 추가
 )
 from app.config.questions import build_question_flow, normalize_category
+
+def _age_range_from_birth(birth_str: Optional[str]) -> str:
+    try:
+        if not birth_str:
+            return "U"
+        # 'YYYY-MM-DD' 또는 'YYYY-MM' 등 유연 처리
+        parts = [int(p) for p in str(birth_str).split("-") if p.isdigit()]
+        if not parts:
+            return "U"
+        year = parts[0]
+        today = date.today()
+        age = today.year - year - ( (today.month, today.day) < (parts[1] if len(parts)>1 else 1, parts[2] if len(parts)>2 else 1) )
+        decade = (age // 10) * 10
+        if decade < 10 or decade > 80:
+            return "U"
+        return f"{decade}s"
+    except Exception:
+        return "U"
 
 def init_session(user_id: int, order_item_id: int, product_id: int | None, bearer: str | None):
     uid = str(user_id)
@@ -107,6 +129,12 @@ def init_session(user_id: int, order_item_id: int, product_id: int | None, beare
     item = (meta.get("name") or "").strip()
     category = normalize_category(meta.get("category"))
 
+    # 유저 퍼소나
+    me = get_me(bearer_token=token) if token else {}
+    gender = (me.get("gender") or "U").upper()[0] if isinstance(me.get("gender"), str) else "U"
+    age_range = _age_range_from_birth(me.get("birthDate") or me.get("birth_date") or None)
+    persona = {"gender": gender if gender in ("F", "M") else "U", "ageRange": age_range}
+
     # 질문 플로우 구성
     q_flow = build_question_flow(category)
     first_q = q_flow[0] if q_flow else "가장 인상 깊었던 점을 알려주세요."
@@ -124,6 +152,8 @@ def init_session(user_id: int, order_item_id: int, product_id: int | None, beare
         "q_idx": 0,
         "summary": None,
         "access_token": token,
+        "reask_counts": {},
+        "persona": persona,
     })
     set_ctx(uid, ctx)
     logger.info("[session] context initialized: item=%s, category=%s, first_q=%s", item, category, first_q)
