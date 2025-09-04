@@ -45,7 +45,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
     depends_on:
       - frontend
-      - backend
     networks:
       - app-network
 
