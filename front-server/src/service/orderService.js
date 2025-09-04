@@ -96,7 +96,6 @@ export const getConfirmWindow = (orderId) =>
 export const fetchSellerOrders = async ({
   status, from, to, q, page = 0, size = 20,
 } = {}) => {
-  console.log("fetchSellerOrders", status)
   const statusApi = mapStatusForApi(status)
   const params = { page, size }
   if (statusApi) params.status = statusApi     // 허용되지 않으면 아예 안 보냄
@@ -192,7 +191,6 @@ export const ORDER_STATUS_MAP = {
 
 /** UI 상태를 백엔드 API 상태로 변환 */
 const mapStatusForApi = (uiStatus) => {
-  console.log("mapStatusForApi", uiStatus)
   if (!uiStatus) return null
   const upper = String(uiStatus).toUpperCase()
   return ORDER_STATUS_MAP[upper] ?? null

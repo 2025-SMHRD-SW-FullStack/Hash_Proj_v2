@@ -8,6 +8,7 @@ public record CartItemView(
         Long productId,
         String productName,
         String thumbnailUrl,
+        String category,
         Long variantId,
         String optionsJson,
         int unitPriceNow,

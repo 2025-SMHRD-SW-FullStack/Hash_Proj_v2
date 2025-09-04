@@ -1,12 +1,21 @@
-FROM node:22-alpine
+FROM node:22.16.0-bullseye
+
 WORKDIR /usr/src/app/front-server
+
+# 패키지 복사
 COPY package*.json ./
-RUN npm cache clean --force
-RUN npm install
-# 시간 설정
+
+# npm 버그 방지 + rollup 강제 설치
+RUN npm ci --legacy-peer-deps && \
+    npm install --save-dev rollup @rollup/rollup-linux-x64-gnu
+
+# 소스 복사
+COPY . .
+
+# 타임존
 RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
     echo "Asia/Seoul" > /etc/timezone
-COPY . .
-EXPOSE 3000
-CMD ["npm", "run", "dev"]
-# CMD ["node", "server.js"]
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
