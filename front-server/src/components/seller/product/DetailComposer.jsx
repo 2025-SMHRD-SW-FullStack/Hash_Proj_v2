@@ -78,14 +78,31 @@ export default function DetailComposer({ initialBlocks = [], onChange, editorCla
 
   // ---- helpers ----
   function placeCaretAtEnd(el) {
-    el.focus()
-    const range = document.createRange()
-    range.selectNodeContents(el)
-    range.collapse(false)
-    const sel = window.getSelection()
-    sel.removeAllRanges()
-    sel.addRange(range)
-  }
+      const scrollRoot = document.querySelector('[data-scroll-root]')
+      const prevWinX = window.scrollX
+      const prevWinY = window.scrollY
+      const prevRootTop = scrollRoot ? scrollRoot.scrollTop : null
+  
+      // 포커스로 인한 페이지 스크롤 이동 방지
+      try { el.focus?.({ preventScroll: true }) } catch { el.focus?.() }
+  
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      range.collapse(false)
+      const sel = window.getSelection()
+      sel.removeAllRanges()
+      sel.addRange(range)
+  
+      // 커서는 보이게 하되, 에디터 내부 스크롤만 이동
+      el.scrollTop = el.scrollHeight
+  
+      // 바깥 스크롤 위치 복원
+      if (scrollRoot && typeof prevRootTop === 'number') {
+        scrollRoot.scrollTop = prevRootTop
+      } else {
+        window.scrollTo({ left: prevWinX, top: prevWinY, behavior: 'auto' })
+      }
+    }
   
   function insertText(text) {
     if (!text || !text.trim()) return

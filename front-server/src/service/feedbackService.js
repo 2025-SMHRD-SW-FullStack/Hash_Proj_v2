@@ -3,8 +3,8 @@ import api from '../config/axiosInstance'
 
 
 export const fetchSellerFeedbacks = async ({ page = 0, size = 50 } = {}) => {
-    const res = await api.get('/api/seller/feedbacks', { params: { page, size } })
-    return res.data
+  const res = await api.get('/api/seller/feedbacks', { params: { page, size } })
+  return res.data
 }
 
 
@@ -72,8 +72,8 @@ export const fetchFeedbackQuestionStats = async ({ productId, from, to }) => {
 // 내부 헬퍼: 2xx만 데이터, 나머진 null
 const getSafe = (url, params) =>
   api.get(url, { params, validateStatus: () => true })
-     .then(r => (r.status >= 200 && r.status < 300 ? r.data : null))
-     .catch(() => null)
+    .then(r => (r.status >= 200 && r.status < 300 ? r.data : null))
+    .catch(() => null)
 
 /**
  * 피드백 통계(인구통계/요약/설문 문항별 평균) 묶어서 반환
@@ -96,14 +96,73 @@ const getSafe = (url, params) =>
  *   demographics: [{ name, value, avg }] // 연령대 분포(도넛용)
  * }
  */
-export async function fetchFeedbackStats({ productId, category, from, to }) {
+export async function fetchFeedbackStats({ productId, from, to }) {
   const paramsCommon = { productId, from, to }
 
-  const [demo, qs, sum] = await Promise.all([
+  const [demo, qs, sum, tpl] = await Promise.all([
     getSafe('/api/seller/feedbacks/demographics', paramsCommon),
-    getSafe('/api/seller/feedbacks/questions', { ...paramsCommon, category }),
+    getSafe('/api/seller/feedbacks/questions', paramsCommon),
     getSafe('/api/seller/feedbacks/summary', paramsCommon),
+    getSafe(`/api/products/${productId}/survey-template`) // 옵션 코드→라벨 매핑
   ])
+
+  // ── 불리언 문항 판별 & 버킷 → 퍼센트(소수1자리) 정규화
+  const isBinary = (q) => {
+    const t = String(q?.type || '').toUpperCase()
+    if (t.includes('BOOL') || t.includes('YES_NO')) return true
+    const ks = Object.keys(q?.buckets || {}).map(k => k.toLowerCase())
+    return ks.length === 2 && ks.every(k => ['true', 'false', 'yes', 'no', 'y', 'n', '있음', '없음'].includes(k))
+  }
+  const normBuckets = (b) => {
+    const entries = Object.entries(b || {}).map(([key, count]) => ({ key: String(key), count: Number(count || 0) }))
+    const total = entries.reduce((s, e) => s + e.count, 0) || 1
+    return entries.map(e => ({ ...e, ratio: Math.round((e.count / total) * 1000) / 10 })) // x.y%
+  }
+
+  // ── 문항 가공: 척도형 평균 / 불리언 비율 분리
+  // 설문 템플릿 옵션 라벨 맵 (choice용)
+  const optionLabelMap = {}
+  for (const q of (tpl?.questions ?? [])) {
+    if (q?.code && Array.isArray(q?.options)) {
+      optionLabelMap[q.code] = {}
+      for (const o of q.options) {
+        optionLabelMap[q.code][String(o.value).toUpperCase()] = o.label
+      }
+      optionLabelMap[q.code]['NA'] ??= '무응답'
+    }
+  }
+
+  const byQuestionAvg = []      // 척도형 평균용
+  const byQuestionChoice = []   // 도넛용(예/아니오/무응답 등 전체)
+  const toPercent = (c, t) => (t > 0 ? Math.round((c / t) * 1000) / 10 : 0)
+  const toYNLabel = (val) => {
+    if (/^(TRUE|YES|Y|있음|긍정|만족)$/i.test(val)) return '예'
+    if (/^(FALSE|NO|N|없음|부정|불만족)$/i.test(val)) return '아니오'
+    return null
+  }
+  for (const q of (qs?.questions ?? [])) {
+    const type = String(q?.type || '').toUpperCase()
+    const code = q?.code
+    if (type.startsWith('SCALE')) {
+      byQuestionAvg.push({ label: q?.label ?? '', avg: Number(q?.average ?? 0) })
+      continue
+    }
+    // CHOICE 계열: 모든 버킷(예/아니오/미정/NA 등)을 퍼센트로 변환
+    const entries = Object.entries(q?.buckets || {}).map(([k, v]) => ({
+      value: String(k).toUpperCase(), count: Number(v || 0),
+    }))
+    const total = entries.reduce((s, e) => s + e.count, 0)
+    const map = optionLabelMap[code] || {}
+    const slices = entries
+      .map(e => {
+        const yn = toYNLabel(e.value)
+        const label = yn ?? map[e.value] ?? (e.value === 'NA' ? (map['NA'] || '무응답') : e.value)
+        return { label, ratio: toPercent(e.count, total) }
+      })
+      .sort((a, b) => b.ratio - a.ratio)
+    byQuestionChoice.push({ label: q?.label ?? '', slices })
+  }
+
 
   // ── demographics → 도넛 데이터 [{ name, value, avg }]
   const demographics = (demo?.byAgeRange ?? []).map(a => ({
@@ -115,36 +174,50 @@ export async function fetchFeedbackStats({ productId, category, from, to }) {
   }))
 
   // ── summary.ratingCounts → 별점 분포 [{ score, count }]
+  // 안전 숫자 변환
+  const toNum = (v) => (v == null ? 0 : Number(v)) || 0
+
+  // ── summary.ratingCounts(레포별 키 편차 흡수) → 별점 분포 [{ score, count }]
   const distribution = (() => {
-    const rc = sum?.ratingCounts
+    const rc = sum?.ratingCounts || sum?.ratings || sum?.counts
     if (!rc || typeof rc !== 'object') return []
     return Object.entries(rc)
-      .map(([k, v]) => ({ score: Number(k), count: Number(v ?? 0) }))
+      .map(([k, v]) => ({ score: Number(k), count: toNum(v) }))
       .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
   })()
+  const distributionTotal = distribution.reduce((s, d) => s + d.count, 0)
 
-  // ── questions.questions → 문항 평균 [{ label, avg }]
-  const byQuestion = (qs?.questions ?? []).map(q => ({
-    label: q?.label ?? '',
-    avg: Number(q?.average ?? 0),
-  }))
+  // ── totalCount 동의어 흡수(+분포 합 폴백)
+  const normalizedTotal =
+    toNum(sum?.totalCount) ||
+    toNum(sum?.total) ||
+    toNum(sum?.count) ||
+    toNum(sum?.reviewCount) ||
+    toNum(sum?.reviewsCount) ||
+    toNum(sum?.ratingsCount) ||
+    distributionTotal
 
   return {
     summary: sum
       ? {
-          totalCount: Number(sum.totalCount ?? 0),
-          averageOverallScore: Number(sum.averageOverallScore ?? 0),
-          from: sum.from,
-          to: sum.to,
-        }
+        totalCount: normalizedTotal,
+        averageOverallScore:
+          typeof sum.averageOverallScore === 'number'
+            ? sum.averageOverallScore
+            : toNum(sum.avg) || toNum(sum.average) || 0,
+        from: sum.from,
+        to: sum.to,
+      }
       : null,
     stars: {
       overallAvg:
         typeof sum?.averageOverallScore === 'number'
           ? sum.averageOverallScore
           : null,
-      distribution,
-      byQuestion,
+      distribution,          // ✅ 분포 추가
+      totalCount: normalizedTotal, // ✅ 표본 수를 같이 내려줌
+      byQuestionAvg,
+      byQuestionChoice,
     },
     demographics,
   }
@@ -188,7 +261,7 @@ export const submitFeedback = (payload) =>
  * 현재 로그인된 사용자가 작성한 모든 피드백 목록을 가져옵니다.
  * @returns {Promise<Array>} 피드백 목록
  */
-export const getMyFeedbacks = () => 
+export const getMyFeedbacks = () =>
   api.get('/api/feedbacks/me').then(r => r.data); // '/api/me/feedbacks' -> '/api/feedbacks/me'로 수정
 
 /**
@@ -238,10 +311,19 @@ export async function listMyProducts() {
   return _myProductsCache
 }
 
+const CATEGORY_ALIAS = {
+  '무형자산(플랫폼)': '무형자산',
+};
+const toCanonicalCategory = (c) =>
+  CATEGORY_ALIAS[c] ?? String(c || '').replace(/\(.*?\)/g, '').trim();
+
+
 // ✅ 카테고리별 목록(클라이언트 필터)
 export async function fetchProductsByCategory(category) {
   const all = await listMyProducts()
-  if (!category) return all
-  const norm = v => String(v ?? '').trim().toLowerCase()
-  return all.filter(p => norm(p.category) === norm(category))
+  const key = toCanonicalCategory(category)
+  if (!key) return all
+  const norm = v => toCanonicalCategory(v).toLowerCase()
+  return all.filter(p => norm(p.category) === norm(key))
+
 }

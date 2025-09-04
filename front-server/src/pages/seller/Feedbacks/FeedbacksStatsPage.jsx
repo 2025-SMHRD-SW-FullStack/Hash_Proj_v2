@@ -5,6 +5,7 @@ import AgeDonut from '/src/components/seller/charts/AgeDonut'
 import { RatingsDistribution, QuestionAverages } from '/src/components/seller/charts/RatingsBar'
 import { fetchFeedbackStats } from '/src/service/feedbackService'
 import AiSummaryPanel from '/src/components/seller/feedbacks/AiSummaryPanel'
+import ChoiceDonut from '/src/components/seller/charts/ChoiceDonut'
 
 // ===== UI 토큰 (이 파일 내부 전용) =====
 const box = 'rounded-xl border bg-white p-5 shadow-sm text-gray-900'
@@ -18,23 +19,32 @@ export default function FeedbacksStatsPage() {
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState(null)
 
-  const load = useCallback(async ({ category, productId }) => {
-    if (!category || !productId) return
+  // 소수 1자리 반올림
+  const r1 = (n) => (Number.isFinite(n) ? Math.round(n * 10) / 10 : null)
+
+  const load = useCallback(async ({ productId }) => {
+    if (!productId) return
     setLoading(true)
     try {
-      const res = await fetchFeedbackStats({ category, productId })
+      const res = await fetchFeedbackStats({ productId })
       setData(res)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  useEffect(() => { load(picked) }, [picked.category, picked.productId, load])
+  useEffect(() => { load(picked) }, [picked.productId, load])
 
+  // 👉 파생 데이터는 먼저 꺼내고
   const summary = data?.summary
   const stars = data?.stars
   const demo = data?.demographics
-
+  // 표본 수는 summary.totalCount가 정답, 없을 때만 분포 합으로 보조
+  const sampleCount = useMemo(() => {
+    const fromSummary = Number(summary?.totalCount ?? 0)
+    if (fromSummary > 0) return fromSummary
+    return (stars?.distribution || []).reduce((s, d) => s + (Number(d?.count) || 0), 0)
+  }, [summary, stars])
   return (
     <div className="mx-auto w-full max-w-[1120px] px-8 py-6 max-lg:px-6 max-sm:px-3">
       <h1 className="mb-4 text-xl font-semibold">피드백 통계</h1>
@@ -69,7 +79,12 @@ export default function FeedbacksStatsPage() {
                 <h3 className="mb-2 text-sm font-medium">별점 분포</h3>
                 <RatingsDistribution data={stars?.distribution || []} />
                 <div className="mt-2 text-right text-sm text-gray-600">
-                  전체 평균: <span className="font-semibold">{stars?.overallAvg ?? '-'}</span> / 5
+                  전체 평균:{' '}
+                  <span className="font-semibold">
+                    {stars?.overallAvg != null ? r1(stars.overallAvg).toFixed(1) : '-'}
+                  </span>{' '}
+                  / 5
+                  <span className="ml-2 text-gray-500">· 표본 {sampleCount}건</span>
                 </div>
               </div>
             </div>
@@ -79,10 +94,24 @@ export default function FeedbacksStatsPage() {
           <div className={`mt-6 ${scrollXDown}`}>
             <div className="min-w-[360px]">
               <h3 className="mb-2 text-sm font-medium">각 설문 별 평균</h3>
-              <QuestionAverages data={stars?.byQuestion || []} />
+              <QuestionAverages
+                data={(stars?.byQuestionAvg || []).map(q => ({ ...q, avg: r1(q.avg) }))}
+              />
             </div>
           </div>
-        </div>
+
+          {/* 선택형 문항 분포(예/아니오/무응답 등 전체) */}
+          {Array.isArray(stars?.byQuestionChoice) && stars.byQuestionChoice.length > 0 && (
+            <div className="mt-6">
+              <h3 className="mb-2 text-sm font-medium">선택형 문항 분포</h3>
+              <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
+                {stars.byQuestionChoice.map((q, i) => (
+                  <ChoiceDonut key={i} label={q.label} slices={q.slices} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>{/* /피드백 통계 box */}
 
         {/* AI 요약 */}
         <div className={box}>

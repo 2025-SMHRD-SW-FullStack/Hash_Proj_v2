@@ -1,6 +1,4 @@
-// src/pages/user/feedbackPage/FeedbackEditor.jsx
-
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { submitFeedback } from "../../../service/feedbackService";
 import { uploadImages } from "../../../service/uploadService";
@@ -12,6 +10,8 @@ import CloseIcon from "../../../assets/icons/ic_close.svg";
 import useFeedbackStore from "../../../stores/feedbackStore";
 import FeedbackSuccessModal from "../../../components/feedback/FeedbackSuccessModal";
 import useAuthStore from "../../../stores/authStore";
+import feedbackGuidelines from "../../../data/feedbackGuidelines.json";
+import { getMyProductDetail } from "../../../service/productService";
 
 // ★ ai-server 연동 컴포넌트
 import AIChatBox from "../../../components/feedback/AIChatBox";
@@ -32,18 +32,34 @@ const FeedbackEditor = () => {
   const setPoints = useAuthStore((state) => state.setPoints);
   const userId = useAuthStore((state) => state.user?.id) || 0;
 
-  // --- 수기 작성 상태 ---
+  // 상품/가이드
+  const [product, setProduct] = useState(null);
+  const category = product?.category || "기타";
+  const guidelines = [
+    ...feedbackGuidelines.common,
+    ...(feedbackGuidelines.categories[category] || []),
+  ];
+
+  // 수기 작성 상태
   const [manualContent, setManualContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const manualFileInputRef = useRef(null);
 
-  // --- 공통 모달 ---
+  // 공통 모달
   const [isSuccessModalOpen, setSuccessModalOpen] = useState(false);
   const [feedbackResult, setFeedbackResult] = useState({ awarded: 0, total: 0 });
 
-  // --- 수기 이미지 프리뷰 로직 ---
+  // 상품 상세(카테고리) 로딩
+  useEffect(() => {
+    if (!productId) return;
+    getMyProductDetail(productId).then((data) => {
+      if (data?.product) setProduct(data.product);
+    }).catch(() => {});
+  }, [productId]);
+
+  // 이미지 프리뷰
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files).slice(0, 5 - selectedFiles.length);
     if (files.length === 0) return;
@@ -59,7 +75,7 @@ const FeedbackEditor = () => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
-  // --- 수기 제출 ---
+  // 수기 제출
   const handleSubmit = async () => {
     const finalContent = manualContent;
     if (!finalContent.trim()) {
@@ -73,9 +89,11 @@ const FeedbackEditor = () => {
 
     setIsSubmitting(true);
     try {
+      // 이미지 업로드
       let uploadedImageUrls = [];
       if (selectedFiles.length > 0) {
-        const uploadResults = await uploadImages("EXCHANGE", selectedFiles);
+        // 서버의 ImageType이 FEEDBACK이 아닌 경우 프로젝트 설정에 맞춰 변경
+        const uploadResults = await uploadImages("FEEDBACK", selectedFiles);
         uploadedImageUrls = uploadResults.map((res) => res.url);
       }
 
@@ -117,12 +135,12 @@ const FeedbackEditor = () => {
     }
   };
 
-  // --- AI 게시 성공 콜백(ai-server -> Spring 저장 완료 후) ---
+  // AI 게시 성공 콜백(ai-server -> Spring 저장 완료 후)
   const handleAIAccepted = async () => {
     try {
       const newTotal = await getMyPointBalance();
       setPoints(newTotal);
-      setFeedbackResult({ awarded: 500, total: newTotal }); // 서버가 포인트 반환 안 하면 임시값
+      setFeedbackResult({ awarded: 500, total: newTotal }); // 서버가 포인트를 명시 안 주면 기본값
     } catch {
       setFeedbackResult((s) => ({ ...s, awarded: s.awarded || 500 }));
     } finally {
@@ -130,7 +148,7 @@ const FeedbackEditor = () => {
     }
   };
 
-  // --- 렌더링 ---
+  // 렌더링
   return (
     <>
       {type === "AI" ? (
@@ -153,9 +171,20 @@ const FeedbackEditor = () => {
           )}
         </div>
       ) : (
+        // 수기 피드백 작성
         <div className="p-8 max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-2">수기 피드백 작성</h1>
           <p className="text-gray-600 mb-8">상품에 대한 솔직한 피드백을 남겨주세요. 포인트가 지급됩니다.</p>
+
+          {/* 작성 가이드 */}
+          <div className="mb-6">
+            <h2 className="font-semibold mb-2">작성 가이드</h2>
+            <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm bg-gray-50 p-4 rounded-lg">
+              {guidelines.map((q, idx) => (
+                <li key={idx}>{q}</li>
+              ))}
+            </ul>
+          </div>
 
           <div className="relative">
             <textarea

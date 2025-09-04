@@ -21,9 +21,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,108 +41,6 @@ public class FeedbackService {
     private final UserRepository userRepo;
     private final ProductRepository productRepo;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    /**
-     * Feedback 엔티티를 FeedbackResponse DTO로 변환합니다. (상세 조회용)
-     * 이 메서드는 productImageUrl이 필요 없는 상세 페이지용입니다.
-     */
-    private FeedbackResponse toResponse(Feedback fb) {
-        OrderItem item = orderItemRepo.findById(fb.getOrderItemId()).orElse(null);
-        String productName = (item != null) ? item.getProductNameSnapshot() : "상품 정보 없음";
-
-        String optionName = null;
-        if (item != null && item.getOptionSnapshotJson() != null && !item.getOptionSnapshotJson().isBlank()) {
-            try {
-                Map<String, String> options = objectMapper.readValue(item.getOptionSnapshotJson(), new TypeReference<>() {});
-                optionName = String.join(" / ", options.values());
-            } catch (Exception e) {
-                optionName = "옵션 정보 오류";
-            }
-        }
-
-        User author = userRepo.findById(fb.getUserId()).orElse(null);
-        String authorNickname =
-                (author != null && author.getNickname() != null && !author.getNickname().isBlank())
-                        ? author.getNickname()
-                        : (author != null && author.getEmail() != null
-                        ? author.getEmail().split("@")[0]
-                        : "알 수 없는 사용자");
-        String authorProfileImageUrl = (author != null) ? author.getProfileImageUrl() : null;
-
-        return new FeedbackResponse(
-                fb.getId(),
-                fb.getOrderItemId(),
-                fb.getProductId(),
-                productName,
-                fb.getCreatedAt(),
-                optionName,
-                fb.getOverallScore(),
-                fb.getContent(),
-                fb.getImagesJson(),
-                fb.getAwardedPoint(),
-                fb.getAwardedAt(),
-                fb.getScoresJson(),
-                authorNickname,
-                authorProfileImageUrl,
-                null // 상세 페이지에서는 상품 이미지가 필요 없으므로 null
-        );
-    }
-
-    /**
-     * Feedback 엔티티 목록을 FeedbackResponse DTO 목록으로 변환합니다. (목록 조회용)
-     * N+1 문제 방지를 위해 관련 엔티티들을 한 번에 조회하여 DTO를 생성합니다.
-     */
-    private List<FeedbackResponse> toResponseList(List<Feedback> feedbacks) {
-        if (feedbacks.isEmpty()) {
-            return List.of();
-        }
-
-        // 1. 필요한 ID들을 한 번에 추출합니다.
-        List<Long> userIds = feedbacks.stream().map(Feedback::getUserId).distinct().toList();
-        List<Long> itemIds = feedbacks.stream().map(Feedback::getOrderItemId).distinct().toList();
-        List<Long> productIds = feedbacks.stream().map(Feedback::getProductId).filter(Objects::nonNull).distinct().toList();
-
-        // 2. ID 목록으로 관련 엔티티 정보들을 한 번의 쿼리로 가져옵니다.
-        Map<Long, User> userMap = userRepo.findAllById(userIds).stream()
-                .collect(Collectors.toMap(User::getId, u -> u));
-        Map<Long, OrderItem> itemMap = orderItemRepo.findAllById(itemIds).stream()
-                .collect(Collectors.toMap(OrderItem::getId, i -> i));
-        Map<Long, Product> productMap = productRepo.findAllById(productIds).stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
-
-        // 3. 가져온 정보들을 조합하여 DTO를 만듭니다.
-        return feedbacks.stream().map(fb -> {
-            User author = userMap.get(fb.getUserId());
-            String nickname = (author != null) ? author.getNickname() : "알 수 없는 사용자";
-            String profileImg = (author != null) ? author.getProfileImageUrl() : null;
-
-            OrderItem item = itemMap.get(fb.getOrderItemId());
-            String productName = (item != null) ? item.getProductNameSnapshot() : "상품 정보 없음";
-
-            String optionName = null;
-            if (item != null && item.getOptionSnapshotJson() != null && !item.getOptionSnapshotJson().isBlank()) {
-                try {
-                    Map<String, String> options = objectMapper.readValue(item.getOptionSnapshotJson(), new TypeReference<>() {});
-                    optionName = String.join(" / ", options.values());
-                } catch (Exception e) {
-                    optionName = "옵션 정보 오류";
-                }
-            }
-
-            Product product = (fb.getProductId() != null) ? productMap.get(fb.getProductId()) : null;
-            String productImageUrl = (product != null) ? product.getThumbnailUrl() : null;
-
-            return new FeedbackResponse(
-                    fb.getId(), fb.getOrderItemId(), fb.getProductId(), productName,
-                    fb.getCreatedAt(), optionName, fb.getOverallScore(), fb.getContent(),
-                    fb.getImagesJson(), fb.getAwardedPoint(), fb.getAwardedAt(),
-                    fb.getScoresJson(),
-                    nickname,
-                    profileImg,
-                    productImageUrl // ✅ 목록 조회에서는 상품 이미지를 포함합니다.
-            );
-        }).collect(Collectors.toList());
-    }
 
     @Transactional
     public FeedbackResponse create(FeedbackCreateRequest req) {
@@ -264,5 +165,156 @@ public class FeedbackService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN");
         }
         return toResponse(fb);
+    }
+
+    /**
+     * Feedback 엔티티를 FeedbackResponse DTO로 변환합니다. (상세 조회용)
+     */
+    private FeedbackResponse toResponse(Feedback fb) {
+        OrderItem mainOrderItem = orderItemRepo.findById(fb.getOrderItemId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_ITEM_NOT_FOUND"));
+
+        Order order = mainOrderItem.getOrder();
+        if (order == null) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Order not found for OrderItem");
+        }
+
+        List<OrderItem> relatedOrderItems = order.getItems().stream()
+                .filter(item -> item.getProductId().equals(fb.getProductId()))
+                .toList();
+
+        List<String> individualOptionStrings = relatedOrderItems.stream()
+                .map(OrderItem::getOptionSnapshotJson)
+                .filter(json -> json != null && !json.isBlank())
+                .map(json -> {
+                    try {
+                        Map<String, String> options = objectMapper.readValue(json, new TypeReference<>() {});
+                        return options.entrySet().stream()
+                                .map(entry -> entry.getKey().trim() + ": " + entry.getValue().trim())
+                                .collect(Collectors.joining(" / "));
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .toList();
+
+        String combinedOptionsText = String.join("\n", individualOptionStrings);
+        int optionsCount = individualOptionStrings.size();
+
+        User author = userRepo.findById(fb.getUserId()).orElse(null);
+        String authorNickname =
+                (author != null && author.getNickname() != null && !author.getNickname().isBlank())
+                        ? author.getNickname()
+                        : (author != null && author.getEmail() != null
+                        ? author.getEmail().split("@")[0]
+                        : "알 수 없는 사용자");
+        String authorProfileImageUrl = (author != null) ? author.getProfileImageUrl() : null;
+
+        Product product = productRepo.findById(fb.getProductId()).orElse(null);
+        String productImageUrl = (product != null) ? product.getThumbnailUrl() : null;
+
+        return new FeedbackResponse(
+                fb.getId(),
+                fb.getOrderItemId(),
+                mainOrderItem.getOptionSnapshotJson(),
+                fb.getProductId(),
+                mainOrderItem.getProductNameSnapshot(),
+                fb.getCreatedAt(),
+                combinedOptionsText,
+                optionsCount,
+                fb.getOverallScore(),
+                fb.getContent(),
+                fb.getImagesJson(),
+                fb.getAwardedPoint(),
+                fb.getAwardedAt(),
+                fb.getScoresJson(),
+                authorNickname,
+                authorProfileImageUrl,
+                productImageUrl
+        );
+    }
+
+    /**
+     * Feedback 엔티티 목록을 FeedbackResponse DTO 목록으로 변환합니다. (목록 조회용)
+     */
+    private List<FeedbackResponse> toResponseList(List<Feedback> feedbacks) {
+        if (feedbacks.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> userIds = feedbacks.stream().map(Feedback::getUserId).distinct().toList();
+        List<Long> orderItemIds = feedbacks.stream().map(Feedback::getOrderItemId).distinct().toList();
+
+        Map<Long, User> userMap = userRepo.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        Map<Long, OrderItem> orderItemMap = orderItemRepo.findAllByIdWithDetails(orderItemIds).stream()
+                .collect(Collectors.toMap(OrderItem::getId, Function.identity()));
+
+        List<Long> productIds = orderItemMap.values().stream()
+                .map(OrderItem::getProductId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, Product> productMap = productRepo.findAllById(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
+
+        return feedbacks.stream().map(fb -> {
+            OrderItem mainOrderItem = orderItemMap.get(fb.getOrderItemId());
+            if (mainOrderItem == null || mainOrderItem.getOrder() == null) {
+                return null;
+            }
+
+            List<OrderItem> relatedOrderItems = mainOrderItem.getOrder().getItems().stream()
+                    .filter(item -> item.getProductId().equals(fb.getProductId()))
+                    .toList();
+
+            List<String> individualOptionStrings = relatedOrderItems.stream()
+                    .map(OrderItem::getOptionSnapshotJson)
+                    .filter(json -> json != null && !json.isBlank())
+                    .map(json -> {
+                        try {
+                            Map<String, String> options = objectMapper.readValue(json, new TypeReference<>() {});
+                            return options.entrySet().stream()
+                                    .map(entry -> entry.getKey().trim() + ": " + entry.getValue().trim())
+                                    .collect(Collectors.joining(" / "));
+                        } catch (Exception e) {
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            String combinedOptionsText = String.join("\n", individualOptionStrings);
+            int optionsCount = individualOptionStrings.size();
+
+            User author = userMap.get(fb.getUserId());
+            String nickname = (author != null) ? author.getNickname() : "알 수 없는 사용자";
+            String profileImg = (author != null) ? author.getProfileImageUrl() : null;
+
+            Product product = productMap.get(mainOrderItem.getProductId());
+            String productImageUrl = (product != null) ? product.getThumbnailUrl() : null;
+
+            return new FeedbackResponse(
+                    fb.getId(),
+                    fb.getOrderItemId(),
+                    mainOrderItem.getOptionSnapshotJson(),
+                    fb.getProductId(),
+                    mainOrderItem.getProductNameSnapshot(),
+                    fb.getCreatedAt(),
+                    combinedOptionsText,
+                    optionsCount,
+                    fb.getOverallScore(),
+                    fb.getContent(),
+                    fb.getImagesJson(),
+                    fb.getAwardedPoint(),
+                    fb.getAwardedAt(),
+                    fb.getScoresJson(),
+                    nickname,
+                    profileImg,
+                    productImageUrl
+            );
+        }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 }
