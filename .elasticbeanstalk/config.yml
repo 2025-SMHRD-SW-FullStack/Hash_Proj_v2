@@ -2,8 +2,12 @@ branch-defaults:
   default:
     environment: null
   master:
-    environment: null
+    environment: hash-proj-v2
     group_suffix: null
+environment-defaults:
+  hash-proj-v2:
+    branch: null
+    repository: null
 global:
   application_name: hash-proj-v2
   branch: null
