@@ -84,19 +84,13 @@ const ProductDetailPage = () => {
   }, [productId]);
 
   useEffect(() => {
-    // productData가 있고, 옵션이 없는 상품일 경우 기본 항목을 selectedItems에 추가
-    if (productData && !useOptions) {
-      // 옵션이 없는 상품은 기본적으로 첫 번째 variant를 1개 선택한 상태로 설정
+    if (!useOptions && productData && selectedItems.length === 0) {
       setSelectedItems([{
         variantId: String(productData.variants[0].id),
         quantity: 1
       }]);
-    } else {
-      // 옵션이 있는 상품이거나 데이터가 없으면 선택된 항목을 비움
-      setSelectedItems([]);
     }
-    // ✅ 의존성 배열에서 selectedItems 제거
-  }, [productData, useOptions]);
+  }, [useOptions, productData, selectedItems]);
 
   const loadFeedbacks = async (page = 0, reset = false) => {
     if (feedbacksLoading && !reset) return;
@@ -285,89 +279,70 @@ const ProductDetailPage = () => {
 
         <hr className="my-4 border-t border-gray-200" />
 
-        <div className="space-y-3">
+        <div className="pr-1 space-y-3">
           {useOptions && (
             <div className="mb-4">
               <CategorySelect categories={optionCategories} selected={placeholderOption} onChange={handleOptionChange} />
             </div>
           )}
 
-          <div className='flex-1 overflow-y-auto'>
-            {selectedItems.map(item => {
-              const variant = variants.find(v => v.id === parseInt(item.variantId));
-              if (!variant) return null;
-              const itemPrice = (product.salePrice > 0 ? product.salePrice : product.basePrice) + (variant.addPrice || 0);
-              const totalItemPrice = itemPrice * item.quantity;
+          {selectedItems.map(item => {
+            const variant = variants.find(v => v.id === parseInt(item.variantId));
+            if (!variant) return null;
+            const itemPrice = (product.salePrice > 0 ? product.salePrice : product.basePrice) + (variant.addPrice || 0);
+            const totalItemPrice = itemPrice * item.quantity;
 
-              return (
-                <div key={item.variantId} className="rounded-md bg-gray-100 p-3">
-                  <div className="flex items-start justify-between">
-                    <p className="max-w-[80%] text-sm text-gray-700">
-                      {`${variant.option1Value ?? ''} ${variant.option2Value ?? ''}`.trim() || product.name}
-                    </p>
-                    {useOptions && (
-                      <Icon
-                        src={Close}
-                        alt="삭제"
-                        className="cursor-pointer"
-                        onClick={() => handleRemoveItem(item.variantId)}
-                      />
-                    )}
-                  </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className="flex items-center justify-between rounded-md border border-solid border-gray-300 bg-white">
-                      <Icon
-                        src={Minus}
-                        alt="감소"
-                        onClick={() => handleQuantityChange(item.variantId, -1)}
-                        className="!h-6 !w-6 p-1 cursor-pointer"
-                      />
-                      <input
-  type="number"
-  value={item.quantity}
-  // onChange: 사용자가 입력하는 모든 순간에 호출
-  onChange={(e) => {
-    const value = e.target.value;
-    
-    // 입력값이 비어있다면, 일단 비어있는 상태를 그대로 반영
-    // 숫자가 입력되면, 숫자로 변환
-    const newQuantity = value === '' ? '' : parseInt(value, 10);
-
-    // 0을 입력하는 것을 방지. 0 입력 시 이전 값이나 1로 유지되게 할 수 있음
-    if (newQuantity < 1 && newQuantity !== '') return;
-
-    setSelectedItems(prev =>
-      prev.map(si =>
-        si.variantId === item.variantId ? { ...si, quantity: newQuantity } : si
-      )
-    );
-  }}
-  // onBlur: 사용자가 입력을 마치고 다른 곳을 클릭했을 때(포커스를 잃었을 때) 호출
-  onBlur={() => {
-    // 만약 최종 값이 비어있거나 1보다 작은 잘못된 값이라면 1로 보정
-    if (item.quantity === '' || item.quantity < 1) {
-      setSelectedItems(prev =>
-        prev.map(si =>
-          si.variantId === item.variantId ? { ...si, quantity: 1 } : si
-        )
-      );
-    }
-  }}
-  className="w-14 text-center text-base font-semibold border-none focus:ring-0 hide-number-arrows"
-/>
-                      <Icon
-                        src={Plus}
-                        alt="증가"
-                        onClick={() => handleQuantityChange(item.variantId, 1)}
-                        className="!h-6 !w-6 p-1 cursor-pointer"
-                      />
-                    </div>
-                    <span className="text-base font-bold">{totalItemPrice.toLocaleString()}원</span>
-                  </div>
+            return (
+              <div key={item.variantId} className="rounded-md bg-gray-100 p-3">
+                <div className="flex items-start justify-between">
+                  <p className="max-w-[80%] text-sm text-gray-700">
+                    {`${variant.option1Value ?? ''} ${variant.option2Value ?? ''}`.trim() || product.name}
+                  </p>
+                  {useOptions && (
+                    <Icon
+                      src={Close}
+                      alt="삭제"
+                      className="h-4 w-4 cursor-pointer"
+                      onClick={() => handleRemoveItem(item.variantId)}
+                    />
+                  )}
                 </div>
-              );
-            })}
-          </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <div className="flex items-center justify-between rounded-md border border-solid border-gray-300 bg-white">
+                    <Icon
+                      src={Minus}
+                      alt="감소"
+                      onClick={() => handleQuantityChange(item.variantId, -1)}
+                      className="h-full w-6 p-1 cursor-pointer"
+                    />
+                    <input
+    type="number"
+    min={1}
+    value={item.quantity}
+    onChange={(e) => {
+      const value = parseInt(e.target.value);
+      if (!isNaN(value) && value > 0) {
+        setSelectedItems(prev =>
+          prev.map(si =>
+            si.variantId === item.variantId ? { ...si, quantity: value } : si
+          )
+        );
+      }
+    }}
+    className="w-14 text-center text-base font-semibold border border-gray-300 rounded-md focus:ring-1 focus:ring-primary focus:outline-none"
+  />
+                    <Icon
+                      src={Plus}
+                      alt="증가"
+                      onClick={() => handleQuantityChange(item.variantId, 1)}
+                      className="h-full w-6 p-1 cursor-pointer"
+                    />
+                  </div>
+                  <span className="text-base font-bold">{totalItemPrice.toLocaleString()}원</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <div className="pt-4 border-t border-gray-200 mt-auto">
@@ -401,8 +376,8 @@ const ProductDetailPage = () => {
 
   return (
     <div className="pb-24 lg:pb-0">
-      <div className="flex flex-col px-4 lg:flex-row items-start">
-        <div className="w-full lg:w-3/4 lg:px-10">
+      <div className="flex flex-col lg:flex-row items-start">
+        <div className="w-full lg:w-3/4 px-4 lg:px-10">
           <div className="flex flex-col items-center">
             <div className="w-full flex justify-between items-center my-4">
               <h2 className="text-xl sm:text-2xl font-bold">[{product.brand}] {product.name}</h2>
@@ -511,7 +486,7 @@ const ProductDetailPage = () => {
           </>
         }
       >
-        <p className="text-base text-gray-700">선택한 상품이 장바구니에 담겼습니다.</p>
+        <p className="text-sm text-gray-700">선택한 상품이 장바구니에 담겼습니다.</p>
       </Modal>
 
       <Modal
@@ -541,6 +516,9 @@ const ProductDetailPage = () => {
         title="피드백 작성 안내"
         footer={
           <>
+            <Button variant="signUp" onClick={() => setFeedbackInfoModalOpen(false)}>
+              닫기
+            </Button>
             <Button onClick={() => navigate('/user/mypage/orders')}>주문 내역 가기</Button>
           </>
         }

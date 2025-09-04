@@ -18,7 +18,7 @@ const CategorySelect = ({ categories, selected, onChange, className }) => {
   }, []);
 
   return (
-    <div className={`relative ${className}`} ref={containerRef}>
+    <div className={`relative w-full ${className}`} ref={containerRef}>
       {/* 선택 버튼 */}
       <button
         onClick={() => setOpen((prev) => !prev)}
