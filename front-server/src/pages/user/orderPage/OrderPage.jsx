@@ -13,6 +13,7 @@ import AddressBookModal from '../../../components/address/AddressBookModal';
 import RequestMemoField from '../../../components/order/RequestMemoField';
 import Button from '../../../components/common/Button';
 import api from '../../../config/axiosInstance';
+import TestImg from '../../../assets/images/ReSsol_TestImg.png'
 
 const SHIPPING_FEE = 3000;
 
@@ -379,9 +380,13 @@ const OrderPage = () => {
           <>
             {productInfo?.thumbnailUrl && (
               <img
-                src={productInfo.thumbnailUrl}
+                src={productInfo.thumbnailUrl || TestImg}
                 alt="상품 썸네일"
                 className="w-32 h-32 object-cover rounded-lg mb-3"
+                onError={(e) => {
+                  e.target.onerror = null; // 무한 루프 방지
+                  e.target.src = TestImg;
+                }}
               />
             )}
             <p><strong>상품명:</strong> {productInfo?.name}</p>

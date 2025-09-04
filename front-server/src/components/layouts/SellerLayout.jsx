@@ -203,7 +203,8 @@ export default function SellerLayout({ children }) {
         )}
 
         {/* 콘텐츠 */}
-        <section className="max-w-[1600px] flex-1">
+        <section 
+        className="max-w-[1600px] flex-1">
           {children || <Outlet />}
         </section>
       </div>

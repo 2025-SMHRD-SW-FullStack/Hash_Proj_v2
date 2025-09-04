@@ -7,6 +7,7 @@ import DiscountRow from '../../../components/seller/product/form/DiscountRow'
 import DetailComposer from '../../../components/seller/product/DetailComposer'
 import OptionSection from '../../../components/seller/product/options/OptionSection'
 import { CATEGORIES } from '../../../constants/products'
+import { uploadImages } from '/src/service/uploadService'
 
 // 실서버 API
 import { getMyProductDetail, updateMyProduct } from '/src/service/productService'
@@ -20,29 +21,104 @@ const longW = 'w-full max-w-[750px]'
 const longW2 = 'w-full max-w-[721px]'
 const shortW = 'w-[224px]'
 
+// "옵션 값"이 실제로 있는 variant 인지(단일 SKU의 빈 variants 제외 기준)
+const hasOptionVariant = (v = {}) => {
+  const vals = [
+    v.option1Value ?? v.optionValue, // 서버가 optionValue만 주는 케이스 겸용
+    v.option2Value,
+    v.option3Value,
+    v.option4Value,
+    v.option5Value,
+  ];
+  return vals.some((x) => x !== undefined && x !== null && String(x).trim() !== '');
+};
+
+
 // blocks ⇄ html
 function blocksToHtml(blocks = []) {
   return blocks
-    .map((b) =>
-      b.type === 'image'
-        ? `<img src="${b.src || ''}" alt="${b.name || ''}" style="max-width:100%;height:auto;display:block;margin:8px 0;" />`
-        : `<p>${(b.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
-    )
-    .join('')
+    .map((b) =>{
+      if (b.type === 'image') {
+        return `<img src="${b.src || ''}" alt="${b.name || ''}" style="max-width:100%;height:auto;display:block;margin:8px 0;" />`;
+      }
+      if (b.text?.trim()) {
+        // 텍스트에 포함된 줄바꿈을 각각의 <p> 태그로 변환하여 문단 구분을 보존합니다.
+        const esc = (s) => s
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+        return b.text
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line)
+          .map(line => `<p>${esc(line)}</p>`)
+          .join('');
+      }
+      return '';
+    })
+    .join('');
 }
+
 function htmlToBlocks(html = '') {
   const out = []
   const div = document.createElement('div')
   div.innerHTML = html || ''
   Array.from(div.childNodes).forEach((node) => {
+    // 1. 이미지 태그 처리
     if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'IMG') {
-      out.push({ type: 'image', src: node.getAttribute('src') || '', name: node.getAttribute('alt') || '' })
-    } else {
-      const txt = (node.textContent || '').trim()
-      if (txt) out.push({ type: 'text', text: txt })
+      out.push({
+        type: 'image',
+        src: node.getAttribute('src') || '',
+        name: node.getAttribute('alt') || '',
+      });
+      return;
     }
-  })
+
+    // 2. 모든 종류의 텍스트 콘텐츠 처리 (공백만 있는 노드는 무시)
+    const textContent = (node.textContent || '').trim();
+    if (textContent) {
+      // 3. 연속된 텍스트 블록을 하나로 병합
+      const lastBlock = out[out.length - 1];
+      if (lastBlock && lastBlock.type === 'text') {
+        lastBlock.text += '\n' + textContent;
+      } else {
+        out.push({ type: 'text', text: textContent });
+      }
+    } else if (node.nodeType === Node.TEXT_NODE) {
+      const txt = node.textContent || ''
+      if (txt.trim()) out.push({ type: 'text', text: txt })
+    }
+  });
   return out
+}
+
+// 상세이미지 업로드 후 블록 내 src를 S3 URL로 치환 (New 페이지와 동일한 전략)
+const extractAndUploadDetailImages = async (blocks = []) => {
+  const imageBlocks = blocks.filter(b => b.type === 'image')
+  const uploadedBlocks = [...blocks]
+  for (const block of imageBlocks) {
+    // 1) File 객체가 있으면 그대로 업로드
+    if (block.file) {
+      const uploaded = await uploadImages('PRODUCT_CONTENT', [block.file])
+      if (uploaded?.[0]?.url) {
+        const idx = uploadedBlocks.findIndex(b => b === block)
+        if (idx !== -1) uploadedBlocks[idx] = { ...block, src: uploaded[0].url, file: undefined }
+      }
+      continue
+    }
+    // 2) blob: URL이면 fetch→File 변환 후 업로드
+    if (block.src && block.src.startsWith('blob:')) {
+      const resp = await fetch(block.src)
+      const blob = await resp.blob()
+      const file = new File([blob], block.name || 'image.jpg', { type: blob.type })
+      const uploaded = await uploadImages('PRODUCT_CONTENT', [file])
+      if (uploaded?.[0]?.url) {
+        const idx = uploadedBlocks.findIndex(b => b === block)
+        if (idx !== -1) uploadedBlocks[idx] = { ...block, src: uploaded[0].url }
+      }
+    }
+  }
+  return uploadedBlocks
 }
 
 // 날짜 포맷 헬퍼 (백엔드: LocalDateTime "yyyy-MM-dd'T'HH:mm:ss")
@@ -139,7 +215,10 @@ export default function ProductEditPage() {
         serverSnapshotRef.current.saleEndAt = product?.saleEndAt || ''
 
         // OptionSection 초기 구성
-        if (Array.isArray(variants) && variants.length) {
+        // 배열 길이가 아니라, 옵션 값이 하나라도 "실제로" 있는지로 판단
+        const anyHasOptions = Array.isArray(variants) && variants.some(hasOptionVariant)
+
+        if (anyHasOptions) {
           const depth = Math.max(
             ...variants.map((v) => {
               let d = 0
@@ -149,7 +228,7 @@ export default function ProductEditPage() {
             optionNames.length || 0
           )
           const names = Array.from({ length: depth }).map((_, i) => optionNames[i] || `옵션${i + 1}`)
-          // 그룹 values 수집
+
           const valuesSet = Array.from({ length: depth }).map(() => new Set())
           variants.forEach((v) => {
             for (let i = 1; i <= depth; i++) {
@@ -158,7 +237,7 @@ export default function ProductEditPage() {
             }
           })
           const groups = valuesSet.map((s, i) => ({ name: names[i], values: Array.from(s) }))
-          // rows
+
           const rows = variants.map((v) => {
             const parts = Array.from({ length: depth }).map((_, i) => ({
               n: names[i],
@@ -173,6 +252,7 @@ export default function ProductEditPage() {
               enabled: true,
             }
           })
+
           setOptionInitial({
             enabled: true,
             composeType: depth === 1 ? 'single' : 'combo',
@@ -190,6 +270,7 @@ export default function ProductEditPage() {
           })
         }
 
+
         if (!alive) return
         setForm({
           category: product?.category || '',
@@ -203,7 +284,7 @@ export default function ProductEditPage() {
           saleEnd,
           feedbackPoint,
           stock: stockTotal,
-          useOptions: Array.isArray(variants) && variants.length > 0,
+          useOptions: anyHasOptions,
           optionGroups: [], // OptionSection에서 갱신
           options: [],       // OptionSection에서 갱신
           thumbnail: null,   // 파일은 UI 유지(서버엔 기존 URL 유지)
@@ -259,6 +340,9 @@ export default function ProductEditPage() {
     const basePrice = pNum
     const salePrice = form.discountEnabled ? Math.max(0, basePrice - Number(form.discount || 0)) : 0
 
+    // ✅ 상세 블록 내 이미지들을 먼저 업로드/치환 (blob/File → S3 URL)
+    const detailBlocksUploaded = await extractAndUploadDetailImages(form.detailBlocks || [])
+
     // 옵션 라벨(OptionSection 제공 groups 우선, 서버 스냅샷 보조)
     const names = (form.optionGroups || []).map((g) => g.name?.trim()).filter(Boolean)
     const optNames = []
@@ -283,7 +367,7 @@ export default function ProductEditPage() {
       basePrice,
       salePrice,
       thumbnailUrl: serverSnapshotRef.current.thumbnailUrl || '', // UI는 파일 유지, 서버에는 기존 URL 전달
-      detailHtml: blocksToHtml(form.detailBlocks),
+      detailHtml: blocksToHtml(detailBlocksUploaded),
       // 백엔드가 LocalDateTime(yyyy-MM-dd'T'HH:mm:ss) 요구
       saleStartAt: serverSnapshotRef.current.saleStartAt || toIsoStart(form.saleStart),
       saleEndAt:   serverSnapshotRef.current.saleEndAt   || toIsoEnd(form.saleEnd),

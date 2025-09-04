@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/me/exchanges")
@@ -47,9 +48,8 @@ public class MeExchangeController {
     @GetMapping
     public List<ExchangeResponse> list() {
         return repo.findByUserIdOrderByIdDesc(uid()).stream()
-                .map(e -> service.request(uid(), e.getOrderItem().getId(), // dummy 변환 아님: 실제론 toDto 헬퍼 따로
-                        new ExchangeCreateRequest(1, null, "", List.of())))
-                .toList(); // ★ 여기서는 실제 서비스 호출이 아니라 toDto 유틸을 사용하세요. (샘플 압축)
+                .map(service::toDto)
+                .collect(Collectors.toList());
     }
 
     @Operation(summary="교환 요청 생성")

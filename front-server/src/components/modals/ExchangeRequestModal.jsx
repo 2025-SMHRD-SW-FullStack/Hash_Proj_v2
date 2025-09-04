@@ -1,5 +1,7 @@
+// src/components/modals/ExchangeRequestModal.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { requestExchange } from '../../service/exchangeService';
+import { uploadImages } from '../../service/uploadService'; // 이미지 업로드 서비스 import
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import Icon from '../common/Icon';
@@ -48,6 +50,11 @@ const ExchangeRequestModal = ({ open, onClose, orderItems, onComplete, existingE
   };
 
   const handleToggleItem = (itemId) => {
+    // ✅ 이미 교환 신청된 상품인지 확인
+    if (existingExchangeIds?.has(itemId)) {
+      alert('이미 교환이 진행 중인 상품입니다.');
+      return;
+    }
     const newIds = new Set(selectedIds);
     if (newIds.has(itemId)) {
       newIds.delete(itemId);
@@ -72,13 +79,19 @@ const ExchangeRequestModal = ({ open, onClose, orderItems, onComplete, existingE
     }
     setIsSubmitting(true);
     try {
-      const imageUrls = images.map(file => `https://cdn.meonjeo.com/temp-images/${file.name}`);
+      // 1. 이미지 업로드
+      let imageUrls = [];
+      if (images.length > 0) {
+        const uploadResults = await uploadImages('EXCHANGE', images);
+        imageUrls = uploadResults.map(res => res.url);
+      }
+      
       const selectedItems = orderItems.filter(item => selectedIds.has(item.id));
 
       const promises = selectedItems.map(item => 
         requestExchange(item.id, {
           reasonText: reason,
-          imageUrls,
+          imageUrls, // 2. 업로드된 실제 이미지 URL 사용
           qty: item.qty,
         })
       );
@@ -95,7 +108,6 @@ const ExchangeRequestModal = ({ open, onClose, orderItems, onComplete, existingE
     }
   };
   
-  // ✅ [수정] 사진 첨부 및 미리보기 로직 구현
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files).slice(0, 5 - images.length);
     if (files.length === 0) return;
@@ -103,7 +115,6 @@ const ExchangeRequestModal = ({ open, onClose, orderItems, onComplete, existingE
     setPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
   };
 
-  // ✅ [수정] 미리보기 이미지 삭제 로직 구현
   const handleRemoveImage = (indexToRemove) => {
     URL.revokeObjectURL(previews[indexToRemove]); // 메모리 누수 방지
     setImages(prev => prev.filter((_, i) => i !== indexToRemove));
@@ -126,7 +137,6 @@ const ExchangeRequestModal = ({ open, onClose, orderItems, onComplete, existingE
               <div>
                 <p className="font-semibold">{item.productName}</p>
                 <p className="text-sm text-gray-600">{formatOptions(item.optionSnapshotJson)}</p>
-                {/* ✅ 구매 수량 표시 */}
                 <p className="text-sm text-gray-500 mt-1">수량: {item.qty}개</p>
               </div>
             </label>

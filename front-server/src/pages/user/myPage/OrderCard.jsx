@@ -1,3 +1,4 @@
+// src/pages/user/myPage/OrderCard.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -10,7 +11,6 @@ import {
 import ConfirmPurchaseModal from "../../../components/modals/ConfirmPurchaseModal";
 import TrackingModal from "../../../components/modals/TrackingModal";
 import ExchangeRequestModal from "../../../components/modals/ExchangeRequestModal";
-import InfoModal from "../../../components/common/InfoModal";
 import Button from "../../../components/common/Button";
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
 import { getMyExchanges } from "../../../service/exchangeService";
@@ -36,11 +36,18 @@ function VariationRow({ variation }) {
 }
 
 function GroupedProductRow({ product }) {
-  const thumb = product.thumbnailUrl || TestImg;
   return (
     <div className="flex items-start gap-4">
       <div className="w-24 h-24 rounded-lg bg-gray-100 shrink-0 overflow-hidden">
-        <img src={thumb} alt={product.productName} className="w-full h-full object-cover" />
+        <img 
+          src={product.thumbnailUrl || TestImg} 
+          alt={product.productName} 
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.onerror = null; // 무한 루프 방지
+            e.target.src = TestImg;
+          }} 
+          />
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-base mb-2">{product.productName}</div>
@@ -65,7 +72,8 @@ const OrderCard = ({ order, onChanged }) => {
   const [openExchangeModal, setOpenExchangeModal] = useState(false);
   const [existingExchangeIds, setExistingExchangeIds] = useState(new Set());
 
-  // ✅ [수정] 각 OrderCard가 마운트될 때 자신의 상세 정보를 불러옵니다.
+  const firstItem = useMemo(() => detail?.items?.[0], [detail]);
+
   useEffect(() => {
     (async () => { 
       try { 
@@ -78,23 +86,20 @@ const OrderCard = ({ order, onChanged }) => {
   }, [order.id]);
 
   useEffect(() => {
-    if (detail?.items && detail.items.length > 0 && ["DELIVERED", "CONFIRMED"].includes(order.status)) {
-      const firstItemId = detail.items[0].id;
-      if (firstItemId) {
+    if (firstItem && ["DELIVERED", "CONFIRMED"].includes(order.status)) {
         (async () => {
           try {
-            const isDone = await checkFeedbackDone(firstItemId);
+            const isDone = await checkFeedbackDone(firstItem.productId);
             setFeedbackDone(isDone);
           } catch (e) {
             console.error(e);
             setFeedbackDone(false);
           }
         })();
-      }
     } else {
       setFeedbackDone(false);
     }
-  }, [order.status, detail]);
+  }, [order.status, firstItem]);
 
   useEffect(() => {
     if (["IN_TRANSIT", "DELIVERED", "CONFIRMED"].includes(order.status)) {
@@ -116,17 +121,19 @@ const OrderCard = ({ order, onChanged }) => {
 
   const handleOpenExchangeModal = async () => {
     try {
+      // ✅ [복구] 정상적으로 교환 내역을 조회합니다.
       const exchanges = await getMyExchanges();
       const itemIdsInOrder = new Set(items.map(it => it.id));
       const requestedIds = new Set(
         exchanges.filter(ex => itemIdsInOrder.has(ex.orderItemId)).map(ex => ex.orderItemId)
       );
       setExistingExchangeIds(requestedIds);
+      setOpenExchangeModal(true); // 성공 시 모달 열기
     } catch (e) {
+      // ✅ [개선] 만약의 서버 오류 발생 시 사용자에게 알림
+      alert('교환 내역을 조회하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       console.error("교환 내역 조회 실패:", e);
-      setExistingExchangeIds(new Set());
     }
-    setOpenExchangeModal(true);
   };
 
   const groupedItems = useMemo(() => {
@@ -158,12 +165,6 @@ const OrderCard = ({ order, onChanged }) => {
     return Object.values(groups);
   }, [items]);
 
-  const handleReorder = () => {
-    if (!items.length) { alert("주문 상품 정보를 불러올 수 없습니다."); return; }
-    const firstProductId = items[0].productId;
-    navi(`/product/${firstProductId}`);
-  };
-
   return (
     <div className="rounded-2xl border border-gray-200 p-4 bg-white">
       <div className="flex flex-col md:flex-row md:justify-between gap-1 md:gap-0 text-sm text-gray-600">
@@ -175,7 +176,6 @@ const OrderCard = ({ order, onChanged }) => {
       </div>
 
       <div className="mt-4 space-y-4 mb-4">
-        {/* ✅ [수정] detail state가 로드되기 전에는 로딩 상태를 표시합니다. */}
         {!detail ? (
           <div className="text-sm text-gray-500">주문 상품 정보 불러오는중...</div>
         ) : (
@@ -188,22 +188,28 @@ const OrderCard = ({ order, onChanged }) => {
           <span className="text-gray-500">결제금액</span>{" "}
           <b>{totalPrice.toLocaleString()}원</b>
         </div>
-
+        
         <div className="flex flex-wrap gap-2 mt-2">
-          {order.status === "PENDING" && <Button className="flex-1">다시 주문하기</Button>}
-          {order.status === "READY" && <Button className="flex-1" variant="unselected" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
-          {order.status === "IN_TRANSIT" && <Button className="flex-1" variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
-          {order.status === "DELIVERED" && <>
-            <Button className="flex-1" onClick={() => setOpenConfirm(true)}>구매확정 후 피드백 작성</Button>
-            <Button className="flex-1" variant="unselected" onClick={handleOpenExchangeModal}>교환 신청</Button>
-          </>}
-          {order.status === "CONFIRMED" && <>
-            {!feedbackDone ? <Button className="flex-1" onClick={() => navi(`/user/mypage/orders/${order.id}?tab=feedback`)}>피드백 작성</Button>
-            : <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">포인트 지급 완료</span>}
-          </>}
-          <Button className="flex-1" variant="unselected" onClick={() => navi(`/user/mypage/orders/${order.id}`)}>주문 상세 보기</Button>
-        </div>
+            {order.status === "PENDING" && <Button className="flex-1">다시 주문하기</Button>}
+            {order.status === "READY" && <Button className="flex-1" variant="unselected" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
+            {order.status === "IN_TRANSIT" && <Button className="flex-1" variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
+            
+            {order.status === "DELIVERED" && !feedbackDone && (
+              <>
+                <Button className="flex-1" onClick={() => setOpenConfirm(true)}>구매확정 후 피드백 작성</Button>
+                <Button className="flex-1" variant="signUp" onClick={handleOpenExchangeModal}>교환 신청</Button>
+              </>
+            )}
 
+            {order.status === "CONFIRMED" && !feedbackDone &&
+                <Button className="flex-1" onClick={() => navi(`/user/survey?orderItemId=${firstItem.id}&productId=${firstItem.productId}`)}>피드백 작성</Button>
+            }
+            {feedbackDone &&
+                <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">피드백 작성 완료</span>
+            }
+
+            <Button className="flex-1" variant="unselected" onClick={() => navi(`/user/mypage/orders/${order.id}`)}>주문 상세 보기</Button>
+        </div>
       </div>
 
       <ConfirmPurchaseModal
@@ -223,7 +229,9 @@ const OrderCard = ({ order, onChanged }) => {
             await confirmPurchase(order.id);
             setOpenConfirm(false);
             onChanged?.();
-            navi(`/user/mypage/orders/${order.id}?tab=feedback`);
+            if (firstItem) {
+              navi(`/user/survey?orderItemId=${firstItem.id}&productId=${firstItem.productId}`);
+            }
           } catch (e) {
             const msg = e?.message || e?.error || (typeof e === "string" ? e : "구매확정 중 오류가 발생했습니다.");
             alert(msg);

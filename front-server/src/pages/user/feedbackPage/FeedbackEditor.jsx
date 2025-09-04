@@ -1,5 +1,3 @@
-// src/pages/user/feedbackPage/FeedbackEditor.jsx
-
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 // 1. 이미지 업로드 서비스 함수를 import 합니다.
@@ -13,6 +11,8 @@ import CloseIcon from "../../../assets/icons/ic_close.svg";
 import useFeedbackStore from "../../../stores/feedbackStore";
 import FeedbackSuccessModal from "../../../components/feedback/FeedbackSuccessModal";
 import useAuthStore from "../../../stores/authStore";
+import feedbackGuidelines from "../../../data/feedbackGuidelines.json";
+import { getMyProductDetail, getProductDetail } from "../../../service/productService";
 
 const MAX_LENGTH = 1000;
 
@@ -26,9 +26,18 @@ const FeedbackEditor = () => {
   const overallScore = searchParams.get("overallScore");
   const scoresJson = searchParams.get("scoresJson");
   const addFeedback = useFeedbackStore((state) => state.addFeedback);
-
+  
   const setPoints = useAuthStore((state) => state.setPoints);
 
+  const [product, setProduct] = useState(null);
+  const category = product?.category || "기타";
+const guidelines = [
+  ...feedbackGuidelines.common,
+  ...(feedbackGuidelines.categories[category] || [])
+];
+
+
+  
   // --- 수기 작성 관련 상태 ---
   const [manualContent, setManualContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,6 +62,16 @@ const FeedbackEditor = () => {
       setStatus('IN_PROGRESS');
     }
   }, [type, orderItemId]);
+
+  useEffect(() => {
+    getMyProductDetail(productId).then((data) => {
+      if (data?.product) {
+        setProduct(data.product); 
+      }
+    });
+  }, [productId]);
+
+
 
   // --- 이미지 프리뷰 로직 ---
   const handleFileChange = (event) => {
@@ -128,7 +147,7 @@ const FeedbackEditor = () => {
     setIsSubmitting(true);
     
     try {
-      // [수정] 2. 이미지 업로드 로직 추가
+      // 2. 이미지 업로드 로직 추가
       let uploadedImageUrls = [];
       // 수기 작성(MANUAL) 모드이고, 선택된 파일이 있을 때만 업로드 실행
       if (type === 'MANUAL' && selectedFiles.length > 0) {
@@ -179,7 +198,7 @@ const FeedbackEditor = () => {
     }
   };
 
-
+  
   // --- 렌더링 ---
   return (
     <>
@@ -237,10 +256,21 @@ const FeedbackEditor = () => {
           </div>
         </div>
       ) : (
+        // 수기 피드백 작성
         <div className="p-8 max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-2">수기 피드백 작성</h1>
           <p className="text-gray-600 mb-8">상품에 대한 솔직한 피드백을 남겨주세요. 포인트가 지급됩니다.</p>
           
+          {/* 작성 가이드 출력 */}
+          <div className="mb-6">
+            <h2 className="font-semibold mb-2">작성 가이드</h2>
+            <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm bg-gray-50 p-4 rounded-lg">
+              {guidelines.map((q, idx) => (
+                <li key={idx}>{q}</li>
+              ))}
+            </ul>
+          </div>
+
           <div className="relative">
             <textarea
               className="w-full h-60 border rounded-xl p-4 text-base resize-none"

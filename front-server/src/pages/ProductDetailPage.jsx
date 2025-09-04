@@ -391,7 +391,7 @@ const ProductDetailPage = () => {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white p-3 border-t shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-40 flex items-center gap-2">
         <Button variant="outline" className="flex-1" onClick={handleAddToCart}>장바구니</Button>
         <Button className="flex-1" onClick={!useOptions ? handlePurchase : () => setIsOptionsPanelOpen(true)}>
-            {selectedItems.length > 0 ? `${totalPrice.toLocaleString()}원 구매하기` : "구매하기"}
+            구매하기
         </Button>
       </div>
 

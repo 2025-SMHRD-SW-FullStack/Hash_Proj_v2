@@ -112,8 +112,8 @@ public class CartService {
             Product p = productMap.get(it.getProductId());
             ProductVariant v = variantMap.get(it.getVariantId());
             if (p == null || v == null) {
-                // 상품/옵션이 삭제되었을 수 있음 → 표시만 하고 inStock=false
-                CartItemView view = new CartItemView(it.getId(), it.getProductId(), "(삭제됨)", it.getVariantId(),
+                // 상품/옵션이 삭제되었을 수 있음 → thumbnailUrl 자리에 null을 넣어줍니다.
+                CartItemView view = new CartItemView(it.getId(), it.getProductId(), "(삭제됨)", null, it.getVariantId(),
                         it.getSelectedOptionsJson(), 0, it.getQty(), 0, false);
                 views.add(view);
                 continue;
@@ -126,7 +126,7 @@ public class CartService {
             total += subtotal;
 
             CartItemView view = new CartItemView(
-                    it.getId(), p.getId(), p.getName(), v.getId(),
+                    it.getId(), p.getId(), p.getName(), p.getThumbnailUrl(), v.getId(),
                     it.getSelectedOptionsJson(), unit, it.getQty(), subtotal, inStock
             );
             views.add(view);

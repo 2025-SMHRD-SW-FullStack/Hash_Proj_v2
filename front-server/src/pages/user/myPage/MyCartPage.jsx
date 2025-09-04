@@ -8,7 +8,7 @@ import { getCart, updateCartItemQty, removeCartItem, clearCart } from '../../../
 
 const SHIPPING_FEE = 3000;
 
-export default function MyCartPage() {
+const MyCartPage = () => {
   const navi = useNavigate();
   
   const [loading, setLoading] = useState(true);
@@ -165,6 +165,10 @@ export default function MyCartPage() {
                         src={row.thumbnailUrl || TestImg}
                         alt={row.productName}
                         className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                        onError={(e) => {
+                          e.target.onerror = null; // 무한 루프 방지
+                          e.target.src = TestImg;
+                        }}
                       />
                       <div className="ml-4 flex flex-col">
                         <div className="font-medium text-sm">{row.productName}</div>
@@ -246,3 +250,5 @@ export default function MyCartPage() {
     </div>
   );
 }
+
+export default MyCartPage

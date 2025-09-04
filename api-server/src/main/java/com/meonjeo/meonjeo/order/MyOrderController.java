@@ -5,6 +5,8 @@ import com.meonjeo.meonjeo.order.dto.MyOrderDetailResponse;
 import com.meonjeo.meonjeo.order.dto.MyOrderItemView;
 import com.meonjeo.meonjeo.order.dto.MyOrderSummaryResponse;
 import com.meonjeo.meonjeo.order.dto.OrderWindowResponse;
+import com.meonjeo.meonjeo.product.Product;
+import com.meonjeo.meonjeo.product.ProductRepository;
 import com.meonjeo.meonjeo.security.AuthSupport;
 import com.meonjeo.meonjeo.shipment.Shipment;
 import com.meonjeo.meonjeo.shipment.ShipmentRepository;
@@ -21,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Tag(name = "내 주문")
 @RestController
@@ -29,6 +32,7 @@ import java.util.*;
 public class MyOrderController {
 
     private final OrderRepository orderRepo;
+    private final ProductRepository productRepo;
     private final AuthSupport auth;
     private final OrderWindowService windowService;
     private final ShipmentRepository shipmentRepo;
@@ -57,13 +61,32 @@ public class MyOrderController {
         Order o = orderRepo.findByIdAndUserId(id, uid())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND"));
 
+        // 1. 주문에 포함된 모든 상품 ID를 한 번에 추출합니다.
+        List<Long> productIds = o.getItems().stream()
+                .map(OrderItem::getProductId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // 2. 모든 Product 정보를 한 번의 쿼리로 가져와 Map으로 만듭니다. (N+1 문제 방지)
+        Map<Long, Product> productMap = productRepo.findAllById(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, product -> product));
+
         List<MyOrderItemView> items = o.getItems().stream()
-                .map(it -> new MyOrderItemView(
-                        it.getId(), it.getProductId(),
-                        it.getProductNameSnapshot(),
-                        it.getUnitPrice(), it.getQty(),
-                        it.getOptionSnapshotJson()
-                ))
+                .map(it -> {
+                    // 3. Map에서 상품 정보를 찾아 썸네일 URL을 가져옵니다.
+                    Product product = productMap.get(it.getProductId());
+                    String thumbnailUrl = (product != null) ? product.getThumbnailUrl() : null;
+
+                    // 4. thumbnailUrl을 포함하여 DTO를 생성합니다.
+                    return new MyOrderItemView(
+                            it.getId(), it.getProductId(),
+                            it.getProductNameSnapshot(),
+                            thumbnailUrl, // ⬅️ 썸네일 URL 전달
+                            it.getUnitPrice(), it.getQty(),
+                            it.getOptionSnapshotJson()
+                    );
+                })
                 .toList();
 
         return new MyOrderDetailResponse(
@@ -118,14 +141,31 @@ public class MyOrderController {
         o.setConfirmationType(Order.ConfirmationType.MANUAL);
         orderRepo.save(o);
 
-        // 확정 후 상세 반환(프론트 새로고침 없이 갱신용)
+        // 1. 주문에 포함된 모든 상품 ID를 한 번에 추출합니다.
+        List<Long> productIds = o.getItems().stream()
+                .map(OrderItem::getProductId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // 2. 모든 Product 정보를 한 번의 쿼리로 가져와 Map으로 만듭니다.
+        Map<Long, Product> productMap = productRepo.findAllById(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, product -> product));
+
+        // 3. Map에서 상품 정보를 찾아 thumbnailUrl을 포함하여 DTO를 생성합니다.
         List<MyOrderItemView> items = o.getItems().stream()
-                .map(it -> new MyOrderItemView(
-                        it.getId(), it.getProductId(),
-                        it.getProductNameSnapshot(),
-                        it.getUnitPrice(), it.getQty(),
-                        it.getOptionSnapshotJson()
-                ))
+                .map(it -> {
+                    Product product = productMap.get(it.getProductId());
+                    String thumbnailUrl = (product != null) ? product.getThumbnailUrl() : null;
+
+                    return new MyOrderItemView(
+                            it.getId(), it.getProductId(),
+                            it.getProductNameSnapshot(),
+                            thumbnailUrl, // ⬅️ 썸네일 URL 전달
+                            it.getUnitPrice(), it.getQty(),
+                            it.getOptionSnapshotJson()
+                    );
+                })
                 .toList();
 
         return new MyOrderDetailResponse(
