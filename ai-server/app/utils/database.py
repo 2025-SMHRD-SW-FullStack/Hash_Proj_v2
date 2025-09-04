@@ -1,50 +1,38 @@
-"""
-MySQL 세션 유틸 (운영 안정화 옵션 포함)
-- .env 또는 환경변수로 설정
-"""
+from __future__ import annotations
+
 import os
-from contextlib import contextmanager
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+from typing import Iterator
 
-def _dsn():
-    dsn = os.getenv("MYSQL_DSN") or os.getenv("DATABASE_URL")
-    if dsn:
-        return dsn
-    host = os.getenv("MYSQL_HOST", "localhost")
-    port = int(os.getenv("MYSQL_PORT", "3306"))
-    db   = os.getenv("MYSQL_DB", "ai_server")
-    user = os.getenv("MYSQL_USER", "ai_user")
-    pw   = os.getenv("MYSQL_PASSWORD", "ai_password")
-    return f"mysql+pymysql://{user}:{pw}@{host}:{port}/{db}?charset=utf8mb4"
+from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
-def engine():
-    return create_engine(
-        _dsn(),
-        pool_pre_ping=True,
-        pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "3600")),
-        pool_size=int(os.getenv("DB_POOL_SIZE", "10")),
-        max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "10")),
-        echo=bool(int(os.getenv("DB_ECHO", "0"))),
-        future=True,
-    )
+load_dotenv()
 
-_ENG = engine()
-_SessionLocal = sessionmaker(bind=_ENG, autoflush=False, autocommit=False, future=True)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("❌ DATABASE_URL 환경변수가 설정되지 않았습니다. (예: mysql+pymysql://user:pw@127.0.0.1:3306/meonjeo?charset=utf8mb4)")
 
-@contextmanager
-def get_db():
-    db = _SessionLocal()
+# 💡 끊긴 커넥션 자동 감지/재연결 + 재사용 주기 설정
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,   # ping으로 dead connection 감지 후 재연결
+    pool_recycle=1800,    # 30분마다 연결 재활용 (wait_timeout보다 작게)
+    pool_size=5,
+    max_overflow=10,
+    pool_timeout=30,
+    connect_args={"connect_timeout": 10},
+    future=True,
+)
+
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+
+Base = declarative_base()
+
+# ✅ FastAPI 의존성 주입용
+def get_db() -> Iterator[Session]:
+    db: Session = SessionLocal()
     try:
         yield db
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
     finally:
         db.close()
-
-def ping():
-    """헬스체크용 DB 핑"""
-    with _ENG.connect() as c:
-        c.execute(text("SELECT 1"))

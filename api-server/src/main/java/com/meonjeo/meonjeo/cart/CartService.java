@@ -115,9 +115,9 @@ public class CartService {
             ProductVariant v = variantMap.get(it.getVariantId());
             if (p == null || v == null) {
                 // 상품/옵션이 삭제되었을 경우
-                CartItemView view = new CartItemView(it.getId(), it.getProductId(), "(삭제됨)", null, it.getVariantId(),
-                        it.getSelectedOptionsJson(), 0, it.getQty(), 0, false);
-                views.add(view);
+//                CartItemView view = new CartItemView(it.getId(), it.getProductId(), "(삭제됨)", null, it.getVariantId(),
+//                        it.getSelectedOptionsJson(), 0, it.getQty(), 0, false);
+//                views.add(view);
                 allItemsAreIntangible = false; // 삭제된 상품은 유형을 알 수 없으므로 배송비 부과
                 continue;
             }
@@ -133,11 +133,11 @@ public class CartService {
             int subtotal = unit * it.getQty();
             total += subtotal;
 
-            CartItemView view = new CartItemView(
-                    it.getId(), p.getId(), p.getName(), p.getThumbnailUrl(), v.getId(),
-                    it.getSelectedOptionsJson(), unit, it.getQty(), subtotal, inStock
-            );
-            views.add(view);
+//            CartItemView view = new CartItemView(
+//                    it.getId(), p.getId(), p.getName(), p.getThumbnailUrl(), v.getId(),
+//                    it.getSelectedOptionsJson(), unit, it.getQty(), subtotal, inStock
+//            );
+//            views.add(view);
         }
 
         // 모든 상품이 무형자산일 경우 배송비를 0원으로, 그렇지 않으면 3000원으로 설정

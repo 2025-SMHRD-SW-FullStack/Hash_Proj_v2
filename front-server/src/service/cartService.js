@@ -1,4 +1,3 @@
-// src/service/cartService.js
 import api from "../config/axiosInstance";
 
 /** 장바구니 조회 */

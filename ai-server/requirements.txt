@@ -1,44 +1,12 @@
-# === Core web ===
 fastapi==0.111.0
-uvicorn[standard]==0.30.1
-
-# === Data / validation ===
-pydantic==2.7.4
-
-# === DB (SQLAlchemy 2 + MySQL) ===
-SQLAlchemy==2.0.31
-pymysql==1.1.1
-
-# === Multipart upload / forms ===
-python-multipart==0.0.9
-
-# === YAML (examples/index.yaml 등) ===
-PyYAML==6.0.2
-
-# === HTTP (sync/async; URL 수집/크롤링 보조) ===
-requests==2.32.3
+uvicorn==0.30.6
 httpx==0.27.0
-
-# === HTML parsing (ingestByUrl 텍스트 후보 추출용) ===
-beautifulsoup4==4.12.3
-# lxml==5.2.2          # (선택) 더 빠른 파서; 빌드 이슈 있으면 주석 유지
-
-# === Images / OCR (사진 분석) ===
-pillow==10.4.0
-pytesseract==0.3.10
-
-# === JWT 검증 ===
-pyjwt[crypto]==2.9.0
-
-# === (선택) 마이그레이션 도구가 필요하면 사용 ===
-# alembic==1.13.2
-
-# === Optional: CLIP/BLIP (이미지 내용 태깅/캡션) ===
-open-clip-torch==2.24.0
-torch==2.3.0
-torchvision==0.18.0
-transformers==4.43.3
-accelerate==0.33.0
-
-# === (선택) 동적 렌더링 페이지 크롤링이 필요할 때만 사용 ===
-playwright==1.46.0
+redis==5.0.7
+pydantic==2.8.2
+python-dotenv==1.0.1
+openai==1.35.7
+SQLAlchemy==2.0.32
+requests==2.32.3
+pymysql
+mysql-connector-python
+PyJWT

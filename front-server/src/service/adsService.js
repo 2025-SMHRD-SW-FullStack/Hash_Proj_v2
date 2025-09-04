@@ -118,7 +118,7 @@ export const confirmAdPayment = async ({ paymentKey, orderId, amount, bookingId 
 export const fetchMyAds = async ({ page = 0, size = 20, status } = {}) => {
   const params = { page, size }
   if (status) params.status = status
-  const res = await api.get(`${ADS_BASE}/me`, { params })
+  const res = await api.get(`${ADS_BASE}/me/bookings`, { params })
   return res.data
 }
 

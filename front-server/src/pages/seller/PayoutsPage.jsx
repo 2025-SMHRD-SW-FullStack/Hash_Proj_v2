@@ -181,7 +181,7 @@ export default function PayoutsPage() {
                     <tr><td colSpan={7} className="py-8 text-center text-gray-500">해당 날짜의 정산 건이 없습니다.</td></tr>
                   )}
                   {rows.map((r) => (
-                    <tr key={`${r.orderId}-${r.confirmedAt}`} className="h-12 border-b last:border-0">
+                    <tr key={`${r.orderId}-${r.confirmedAt}`} className="h-12 border-b last:border-0 text-center">
                       <td className="px-3 align-middle">{r.orderNo || r.orderId}</td>
                       <td className="px-3 align-middle">{fmtDateTime(r.confirmedAt)}</td>
                       <td className="px-3 align-middle">₩ {fmtWon(r.itemTotal)}</td>

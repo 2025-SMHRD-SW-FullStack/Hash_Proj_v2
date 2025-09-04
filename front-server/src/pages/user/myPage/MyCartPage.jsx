@@ -15,8 +15,27 @@ export default function MyCartPage() {
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState(new Set());
 
+<<<<<<< HEAD
   const reload = async () => {
     setLoading(true);
+=======
+  // 옵션 JSON을 파싱하여 표시 가능한 문자열로 변환하는 헬퍼 함수
+  const getOptionsString = (optionsJson) => {
+    if (!optionsJson) return null;
+    try {
+      const options = JSON.parse(optionsJson);
+      const values = Object.values(options).filter(Boolean); // null이나 빈 문자열 값 제외
+      if (values.length === 0 || (values.length === 1 && values[0] === '기본')) {
+        return null; // 의미 없는 옵션은 표시하지 않음
+      }
+      return values.join(' / ');
+    } catch (e) {
+      return null; // JSON 파싱 실패 시 표시하지 않음
+    }
+  };
+
+  const fetchCart = async () => {
+>>>>>>> 7e8c116bfc12c7d3e357fce6394960d6f1aa29a7
     try {
       const data = await getCart();
       setCart(data || { items: [] });
@@ -58,15 +77,25 @@ export default function MyCartPage() {
 
   /** 배송비 계산 로직 */
   const computedShippingFee = useMemo(() => {
+    console.log("Recalculating shipping fee...");
+    console.log("Selected items:", selectedItems);
     if (selectedItems.length === 0) return 0;
 
+<<<<<<< HEAD
     // 무형자산 포함 → 배송비 0원
+=======
+    // 무형자산 포함 → 배송비 0원 (이제 it.category에 접근 가능)
+>>>>>>> 7e8c116bfc12c7d3e357fce6394960d6f1aa29a7
     const hasIntangible = selectedItems.some(it => it.category === "무형자산");
     if (hasIntangible) return 0;
 
     // 기본 로직 (셀러 수 × 3000)
     return SHIPPING_FEE_PER_SELLER * Math.max(1, distinctSellerCount);
+<<<<<<< HEAD
   }, [selectedItems, distinctSellerCount]);
+=======
+  }, [selectedItems, cartData.shippingFee]);
+>>>>>>> 7e8c116bfc12c7d3e357fce6394960d6f1aa29a7
 
   const computedPayableBase = useMemo(
     () => itemsTotal + computedShippingFee,
@@ -181,7 +210,20 @@ export default function MyCartPage() {
                       />
                       <div className="ml-4 flex flex-col">
                         <div className="font-medium text-sm">{row.productName}</div>
+<<<<<<< HEAD
                         <div className="text-xs text-gray-500 break-words">{row.optionsJson}</div>
+=======
+                        {
+                          (() => {
+                            const optionsDisplay = getOptionsString(row.optionsJson);
+                            if (optionsDisplay) {
+                              // 옵션이 있을 때만 표시
+                              return <div className="text-xs text-gray-500 break-words mt-1">{optionsDisplay}</div>;
+                            }
+                            return null;
+                          })()
+                        }
+>>>>>>> 7e8c116bfc12c7d3e357fce6394960d6f1aa29a7
                         {!row.inStock && (
                           <div className="text-xs text-red-600 mt-1">품절 또는 재고 부족</div>
                         )}
