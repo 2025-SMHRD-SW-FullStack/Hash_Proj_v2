@@ -1,7 +1,7 @@
 #!/bin/sh
 #pip3 install awscli
 
-SERVICE_NAME='hash_proj_v2'
+SERVICE_NAME='hash-proj-v2'
 
 echo "SERVICE_NAME ${SERVICE_NAME}"
 

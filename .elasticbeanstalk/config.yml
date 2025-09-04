@@ -1,11 +1,11 @@
 branch-defaults:
   default:
     environment: null
-  main:
-    environment: gj-startup
+  master:
+    environment: null
     group_suffix: null
 global:
-  application_name: hash_proj_v2
+  application_name: hash-proj-v2
   branch: null
   default_ec2_keyname: null
   default_platform: Docker running on 64bit Amazon Linux 2023
@@ -14,7 +14,7 @@ global:
   instance_profile: null
   platform_name: null
   platform_version: null
-  profile: hash_proj_v2
+  profile: hash-proj-v2
   repository: null
   sc: git
   workspace_type: Application
