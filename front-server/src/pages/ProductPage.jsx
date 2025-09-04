@@ -136,7 +136,7 @@ const ProductPage = () => {
     // ✅ 이 div에 max-w-7xl mx-auto를 추가하여 전체 너비를 제한합니다.
     <div ref={containerRef} className='max-w-7xl mx-auto flex flex-col px-4 mb-4'>
       {/* 모바일: CategorySelect + 검색바  */}
-      <div className="sm:hidden my-4  flex items-center gap-2 ">
+      <div className="sm:hidden my-4 flex items-center gap-2 ">
           <CategorySelect
             categories={categories}
             selected={selectedCategory}

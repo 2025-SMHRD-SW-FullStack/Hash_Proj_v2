@@ -29,13 +29,13 @@ body {
   margin-bottom: 1em;
 }
 
-/* input 숫자 화살표 제거 */
-.no-spinner::-webkit-outer-spin-button,
-.no-spinner::-webkit-inner-spin-button {
+/* input type="number"의 기본 화살표(spinner) 숨기기 */
+.hide-number-arrows::-webkit-outer-spin-button,
+.hide-number-arrows::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.no-spinner {
-  -moz-appearance: textfield;
+.hide-number-arrows {
+  -moz-appearance: textfield; /* Firefox */
 }
