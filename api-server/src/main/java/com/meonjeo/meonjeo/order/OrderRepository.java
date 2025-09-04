@@ -121,4 +121,21 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("sellerId") Long sellerId,
             @Param("status") OrderStatus status
     );
+
+    // 아래 메서드 추가
+    @Query("""
+      select distinct o from Order o
+      join o.items oi
+      where oi.productId = :productId
+        and o.confirmedAt is not null
+        and o.confirmedAt >= :fromTs
+        and o.confirmedAt <  :toTs
+    """)
+    List<Order> findConfirmedOrdersForProduct(
+            @Param("productId") Long productId,
+            @Param("fromTs") java.time.LocalDateTime fromTs,
+            @Param("toTs")   java.time.LocalDateTime toTs
+    );
+
+
 }

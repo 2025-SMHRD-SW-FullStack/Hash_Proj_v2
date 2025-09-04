@@ -203,7 +203,12 @@ public class FeedbackService {
         int optionsCount = individualOptionStrings.size();
 
         User author = userRepo.findById(fb.getUserId()).orElse(null);
-        String authorNickname = (author != null) ? author.getNickname() : "알 수 없는 사용자";
+        String authorNickname =
+                (author != null && author.getNickname() != null && !author.getNickname().isBlank())
+                        ? author.getNickname()
+                        : (author != null && author.getEmail() != null
+                        ? author.getEmail().split("@")[0]
+                        : "알 수 없는 사용자");
         String authorProfileImageUrl = (author != null) ? author.getProfileImageUrl() : null;
 
         Product product = productRepo.findById(fb.getProductId()).orElse(null);
