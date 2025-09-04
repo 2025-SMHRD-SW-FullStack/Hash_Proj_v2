@@ -1,20 +1,13 @@
-FROM node:22-bullseye
-
+# 1단계: 빌드
+FROM node:20-bullseye AS builder
 WORKDIR /usr/src/app/front-server
-
-# package-lock.json 같이 복사
 COPY package*.json ./
-
-# npm 최신화 + 클린 설치
-RUN npm install -g npm@latest
 RUN npm ci --legacy-peer-deps
-
-# 시간 설정
-RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
-    echo "Asia/Seoul" > /etc/timezone
-
 COPY . .
+RUN npm run build
 
-EXPOSE 5173
-
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# 2단계: 실행 (vite dev가 아니라 빌드된 정적 파일 serve)
+FROM nginx:stable-alpine
+COPY --from=builder /usr/src/app/front-server/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
