@@ -2,7 +2,8 @@
 FROM gradle:8.7-jdk17 AS build
 WORKDIR /app
 
-COPY . .
+# api-server 폴더만 복사
+COPY api-server/ ./
 
 # gradlew 실행 권한 부여
 RUN chmod +x gradlew

@@ -1,5 +1,5 @@
 FROM python:3.11
-WORKDIR /usr/src/app/server
+WORKDIR /usr/src/app/ai-server
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 # 시간 설정
