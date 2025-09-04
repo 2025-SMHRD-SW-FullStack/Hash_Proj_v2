@@ -88,3 +88,8 @@ bootJar {
 jar {
     enabled = false
 }
+
+bootRun {
+    // 기본이 dev이긴 하지만, 명시해두면 편함
+    systemProperty 'spring.profiles.active', System.getProperty('spring.profiles.active', 'dev')
+}

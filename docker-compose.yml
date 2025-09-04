@@ -1,0 +1,51 @@
+services:
+  frontend:
+    build:
+      context: ./front-server
+      dockerfile: Dockerfile
+    environment:
+      - VITE_HOST=0.0.0.0
+    networks:
+      - app-network
+
+#  api-server:
+#    build:
+#      context: ./api-server
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      - TZ=Asia/Seoul
+#      - AWS_ACCESS_KEY_ID
+#      - AWS_SECRET_ACCESS_KEY
+#    networks:
+#      - app-network
+
+#  ai-server:
+#    build:
+#      context: ./ai-server
+#      dockerfile: Dockerfile
+#    ports:
+#      - "7777:7777"
+#    environment:
+#      - TZ=Asia/Seoul
+#      - AWS_ACCESS_KEY_ID
+#      - AWS_SECRET_ACCESS_KEY
+#    networks:
+#      - app-network
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - frontend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

@@ -132,6 +132,11 @@ public class ProductService {
         //  - req.variants().isEmpty()→ 단일 SKU로 리셋(재고는 req.stockTotal 사용)
         //  - 그 외(리스트 존재)      → 전달된 조합으로 전면 교체
         if (req.variants() != null) {
+            // 옵션 배열을 보냈지만 비어 있고, 단일 재고도 0/미지정이면
+            // 실수로 전체 재고가 0으로 리셋되는 것을 방지하기 위해 '변경 없음'으로 취급
+            if (req.variants().isEmpty() && req.stockTotal() <= 0) {
+                return; // 위에서 p의 나머지 필드는 이미 업데이트됨
+            }
             replaceVariantsAccordingToRequest(p, req.variants(), req.stockTotal());
         }
     }
