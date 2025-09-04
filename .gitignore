@@ -22,4 +22,4 @@ __pycache__/
 # Secrets
 application-secret-dev.yml
 application-secret-prod.yml
-.env
+*.env

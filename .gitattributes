@@ -7,4 +7,3 @@
 # Ignore binary
 *.jar binary
 *.png binary
-*.env
