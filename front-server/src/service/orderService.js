@@ -179,15 +179,15 @@ export const fetchTracking = (orderId) => getTracking(orderId)
 // ===== 백엔드 OrderStatus enum과 일치하는 상태 매핑 =====
 // 백엔드: PENDING, PAID, READY, IN_TRANSIT, DELIVERED, CONFIRMED
 export const ORDER_STATUS_MAP = {
-  // UI 상태 → 백엔드 enum
-  ALL: null,
-  PAID: 'READY',             // 신규주문 (결제완료 후 배송준비중)
-  READY: 'READY',            // 배송준비
-  SHIPPING: 'IN_TRANSIT',    // 배송중
-  DELIVERED: 'DELIVERED',    // 배송완료
-  CONFIRMED: 'CONFIRMED',    // 구매확정
-  PENDING: 'PENDING',        // 결제대기
-  NEW: 'READY',              // 신규주문 (READY와 동일)
+  ALL: undefined,        // ← 전체는 파라미터 미전달
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+  READY: 'READY',
+  IN_TRANSIT: 'IN_TRANSIT',
+  DELIVERED: 'DELIVERED',
+  CONFIRMED: 'CONFIRMED',
+  SHIPPING: 'IN_TRANSIT', // (구키 호환)
+  NEW: 'PAID',
 }
 
 /** UI 상태를 백엔드 API 상태로 변환 */
@@ -215,8 +215,8 @@ export const mapStatusForDisplay = (apiStatus) => {
 // 그리드 조회 래퍼 (하위호환)
 export async function fetchSellerOrdersGrid({ statusKey = 'ALL', page = 0, size = 20, q, from, to } = {}) {
   const params = { page, size }
-  const mapped = ORDER_STATUS_MAP[statusKey] ?? null
-  if (mapped) params.status = mapped       // ALL이면 status 생략
+  const mapped = ORDER_STATUS_MAP?.[statusKey]
+  if (mapped != null) params.status = mapped   // undefined/null이면 쿼리에 안 붙음
   if (q) params.q = q
   if (from) params.from = from
   if (to) params.to = to

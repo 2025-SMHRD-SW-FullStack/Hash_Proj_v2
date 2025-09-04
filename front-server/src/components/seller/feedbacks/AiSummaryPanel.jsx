@@ -1,39 +1,66 @@
-//src/components/seller/feedbacks/AiSummaryPanel.jsx
-
-import React, { useMemo, useState } from 'react'
+// src/components/seller/feedbacks/AiSummaryPanel.jsx
+import React, { useMemo, useState, useEffect } from 'react'
 import Button from '../../common/Button'
+
 /**
  * props:
  *  - aiDaily: [{ date:'YYYY-MM-DD', text:'...' }, ...]
  *  - lastGeneratedAt: 'YYYY-MM-DD HH:mm' (선택)
  */
 export default function AiSummaryPanel({ aiDaily = [], lastGeneratedAt }) {
+  // ── 날짜 헬퍼
   const pad = (n) => (n < 10 ? `0${n}` : `${n}`)
   const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  const parse = (s) => {
+    const [y, m, d] = String(s || '').split('-').map(Number)
+    const dt = new Date(y || 1970, (m || 1) - 1, d || 1)
+    dt.setHours(0, 0, 0, 0)
+    return dt
+  }
+  const addDays = (s, n) => {
+    const d = parse(s)
+    d.setDate(d.getDate() + n)
+    return ymd(d)
+  }
+  const clampDate = (s, min, max) => (min && s < min ? min : max && s > max ? max : s)
 
   const today = useMemo(() => ymd(new Date()), [])
+
+  // ── 날짜 목록(정렬)
   const sortedDates = useMemo(
-    () => [...aiDaily.map(d => d.date)].sort(),
+    () => [...aiDaily.map(d => d.date)].filter(Boolean).sort(),
     [aiDaily]
   )
-  const lastDate = sortedDates[sortedDates.length - 1] || today
+  const minDate = sortedDates[0] || null
+  const maxDate = sortedDates[sortedDates.length - 1] || null
+  const lastDate = maxDate || today
 
   const [selectedDate, setSelectedDate] = useState(lastDate)
+
+  // 데이터 바뀌면 선택값을 범위에 맞게 보정
+  useEffect(() => {
+    setSelectedDate((s) => clampDate(s || lastDate, minDate || lastDate, maxDate || lastDate))
+  }, [minDate, maxDate, lastDate])
 
   const findItem = (date) => aiDaily.find(d => d.date === date)
   const current = findItem(selectedDate)
 
+  // ── 하루씩 이동 (목록에 없어도 이동 → "요약 없음" 표시)
+  const prevDisabled = !!minDate && selectedDate <= minDate
+  const nextDisabled = !!maxDate && selectedDate >= maxDate
+
   const goPrev = () => {
-    if (!sortedDates.length) return
-    const idx = sortedDates.indexOf(selectedDate)
-    if (idx > 0) setSelectedDate(sortedDates[idx - 1])
+    if (prevDisabled) return
+    setSelectedDate((s) => clampDate(addDays(s, -1), minDate, maxDate))
   }
   const goNext = () => {
-    if (!sortedDates.length) return
-    const idx = sortedDates.indexOf(selectedDate)
-    if (idx >= 0 && idx < sortedDates.length - 1) setSelectedDate(sortedDates[idx + 1])
+    if (nextDisabled) return
+    setSelectedDate((s) => clampDate(addDays(s, +1), minDate, maxDate))
   }
-  const goToday = () => setSelectedDate(today)
+  const goToday = () => {
+    const t = clampDate(today, minDate || today, maxDate || today)
+    setSelectedDate(t)
+  }
 
   return (
     <div>
@@ -47,9 +74,10 @@ export default function AiSummaryPanel({ aiDaily = [], lastGeneratedAt }) {
         <div className="flex items-center gap-2">
           <Button
             type="button"
-            className="rounded-md border px-2 py-1 text-sm"
+            className="rounded-md border px-2 py-1 text-sm disabled:opacity-40"
             variant="admin"
             onClick={goPrev}
+            disabled={prevDisabled}
             aria-label="이전 요약"
           >
             ←
@@ -59,14 +87,20 @@ export default function AiSummaryPanel({ aiDaily = [], lastGeneratedAt }) {
             type="date"
             className="rounded-md border px-3 py-1 text-sm"
             value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
+            min={minDate || undefined}
+            max={maxDate || undefined}
+            onChange={(e) => {
+              const v = e.target.value
+              setSelectedDate(clampDate(v, minDate || v, maxDate || v))
+            }}
           />
 
           <Button
             type="button"
-            className="rounded-md border px-2 py-1 text-sm"
+            className="rounded-md border px-2 py-1 text-sm disabled:opacity-40"
             variant="admin"
             onClick={goNext}
+            disabled={nextDisabled}
             aria-label="다음 요약"
           >
             →
