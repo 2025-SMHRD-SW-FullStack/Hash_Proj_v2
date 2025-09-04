@@ -3,4 +3,9 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    allowedHosts: [
+      'hash-proj-v2.eba-ijnehrgn.ap-northeast-2.elasticbeanstalk.com'
+    ],
+  },
 })

@@ -97,4 +97,22 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
             @Param("fromTs") LocalDateTime fromTs,
             @Param("toTs") LocalDateTime toTs
     );
+    @Query(
+        value = """
+            select f
+            from Feedback f, OrderItem oi
+            where oi.id = f.orderItemId
+              and oi.sellerId = :sellerId
+              and (f.removed = false or f.removed is null)
+            order by f.id desc
+        """,
+                countQuery = """
+            select count(f)
+            from Feedback f, OrderItem oi
+            where oi.id = f.orderItemId
+              and oi.sellerId = :sellerId
+              and (f.removed = false or f.removed is null)
+        """
+        )
+    Page<Feedback> pageBySeller(@Param("sellerId") Long sellerId, Pageable pageable);
 }

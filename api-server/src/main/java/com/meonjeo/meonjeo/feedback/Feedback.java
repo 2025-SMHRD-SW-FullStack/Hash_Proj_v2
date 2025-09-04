@@ -54,6 +54,13 @@ public class Feedback {
     @Lob
     private String imagesJson;
 
+    @Builder.Default
+    @Column(name = "reported", nullable = false, columnDefinition = "bit(1)")
+    private boolean reported = false;
+
+    public boolean isReported() { return reported; }
+    public void setReported(boolean reported) { this.reported = reported; }
+
     /** 생성/수정/마감 시각 */
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
