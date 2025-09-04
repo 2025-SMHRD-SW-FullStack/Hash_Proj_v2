@@ -8,5 +8,5 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
     echo "Asia/Seoul" > /etc/timezone
 COPY . .
 EXPOSE 3000
-# CMD ["npm", "run", "dev"]
-CMD ["node", "server.js"]
+CMD ["npm", "run", "dev"]
+# CMD ["node", "server.js"]
