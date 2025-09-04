@@ -1,17 +1,12 @@
-// /src/pages/seller/Feedbacks/FeedbacksStatsPage.jsx
-import React, { useEffect, useMemo, useState, useCallback } from 'react'
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import ProductPicker from '/src/components/seller/feedbacks/ProductPicker'
 import AgeDonut from '/src/components/seller/charts/AgeDonut'
 import { RatingsDistribution, QuestionAverages } from '/src/components/seller/charts/RatingsBar'
-import { fetchFeedbackStats } from '/src/service/feedbackService'
+import { fetchFeedbackStats, computeAiSummaryNow } from '/src/service/feedbackService'
 import AiSummaryPanel from '/src/components/seller/feedbacks/AiSummaryPanel'
 import ChoiceDonut from '/src/components/seller/charts/ChoiceDonut'
 
-// ===== UI 토큰 (이 파일 내부 전용) =====
 const box = 'rounded-xl border bg-white p-5 shadow-sm text-gray-900'
-const statNumber = 'text-2xl font-bold'
-const statSub = 'text-xs text-gray-500'
-// 작은 화면에서만 가로 스크롤(데스크톱은 보통 보이게)
 const scrollXDown = 'md:overflow-visible max-md:overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 
 export default function FeedbacksStatsPage() {
@@ -19,7 +14,12 @@ export default function FeedbacksStatsPage() {
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState(null)
 
-  // 소수 1자리 반올림
+  // AI 요약 (캐시 + 레이스 방지)
+  const [aiLive, setAiLive] = useState(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const aiCacheRef = useRef(new Map()) // productId -> aiLive
+  const reqSeqRef = useRef(0)
+
   const r1 = (n) => (Number.isFinite(n) ? Math.round(n * 10) / 10 : null)
 
   const load = useCallback(async ({ productId }) => {
@@ -28,6 +28,27 @@ export default function FeedbacksStatsPage() {
     try {
       const res = await fetchFeedbackStats({ productId })
       setData(res)
+
+      // 캐시 있으면 바로 보여주고, 없으면 비워서 로딩 UI만 노출
+      const cached = aiCacheRef.current.get(productId)
+      setAiLive(cached || null)
+
+      const mySeq = ++reqSeqRef.current
+      setAiLoading(true)
+      computeAiSummaryNow({ productId })
+        .then((ai) => {
+          if (reqSeqRef.current !== mySeq) return
+          setAiLive(ai)
+          aiCacheRef.current.set(productId, ai)
+        })
+        .catch((e) => {
+          if (reqSeqRef.current !== mySeq) return
+          console.warn('[AI live] compute failed:', e?.response?.data || e?.message || e)
+          setAiLive(null) // 실패 시에도 로딩 종료 후 비워둠
+        })
+        .finally(() => {
+          if (reqSeqRef.current === mySeq) setAiLoading(false)
+        })
     } finally {
       setLoading(false)
     }
@@ -35,16 +56,16 @@ export default function FeedbacksStatsPage() {
 
   useEffect(() => { load(picked) }, [picked.productId, load])
 
-  // 👉 파생 데이터는 먼저 꺼내고
   const summary = data?.summary
   const stars = data?.stars
   const demo = data?.demographics
-  // 표본 수는 summary.totalCount가 정답, 없을 때만 분포 합으로 보조
+
   const sampleCount = useMemo(() => {
     const fromSummary = Number(summary?.totalCount ?? 0)
     if (fromSummary > 0) return fromSummary
     return (stars?.distribution || []).reduce((s, d) => s + (Number(d?.count) || 0), 0)
   }, [summary, stars])
+
   return (
     <div className="mx-auto w-full max-w-[1120px] px-8 py-6 max-lg:px-6 max-sm:px-3">
       <h1 className="mb-4 text-xl font-semibold">피드백 통계</h1>
@@ -57,13 +78,11 @@ export default function FeedbacksStatsPage() {
         </div>
       </section>
 
-      {/* 하단 상세 */}
       <section className="mt-6 space-y-6">
         {/* 피드백 통계 */}
         <div className={box}>
           <h2 className="mb-3 text-base font-semibold">피드백 통계</h2>
 
-          {/* 데스크톱 2열 → 작은 화면 1열 */}
           <div className="grid grid-cols-2 gap-6 max-lg:grid-cols-1">
             {/* 연령별 분포 */}
             <div className={scrollXDown}>
@@ -79,7 +98,7 @@ export default function FeedbacksStatsPage() {
                 <h3 className="mb-2 text-sm font-medium">별점 분포</h3>
                 <RatingsDistribution data={stars?.distribution || []} />
                 <div className="mt-2 text-right text-sm text-gray-600">
-                  전체 평균:{' '}
+                  전체 평균{' '}
                   <span className="font-semibold">
                     {stars?.overallAvg != null ? r1(stars.overallAvg).toFixed(1) : '-'}
                   </span>{' '}
@@ -90,7 +109,7 @@ export default function FeedbacksStatsPage() {
             </div>
           </div>
 
-          {/* 각 설문 별 평균 — 작은 화면에서만 가로 스크롤 */}
+          {/* 각 설문 별 평균 */}
           <div className={`mt-6 ${scrollXDown}`}>
             <div className="min-w-[360px]">
               <h3 className="mb-2 text-sm font-medium">각 설문 별 평균</h3>
@@ -100,7 +119,7 @@ export default function FeedbacksStatsPage() {
             </div>
           </div>
 
-          {/* 선택형 문항 분포(예/아니오/무응답 등 전체) */}
+          {/* 선택형 문항 분포 */}
           {Array.isArray(stars?.byQuestionChoice) && stars.byQuestionChoice.length > 0 && (
             <div className="mt-6">
               <h3 className="mb-2 text-sm font-medium">선택형 문항 분포</h3>
@@ -111,22 +130,20 @@ export default function FeedbacksStatsPage() {
               </div>
             </div>
           )}
-        </div>{/* /피드백 통계 box */}
+        </div>
 
         {/* AI 요약 */}
         <div className={box}>
           <div className="flex items-center justify-between gap-2 max-sm:flex-col max-sm:items-start">
             <h2 className="text-base font-semibold">AI 요약</h2>
             <div className="text-xs text-gray-500">
-              매일 0시에 생성 · 신고 피드백 제외 · 마지막 생성: {data?.lastGeneratedAt || '-'}
+              피드백 제출 시 자동 생성/갱신{aiLoading ? ' · 생성 중…' : ''}
             </div>
           </div>
 
           <div className="mt-3">
-            <AiSummaryPanel aiDaily={data?.aiDaily || []} lastGeneratedAt={data?.lastGeneratedAt} />
-            <p className="mt-3 text-xs text-gray-500">
-              판매 기간 동안 날짜별 요약본이 누적됩니다. 피드백 작성 가능 마지막날 다음날 생성분이 최종 요약본입니다.
-            </p>
+            <AiSummaryPanel aiLive={aiLive} loading={aiLoading} />
+            <p className="mt-3 text-xs text-gray-500">생성 완료 시 자동으로 표시됩니다.</p>
           </div>
         </div>
       </section>

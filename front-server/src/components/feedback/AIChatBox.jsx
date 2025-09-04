@@ -1,7 +1,7 @@
 // src/components/feedback/AIChatBox.jsx
 import React, { useEffect, useRef, useState } from 'react';
 // 별칭(@) 말고 상대경로 사용
-import { startSession, sendReply, editSummary, acceptNow } from '../../service/ai';
+import { startSession, sendReply, editSummary, acceptNow } from '../../service/aiService';
 
 function mapAssistantMessages(apiMsgs) {
   return (apiMsgs || []).map((m, i) => {

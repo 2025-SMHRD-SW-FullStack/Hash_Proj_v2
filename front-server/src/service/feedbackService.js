@@ -1,29 +1,25 @@
 import api from '../config/axiosInstance'
+import axiosAI from '/src/config/axiosAI'
+
+// ======================= 기존 API들 =======================
 
 export const fetchSellerFeedbacks = async ({ page = 0, size = 50 } = {}) => {
   const res = await api.get('/api/seller/feedbacks', { params: { page, size } })
   return res.data
 }
 
-// 설문 템플릿(카테고리 기반) — 서버에 SurveyCatalog 있음
 export const getSurveyTemplate = (productId) =>
   api.get(`/api/products/${productId}/survey-template`).then(r => r.data)
 
-// 설문 제출(임시 저장 X, 바로 서버 보냄)
 export const submitSurvey = (orderItemId, payload) =>
   api.post(`/api/surveys/answers`, { orderItemId, ...payload }).then(r => r.data)
 
-// 셀러 피드백
-
-/** 셀러 피드백 그리드 (주문 그리드 기반)
- *  - 빈 값(from/to/q)은 쿼리스트링에 포함하지 않음 → Spring LocalDate 바인딩 에러 방지
- */
+/** 셀러 피드백 그리드 */
 export const fetchSellerFeedbackGrid = async ({ from, to, q, page = 0, size = 100 } = {}) => {
   const params = { page, size }
-  if (from) params.from = from          // 'YYYY-MM-DD'
-  if (to) params.to = to                // 'YYYY-MM-DD'
+  if (from) params.from = from
+  if (to) params.to = to
   if (q && q.trim()) params.q = q.trim()
-
   const { data } = await api.get('/api/seller/orders/grid', { params })
   return data
 }
@@ -61,58 +57,115 @@ export const fetchFeedbackQuestionStats = async ({ productId, from, to }) => {
   return data
 }
 
-// 피드백 통계
-// 내부 헬퍼: 2xx만 데이터, 나머진 null
-const getSafe = (url, params) =>
-  api.get(url, { params, validateStatus: () => true })
-    .then(r => (r.status >= 200 && r.status < 300 ? r.data : null))
-    .catch(() => null)
+// ======================= AI 요약: 즉시 생성(1회) =======================
+
+/** 오늘 날짜(YYYY-MM-DD) */
+const _today = () => new Date().toISOString().slice(0, 10)
+
+/** 최근 텍스트 피드백 N개 (요약 샘플용) */
+async function _fetchRecentFeedbackTexts(productId, limit = 10) {
+  try {
+    const page = await getProductFeedbacks(productId, { page: 0, size: Math.max(5, limit) })
+    const content = page?.content || page?.list || page || []
+    return content
+      .map((f) => (typeof f?.content === 'string' ? f.content.trim() : ''))
+      .filter(Boolean)
+      .slice(0, limit)
+  } catch {
+    return []
+  }
+}
 
 /**
- * 피드백 통계(인구통계/요약/설문 문항별 평균) 묶어서 반환
- * @param {object} args
- * @param {number|string} args.productId  (필수)
- * @param {string} [args.category]        (questions API에 필요)
- * @param {string} [args.from]            'YYYY-MM-DD'
- * @param {string} [args.to]              'YYYY-MM-DD'
- *
- * 반환 shape:
- * {
- *   summary: {...} | null,
- *   stars: {...},
- *   demographics: [...],
- *   aiDaily: [{ date, headline, keyPointsJson, actionsJson, fullSummary, model, createdAt }],
- *   lastGeneratedAt: string | null
- * }
+ * 지금 시점의 지표로 AI 요약 1건 계산
+ * 반환: { headline, keyPoints, actions, fullSummary, model, createdAt }
  */
+export async function computeAiSummaryNow({ productId, from, to } = {}) {
+  if (!productId) throw new Error('productId is required')
+
+  // 필요한 지표 병렬 수집
+  const paramsCommon = { productId, from, to }
+  const [demo, qsRaw, sumRaw, tpl, recentTexts] = await Promise.all([
+    fetchFeedbackDemographics(paramsCommon),
+    fetchFeedbackQuestionStats(paramsCommon),
+    fetchFeedbackSummary(paramsCommon),
+    getSurveyTemplate(productId),
+    _fetchRecentFeedbackTexts(productId, 10),
+  ])
+
+  // 별점 분포/평균
+  const ratingCounts = sumRaw?.ratingCounts || sumRaw?.ratings || sumRaw?.counts || {}
+  const starsObj = Object.entries(ratingCounts).reduce((m, [k, v]) => {
+    m[String(k)] = Number(v || 0); return m
+  }, {})
+  const buyerSample =
+    Number(sumRaw?.totalCount ?? sumRaw?.total ?? sumRaw?.count ?? 0) ||
+    Object.values(starsObj).reduce((s, n) => s + Number(n || 0), 0)
+  const overallAvg =
+    typeof sumRaw?.averageOverallScore === 'number'
+      ? sumRaw.averageOverallScore
+      : (typeof sumRaw?.avg === 'number' ? sumRaw.avg : null)
+
+  // 인구통계
+  const demoMap = {}
+  for (const a of (demo?.byAgeRange ?? [])) {
+    const key = String(a?.key ?? '').trim()
+    const count = Number(a?.count ?? 0)
+    if (key) demoMap[key] = (demoMap[key] || 0) + count
+  }
+
+  // 문항(평균/버킷)
+  const byQuestionAvg = []
+  const byQuestionChoice = []
+  for (const q of (qsRaw?.questions ?? [])) {
+    const type = String(q?.type || '').toUpperCase()
+    if (type.startsWith('SCALE')) {
+      byQuestionAvg.push({
+        questionId: q?.code ?? q?.id ?? null,
+        label: q?.label ?? '',
+        average: Number(q?.average ?? 0),
+      })
+    } else {
+      const buckets = {}
+      Object.entries(q?.buckets || {}).forEach(([k, v]) => {
+        buckets[String(k)] = Number(v || 0)
+      })
+      byQuestionChoice.push({ questionId: q?.code ?? q?.id ?? null, label: q?.label ?? '', buckets })
+    }
+  }
+
+  const payload = {
+    date: _today(),
+    productId: Number(productId),
+    productName: tpl?.productName ?? tpl?.name ?? null,
+    category: tpl?.category ?? null,
+    overallAvg: overallAvg ?? null,
+    stars: starsObj,
+    demographics: demoMap,
+    buyerSample,
+    byQuestionAvg,
+    byQuestionChoice,
+    feedbackTexts: recentTexts,
+    previousSummary: null,
+  }
+
+  const { data: obj } = await axiosAI.post('/api/ai/summary/daily', payload)
+  return { ...(obj || {}), createdAt: new Date().toISOString() }
+}
+
+// ======================= 통계 집계 묶음 =======================
+
 export async function fetchFeedbackStats({ productId, from, to }) {
   const paramsCommon = { productId, from, to }
 
-  const [demo, qs, sum, tpl, ai] = await Promise.all([
-    getSafe('/api/seller/feedbacks/demographics', paramsCommon),
-    getSafe('/api/seller/feedbacks/questions', paramsCommon),
-    getSafe('/api/seller/feedbacks/summary', paramsCommon),
-    getSafe(`/api/products/${productId}/survey-template`), // 옵션 코드→라벨 매핑
-    getSafe('/api/seller/ai/daily', { productId, limit: 14 }), // ✅ 전날 AI 요약 목록
+  const [demo, qs, sum, tpl] = await Promise.all([
+    fetchFeedbackDemographics(paramsCommon),
+    fetchFeedbackQuestionStats(paramsCommon),
+    fetchFeedbackSummary(paramsCommon),
+    getSurveyTemplate(productId),
   ])
-  const aiDays = Array.isArray(ai?.days) ? ai.days : []
-  const lastGeneratedAt = ai?.lastGeneratedAt || (aiDays[0]?.createdAt ?? null)
 
-  // ── 불리언 문항 판별 & 버킷 → 퍼센트(소수1자리) 정규화
-  const isBinary = (q) => {
-    const t = String(q?.type || '').toUpperCase()
-    if (t.includes('BOOL') || t.includes('YES_NO')) return true
-    const ks = Object.keys(q?.buckets || {}).map(k => k.toLowerCase())
-    return ks.length === 2 && ks.every(k => ['true', 'false', 'yes', 'no', 'y', 'n', '있음', '없음'].includes(k))
-  }
-  const normBuckets = (b) => {
-    const entries = Object.entries(b || {}).map(([key, count]) => ({ key: String(key), count: Number(count || 0) }))
-    const total = entries.reduce((s, e) => s + e.count, 0) || 1
-    return entries.map(e => ({ ...e, ratio: Math.round((e.count / total) * 1000) / 10 })) // x.y%
-  }
-
-  // ── 문항 가공: 척도형 평균 / 불리언 비율 분리
-  // 설문 템플릿 옵션 라벨 맵 (choice용)
+  // 설문 라벨 맵
   const optionLabelMap = {}
   for (const q of (tpl?.questions ?? [])) {
     if (q?.code && Array.isArray(q?.options)) {
@@ -124,8 +177,8 @@ export async function fetchFeedbackStats({ productId, from, to }) {
     }
   }
 
-  const byQuestionAvg = []      // 척도형 평균용
-  const byQuestionChoice = []   // 도넛용(예/아니오/무응답 등 전체)
+  const byQuestionAvg = []
+  const byQuestionChoice = []
   const toPercent = (c, t) => (t > 0 ? Math.round((c / t) * 1000) / 10 : 0)
   const toYNLabel = (val) => {
     if (/^(TRUE|YES|Y|있음|긍정|만족)$/i.test(val)) return '예'
@@ -139,7 +192,6 @@ export async function fetchFeedbackStats({ productId, from, to }) {
       byQuestionAvg.push({ label: q?.label ?? '', avg: Number(q?.average ?? 0) })
       continue
     }
-    // CHOICE 계열: 모든 버킷(예/아니오/미정/NA 등)을 퍼센트로 변환
     const entries = Object.entries(q?.buckets || {}).map(([k, v]) => ({
       value: String(k).toUpperCase(), count: Number(v || 0),
     }))
@@ -155,18 +207,13 @@ export async function fetchFeedbackStats({ productId, from, to }) {
     byQuestionChoice.push({ label: q?.label ?? '', slices })
   }
 
-  // ── demographics → 도넛 데이터 [{ name, value, avg }]
   const demographics = (demo?.byAgeRange ?? []).map(a => ({
-    name: a?.key ?? '',                         // 라벨 (예: '20대')
-    value: Number(a?.count ?? 0),               // 분포 카운트
-    avg: typeof a?.averageOverallScore === 'number'
-      ? a.averageOverallScore
-      : null,
+    name: a?.key ?? '',
+    value: Number(a?.count ?? 0),
+    avg: typeof a?.averageOverallScore === 'number' ? a.averageOverallScore : null,
   }))
 
-  // ── summary.ratingCounts → 별점 분포 [{ score, count }]
   const toNum = (v) => (v == null ? 0 : Number(v)) || 0
-
   const distribution = (() => {
     const rc = sum?.ratingCounts || sum?.ratings || sum?.counts
     if (!rc || typeof rc !== 'object') return []
@@ -188,14 +235,14 @@ export async function fetchFeedbackStats({ productId, from, to }) {
   return {
     summary: sum
       ? {
-        totalCount: normalizedTotal,
-        averageOverallScore:
-          typeof sum.averageOverallScore === 'number'
-            ? sum.averageOverallScore
-            : toNum(sum.avg) || toNum(sum.average) || 0,
-        from: sum.from,
-        to: sum.to,
-      }
+          totalCount: normalizedTotal,
+          averageOverallScore:
+            typeof sum.averageOverallScore === 'number'
+              ? sum.averageOverallScore
+              : toNum(sum.avg) || toNum(sum.average) || 0,
+          from: sum.from,
+          to: sum.to,
+        }
       : null,
     stars: {
       overallAvg:
@@ -208,80 +255,39 @@ export async function fetchFeedbackStats({ productId, from, to }) {
       byQuestionChoice,
     },
     demographics,
-    aiDaily: aiDays,           // ✅ AI 요약 목록
-    lastGeneratedAt,           // ✅ 마지막 생성 시각
   }
 }
 
-/** (선택) 설문 템플릿: 카테고리/문항 라벨 필요 시 사용 */
-export async function fetchSurveyTemplate(productId) {
-  return getSafe(`/api/products/${productId}/survey-template`)
-}
-
-/** 피드백 신고 */
-export const ReportFeedback = async ({ feedbackId, reason }) => {
-  if (!feedbackId) throw new Error('feedbackId가 필요합니다.')
-  const body = { reason }
-
-  // 레포별 엔드포인트 차이 방어(우선순위)
-  const candidates = [
-    `/api/seller/feedbacks/${feedbackId}/report`,
-    `/api/feedbacks/${feedbackId}/report`,
-    `/api/admin/feedbacks/${feedbackId}/report`,
-  ]
-
-  let lastErr
-  for (const url of candidates) {
-    try {
-      const { data } = await api.post(url, body)
-      return data
-    } catch (e) {
-      lastErr = e
-      const st = e?.response?.status
-      if (st !== 404 && st !== 405) throw e
-    }
-  }
-  throw lastErr
-}
-
-export const submitFeedback = (payload) =>
-  api.post(`/api/feedbacks`, payload).then(r => r.data)
-
-/**
- * 현재 로그인된 사용자가 작성한 모든 피드백 목록을 가져옵니다.
- * @returns {Promise<Array>} 피드백 목록
- */
+/** 현재 로그인 사용자의 피드백 목록 */
 export const getMyFeedbacks = () =>
-  api.get('/api/feedbacks/me').then(r => r.data) // '/api/me/feedbacks' -> '/api/feedbacks/me'로 수정
+  api.get('/api/feedbacks/me').then(r => r.data)
 
-/**
- * 특정 피드백의 상세 정보를 ID로 조회합니다.
- * @param {number | string} feedbackId 피드백 ID
- * @returns {Promise<object>} 피드백 상세 정보
- */
 export const getFeedbackDetail = (feedbackId) =>
   api.get(`/api/feedbacks/${feedbackId}`).then(r => r.data)
 
-/**
- * (신규) 특정 상품에 대한 피드백 목록을 페이지네이션으로 가져옵니다.
- * @param {number | string} productId 상품 ID
- * @param {object} params - { page, size }
- * @returns {Promise<object>} 페이지네이션된 피드백 데이터
- */
 export const getProductFeedbacks = (productId, { page = 0, size = 5 } = {}) =>
   api.get(`/api/feedbacks/products/${productId}`, { params: { page, size } }).then(r => r.data)
 
-/**
- * (신규) 관리자가 피드백을 삭제합니다.
- */
+/** 관리자 삭제 */
 export const adminDeleteFeedback = (feedbackId) =>
   api.delete(`/api/admin/feedbacks/${feedbackId}`)
 
-// 피드백 통계
-// 모듈 캐시: 페이지 내에서 여러 번 호출해도 네트워크는 1회
-let _myProductsCache = null
+/**
+ * 피드백 제출: 성공 시 해당 상품의 AI 요약 즉시 생성 트리거
+ */
+export const submitFeedback = async (payload) => {
+  const res = await api.post(`/api/feedbacks`, payload)
+  try {
+    const productId = res?.data?.productId
+    if (productId) {
+      await computeAiSummaryNow({ productId })
+    }
+  } catch (_) { /* 조용히 무시 */ }
+  return res.data
+}
 
-// 전체 내 상품 목록
+// ====== 피드백 통계용 보조 ======
+let _myProductsCache = null
 export async function listMyProducts() {
   if (_myProductsCache) return _myProductsCache
   const res = await api.get('/api/seller/products', { validateStatus: () => true })
@@ -300,13 +306,10 @@ export async function listMyProducts() {
   return _myProductsCache
 }
 
-const CATEGORY_ALIAS = {
-  '무형자산(플랫폼)': '무형자산',
-}
+const CATEGORY_ALIAS = { '무형자산(플랫폼)': '무형자산' }
 const toCanonicalCategory = (c) =>
   CATEGORY_ALIAS[c] ?? String(c || '').replace(/\(.*?\)/g, '').trim()
 
-// ✅ 카테고리별 목록(클라이언트 필터)
 export async function fetchProductsByCategory(category) {
   const all = await listMyProducts()
   const key = toCanonicalCategory(category)
