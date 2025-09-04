@@ -81,8 +81,6 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     boolean existsForOrder(@Param("orderId") Long orderId);
 
     // ====== [NEW] 셀러 대시보드 통계용 카운트 메서드 ======
-    
-    // 특정 날짜 범위에 생성된 셀러의 피드백 개수
     @Query("""
         select count(f)
         from Feedback f
@@ -97,6 +95,30 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
             @Param("fromTs") LocalDateTime fromTs,
             @Param("toTs") LocalDateTime toTs
     );
+
+    // ===== ✅ 실시간 스냅샷용 =====
+
+    @Query("""
+        select f.overallScore, count(f)
+          from Feedback f, OrderItem oi
+         where oi.id = f.orderItemId
+           and oi.productId = :productId
+           and (f.removed = false or f.removed is null)
+           and f.createdAt >= :fromTs
+         group by f.overallScore
+    """)
+    List<Object[]> countRatingsByProductSince(@Param("productId") Long productId,
+                                              @Param("fromTs") LocalDateTime fromTs);
+
+    @Query("""
+        select f.content
+          from Feedback f, OrderItem oi
+         where oi.id = f.orderItemId
+           and oi.productId = :productId
+           and (f.removed = false or f.removed is null)
+         order by f.createdAt desc
+    """)
+    Page<String> findRecentFeedbackTexts(@Param("productId") Long productId, Pageable pageable);
     @Query(
         value = """
             select f

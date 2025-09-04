@@ -1,19 +1,20 @@
-FROM node:22-bullseye
+FROM node:22.16.0-bullseye
 
 WORKDIR /usr/src/app/front-server
 
-# package-lock.json 같이 복사
+# 패키지 복사
 COPY package*.json ./
 
-# npm 최신화 + 클린 설치
-RUN npm install -g npm@latest
-RUN npm ci --legacy-peer-deps
+# npm 버그 방지 + rollup 강제 설치
+RUN npm ci --legacy-peer-deps && \
+    npm install --save-dev rollup @rollup/rollup-linux-x64-gnu
 
-# 시간 설정
+# 소스 복사
+COPY . .
+
+# 타임존
 RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
     echo "Asia/Seoul" > /etc/timezone
-
-COPY . .
 
 EXPOSE 5173
 

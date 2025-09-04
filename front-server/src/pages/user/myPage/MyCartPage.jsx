@@ -6,12 +6,43 @@ import {
 } from "../../../service/cartService";
 import TestImg from "../../../assets/images/ReSsol_TestImg.png";
 
-const SHIPPING_FEE_PER_SELLER = 3000;
+const SHIPPING_FEE = 3000;
+
+// 빈 옵션이면 공백, 있으면 "(색상: 핑크 · 사이즈: M)" 형태로
+const formatOptionsText = (optionsJson) => {
+  if (!optionsJson) return ''
+  try {
+    const data = typeof optionsJson === 'string' ? JSON.parse(optionsJson) : optionsJson
+    if (!data) return ''
+
+    if (Array.isArray(data)) {
+      const parts = data.map(it => {
+        if (!it) return ''
+        if (typeof it === 'string') return it
+        const name = it.name ?? it.optionName ?? it.key ?? ''
+        const value = it.value ?? it.optionValue ?? ''
+        const text = [name, value].filter(Boolean).join(': ')
+        return text
+      }).filter(Boolean)
+      return parts.length ? `(${parts.join(' · ')})` : ''
+    }
+
+    if (typeof data === 'object') {
+      const keys = Object.keys(data)
+      if (!keys.length) return ''
+      const parts = keys.map(k => (data[k] ? `${k}: ${data[k]}` : '')).filter(Boolean)
+      return parts.length ? `(${parts.join(' · ')})` : ''
+    }
+
+    return ''
+  } catch {
+    return ''
+  }
+}
 
 export default function MyCartPage() {
   const navi = useNavigate();
 
-  const [cart, setCart] = useState({ items: [] });
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState(new Set());
 
@@ -107,17 +138,15 @@ export default function MyCartPage() {
     await reload();
   };
 
-  const onCheckout = async () => {
-    const latest = await reload();
-    const invalid = (latest?.items ?? []).filter(
-      it => selectedIds.has(it.cartItemId) && !it.inStock
-    );
-    if (invalid.length > 0) {
-      alert("선택한 항목 중 품절/재고 부족 상품이 있습니다. 수정/삭제 후 다시 시도해주세요.");
-      return;
-    }
-    navi(`/user/order?mode=cart`, { state: { selectedIds: Array.from(selectedIds) } });
-  };
+  const onCheckout = () => {
+    if (!canCheckout) return;
+    const ids = Array.from(selectedIds)            // Set → Array
+    const qs = ids.length ? `&items=${ids.join(',')}` : ''
+    navi(`/user/order?mode=cart${qs}`)
+  }
+
+  if (loading) return <div className="p-4">장바구니를 불러오는 중...</div>;
+  if (error) return <div className="p-4 text-red-500">{error}</div>;
 
   return (
     <div className="p-4">
@@ -181,7 +210,9 @@ export default function MyCartPage() {
                       />
                       <div className="ml-4 flex flex-col">
                         <div className="font-medium text-sm">{row.productName}</div>
-                        <div className="text-xs text-gray-500 break-words">{row.optionsJson}</div>
+                        <div className="text-xs text-gray-500 break-words">
+                          {formatOptionsText(row.optionsJson)}
+                        </div>
                         {!row.inStock && (
                           <div className="text-xs text-red-600 mt-1">품절 또는 재고 부족</div>
                         )}

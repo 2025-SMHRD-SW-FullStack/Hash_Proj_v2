@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile
     environment:
       - VITE_HOST=0.0.0.0
+    ports:
+      - "5173:5173"
     networks:
       - app-network
 
