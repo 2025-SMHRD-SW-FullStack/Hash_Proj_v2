@@ -1,0 +1,38 @@
+#!/bin/sh
+#pip3 install awscli
+
+SERVICE_NAME='hash_proj_v2'
+
+echo "SERVICE_NAME ${SERVICE_NAME}"
+
+ACCESS_KEY=$(grep AWS_ACCESS_KEY_ID ${SERVICE_NAME}.env | cut -d '=' -f2)
+echo "ACCESS_KEY ${ACCESS_KEY}"
+
+SECRET_KEY=$(grep AWS_SECRET_ACCESS_KEY ${SERVICE_NAME}.env | cut -d '=' -f2)
+
+echo "SECRET_KEY: ${SECRET_KEY}"
+
+aws configure set aws_access_key_id ${ACCESS_KEY} --profile ${SERVICE_NAME}
+aws configure set aws_secret_access_key ${SECRET_KEY} --profile ${SERVICE_NAME}
+
+echo "AWS credentials for profile '${SERVICE_NAME}' have been configured."
+
+ENV_FILE="${SERVICE_NAME}.env"
+
+
+env_vars=""
+while IFS='=' read -r key value; do
+    key=$(echo "$key" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+    value=$(echo "$value" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+    if [ -n "$key" ] && [ -n "$value" ]; then
+        env_vars+="${key}=${value},"
+    fi
+done < "$ENV_FILE"
+
+# 맨 뒤의 쉼표 제거
+env_vars=${env_vars%,}
+
+# 결과 출력
+echo "$env_vars"
+eb init ${SERVICE_NAME} --profile ${SERVICE_NAME} --region ap-northeast-2
+eb create ${SERVICE_NAME} --envvars ${env_vars}
