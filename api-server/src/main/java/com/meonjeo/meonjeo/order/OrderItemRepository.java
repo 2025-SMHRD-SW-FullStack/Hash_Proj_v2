@@ -1,11 +1,10 @@
-// meonjeo/order/OrderItemRepository.java
-
 package com.meonjeo.meonjeo.order;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,4 +29,28 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
      */
     @Query("SELECT oi FROM OrderItem oi WHERE oi.order.id IN :orderIds AND oi.sellerId = :sellerId")
     List<OrderItem> findByOrderIdInAndSellerId(@Param("orderIds") List<Long> orderIds, @Param("sellerId") Long sellerId);
+
+    // ===== ✅ 실시간 스냅샷용: 금일 특정 상품의 구매건수/매출합 =====
+
+    @Query("""
+        select count(oi)
+          from OrderItem oi
+          join oi.order o
+         where oi.productId = :productId
+           and o.status in ('READY','IN_TRANSIT','DELIVERED','CONFIRMED')
+           and o.createdAt >= :fromTs
+    """)
+    long countPaidOrdersForProductSince(@Param("productId") Long productId,
+                                        @Param("fromTs") LocalDateTime fromTs);
+
+    @Query("""
+        select coalesce(sum(oi.unitPrice * oi.qty), 0)
+          from OrderItem oi
+          join oi.order o
+         where oi.productId = :productId
+           and o.status in ('READY','IN_TRANSIT','DELIVERED','CONFIRMED')
+           and o.createdAt >= :fromTs
+    """)
+    Long sumSalesAmountForProductSince(@Param("productId") Long productId,
+                                       @Param("fromTs") LocalDateTime fromTs);
 }

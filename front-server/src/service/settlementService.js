@@ -1,4 +1,3 @@
-// /src/service/settlementService.js
 import api from '/src/config/axiosInstance'
 
 /** 일별 정산 요약 */

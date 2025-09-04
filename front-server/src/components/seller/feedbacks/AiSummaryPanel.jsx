@@ -1,133 +1,116 @@
-// src/components/seller/feedbacks/AiSummaryPanel.jsx
-import React, { useMemo, useState, useEffect } from 'react'
-import Button from '../../common/Button'
+import React, { useMemo } from 'react'
 
 /**
  * props:
- *  - aiDaily: [{ date:'YYYY-MM-DD', text:'...' }, ...]
- *  - lastGeneratedAt: 'YYYY-MM-DD HH:mm' (선택)
+ *  - aiLive: { headline, keyPoints, actions, fullSummary, model, createdAt, date? } | null
+ *  - loading: boolean
  */
-export default function AiSummaryPanel({ aiDaily = [], lastGeneratedAt }) {
-  // ── 날짜 헬퍼
-  const pad = (n) => (n < 10 ? `0${n}` : `${n}`)
-  const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-  const parse = (s) => {
-    const [y, m, d] = String(s || '').split('-').map(Number)
-    const dt = new Date(y || 1970, (m || 1) - 1, d || 1)
-    dt.setHours(0, 0, 0, 0)
-    return dt
+
+const parseList = (v) => {
+  if (Array.isArray(v)) return v
+  if (typeof v === 'string') {
+    try {
+      const j = JSON.parse(v)
+      if (Array.isArray(j)) return j
+    } catch (_) {}
+    return v.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
   }
-  const addDays = (s, n) => {
-    const d = parse(s)
-    d.setDate(d.getDate() + n)
-    return ymd(d)
-  }
-  const clampDate = (s, min, max) => (min && s < min ? min : max && s > max ? max : s)
+  return []
+}
 
-  const today = useMemo(() => ymd(new Date()), [])
-
-  // ── 날짜 목록(정렬)
-  const sortedDates = useMemo(
-    () => [...aiDaily.map(d => d.date)].filter(Boolean).sort(),
-    [aiDaily]
-  )
-  const minDate = sortedDates[0] || null
-  const maxDate = sortedDates[sortedDates.length - 1] || null
-  const lastDate = maxDate || today
-
-  const [selectedDate, setSelectedDate] = useState(lastDate)
-
-  // 데이터 바뀌면 선택값을 범위에 맞게 보정
-  useEffect(() => {
-    setSelectedDate((s) => clampDate(s || lastDate, minDate || lastDate, maxDate || lastDate))
-  }, [minDate, maxDate, lastDate])
-
-  const findItem = (date) => aiDaily.find(d => d.date === date)
-  const current = findItem(selectedDate)
-
-  // ── 하루씩 이동 (목록에 없어도 이동 → "요약 없음" 표시)
-  const prevDisabled = !!minDate && selectedDate <= minDate
-  const nextDisabled = !!maxDate && selectedDate >= maxDate
-
-  const goPrev = () => {
-    if (prevDisabled) return
-    setSelectedDate((s) => clampDate(addDays(s, -1), minDate, maxDate))
-  }
-  const goNext = () => {
-    if (nextDisabled) return
-    setSelectedDate((s) => clampDate(addDays(s, +1), minDate, maxDate))
-  }
-  const goToday = () => {
-    const t = clampDate(today, minDate || today, maxDate || today)
-    setSelectedDate(t)
-  }
-
+function Spinner({ className = 'h-4 w-4' }) {
   return (
-    <div>
-      {/* 상단: 달력(날짜 선택) */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-xs text-gray-500">
-          매일 0시에 생성 · 신고 피드백 제외
-          {lastGeneratedAt ? <> · 마지막 생성: {lastGeneratedAt}</> : null}
+    <svg className={`animate-spin ${className} text-gray-400`} viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+    </svg>
+  )
+}
+
+export default function AiSummaryPanel({ aiLive = null, loading = false }) {
+  const live = useMemo(() => {
+    if (!aiLive) return null
+    return {
+      headline: aiLive.headline ?? '',
+      keyPoints: parseList(aiLive.keyPoints ?? aiLive.keyPointsJson ?? []),
+      actions: parseList(aiLive.actions ?? aiLive.actionsJson ?? []),
+      fullSummary: aiLive.fullSummary ?? aiLive.text ?? '',
+      model: aiLive.model ?? '',
+      createdAt: aiLive.createdAt ?? null,
+      date: aiLive.date ?? null,
+    }
+  }, [aiLive])
+
+  // ===== 로딩 UI =====
+  if (loading && !live) {
+    return (
+      <section className="rounded-lg border p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="inline-flex items-center rounded bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+            실시간
+          </span>
+          <Spinner />
+          <span className="text-sm text-gray-600">요약본 생성중…</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            className="rounded-md border px-2 py-1 text-sm disabled:opacity-40"
-            variant="admin"
-            onClick={goPrev}
-            disabled={prevDisabled}
-            aria-label="이전 요약"
-          >
-            ←
-          </Button>
-
-          <input
-            type="date"
-            className="rounded-md border px-3 py-1 text-sm"
-            value={selectedDate}
-            min={minDate || undefined}
-            max={maxDate || undefined}
-            onChange={(e) => {
-              const v = e.target.value
-              setSelectedDate(clampDate(v, minDate || v, maxDate || v))
-            }}
-          />
-
-          <Button
-            type="button"
-            className="rounded-md border px-2 py-1 text-sm disabled:opacity-40"
-            variant="admin"
-            onClick={goNext}
-            disabled={nextDisabled}
-            aria-label="다음 요약"
-          >
-            →
-          </Button>
-
-          <Button
-            type="button"
-            variant="admin"
-            className="rounded-md border px-3 py-1 text-sm"
-            onClick={goToday}
-          >
-            오늘
-          </Button>
+        {/* 스켈레톤 */}
+        <div className="animate-pulse space-y-3">
+          <div className="h-5 w-2/3 rounded bg-gray-100" />
+          <div className="h-3 w-4/5 rounded bg-gray-100" />
+          <div className="h-3 w-3/5 rounded bg-gray-100" />
+          <div className="h-24 w-full rounded bg-gray-50" />
+          <div className="pt-1 text-xs text-gray-300">모델: 준비 중…</div>
         </div>
+      </section>
+    )
+  }
+
+  // ===== 결과 표시 =====
+  return (
+    <section className="rounded-lg border p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="inline-flex items-center rounded bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+          실시간
+        </span>
+        <span className="text-xs text-gray-500">
+          {live?.createdAt ? `생성: ${live.createdAt}` : '생성 완료'}
+        </span>
       </div>
 
-      {/* 하단: 선택된 날짜의 요약 */}
-      <div className="mt-3 rounded-lg border p-4">
-        <div className="mb-1 text-sm font-medium">{selectedDate}</div>
-        {current ? (
-          <p className="whitespace-pre-wrap text-sm text-gray-800">{current.text}</p>
-        ) : (
-          <p className="text-sm text-gray-500">
-            해당 일자의 요약이 없습니다. (생성되지 않았거나 신고 제외됨)
-          </p>
-        )}
-      </div>
-    </div>
+      {live ? (
+        <div className="space-y-3">
+          {live.date && <div className="text-sm text-gray-500">{live.date}</div>}
+          {live.headline && <h3 className="text-base font-semibold">{live.headline}</h3>}
+
+          {live.keyPoints?.length > 0 && (
+            <div>
+              <div className="mb-1 text-sm font-medium text-gray-700">핵심 포인트</div>
+              <ul className="list-disc space-y-1 pl-5 text-sm">
+                {live.keyPoints.map((li, i) => <li key={i}>{li}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {live.actions?.length > 0 && (
+            <div>
+              <div className="mb-1 text-sm font-medium text-gray-700">권장 액션</div>
+              <ul className="list-disc space-y-1 pl-5 text-sm">
+                {live.actions.map((li, i) => <li key={i}>{li}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {live.fullSummary && (
+            <article className="prose prose-sm max-w-none text-gray-800">
+              {live.fullSummary.split(/\n{2,}/).map((p, i) => <p key={i}>{p}</p>)}
+            </article>
+          )}
+
+          <div className="pt-1 text-xs text-gray-400">모델: {live.model || '—'}</div>
+        </div>
+      ) : (
+        <div className="text-sm text-gray-500">표시할 요약이 없습니다.</div>
+      )}
+    </section>
   )
 }

@@ -7,7 +7,7 @@ import useAuthStore from '../stores/authStore'
 const API_BASE =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
   (window.__API_BASE__) ||
-  'http://localhost:7777'
+  ''
 
 const SOCKET_URL = `${API_BASE.replace(/\/$/, '')}/ws-stomp`
 
