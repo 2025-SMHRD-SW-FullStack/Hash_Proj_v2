@@ -27,14 +27,13 @@ final class ImageValidator {
             if (size > MAX_PER_FILE) throw new IllegalArgumentException("FILE_TOO_LARGE");
             total += size;
 
-            // 크기 검사 (webp 등 ImageIO 미지원 포맷은 스킵)
             try (InputStream in = f.getInputStream()) {
                 BufferedImage img = ImageIO.read(in);
                 if (img != null) {
                     if (img.getWidth() > MAX_PX || img.getHeight() > MAX_PX)
                         throw new IllegalArgumentException("IMAGE_TOO_BIG");
                 }
-            } catch (Exception ignore) { /* dimension check best-effort */ }
+            } catch (Exception ignore) { /* best-effort */ }
         }
         if (total > MAX_TOTAL) throw new IllegalArgumentException("TOTAL_TOO_LARGE");
     }

@@ -30,7 +30,6 @@ public class LocalStorageClient implements StorageClient {
         try (OutputStream os = Files.newOutputStream(dest)) {
             data.transferTo(os);
         }
-        // 절대 URL 반환 (Ad 배너 검증에서 http(s) 요구)
         return publicBaseUrl.replaceAll("/+$","") + "/uploads/" + key.replace("\\","/");
     }
 }

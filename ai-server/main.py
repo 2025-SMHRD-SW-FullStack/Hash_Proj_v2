@@ -1,3 +1,4 @@
+# main.py
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,18 +10,24 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.services.state import init_session, get_user_context, update_user_context
-# 여기에서 edit_summary를 import해도, 위 __all__ 덕분에 항상 성공
 from app.services.chatbot import reply_once, accept_now, edit_summary
-from app.core.gpt_client import call_chatgpt  # ⬅️ LLM 호출
+from app.core.gpt_client import call_chatgpt  # LLM 호출
 
-# ===== 추가: timeout + 폴백 유틸 =====
+# ===== timeout + 폴백 유틸 =====
 import json
 import concurrent.futures
-from typing import Any, Dict
+from typing import Any, Dict, Optional, List
 
 LLM_TIMEOUT_SEC = 20  # LLM 최대 대기 시간(초)
 
-def _call_llm_with_timeout(product_id: int, system_prompt: str, user_prompt: str, *, timeout_sec: int = LLM_TIMEOUT_SEC) -> str:
+
+def _call_llm_with_timeout(
+    product_id: int,
+    system_prompt: str,
+    user_prompt: str,
+    *,
+    timeout_sec: int = LLM_TIMEOUT_SEC,
+) -> str:
     """call_chatgpt를 별도 스레드에서 실행해 timeout_sec 내 결과만 받음."""
     def _run():
         return call_chatgpt(
@@ -30,12 +37,14 @@ def _call_llm_with_timeout(product_id: int, system_prompt: str, user_prompt: str
             temperature=0.3,
             max_tokens=800,
         )
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
         fut = ex.submit(_run)
         try:
             return fut.result(timeout=timeout_sec)
         except concurrent.futures.TimeoutError:
             raise TimeoutError(f"LLM timeout>{timeout_sec}s")
+
 
 def _as_json_or_wrap(txt: str) -> Dict[str, Any]:
     """LLM이 JSON이 아니어도 안전하게 JSON으로 감쌈."""
@@ -52,6 +61,7 @@ def _as_json_or_wrap(txt: str) -> Dict[str, Any]:
         "fullSummary": txt or "",
         "model": "fallback",
     }
+
 
 def _fallback_from_daily(p) -> Dict[str, Any]:
     """LLM 없이 숫자 지표로 빠르게 요약 생성(전일/누적용)."""
@@ -104,7 +114,14 @@ def _fallback_from_daily(p) -> Dict[str, Any]:
         + (f"- 5점 비중 {r5}%, 1점 비중 {r1}%로 파악됩니다.\n" if total else "")
         + "- 상위/하위 문항을 중심으로 개선 액션을 수립하세요."
     )
-    return {"headline": headline, "keyPoints": keyPoints, "actions": actions, "fullSummary": fullSummary, "model": "fallback"}
+    return {
+        "headline": headline,
+        "keyPoints": keyPoints,
+        "actions": actions,
+        "fullSummary": fullSummary,
+        "model": "fallback",
+    }
+
 
 def _fallback_from_realtime(p) -> Dict[str, Any]:
     """LLM 없이 숫자 지표로 빠르게 요약 생성(실시간 스냅샷용)."""
@@ -123,7 +140,14 @@ def _fallback_from_realtime(p) -> Dict[str, Any]:
         keyPoints.append("금일 구매 표본이 아직 부족합니다.")
     actions = ["저평점 리뷰 실시간 모니터링", "응대 템플릿으로 빠른 회신"]
     fullSummary = "- 금일 데이터 기준 간단 요약입니다. 표본이 늘어나면 자동 보강됩니다."
-    return {"headline": headline, "keyPoints": keyPoints, "actions": actions, "fullSummary": fullSummary, "model": "fallback"}
+    return {
+        "headline": headline,
+        "keyPoints": keyPoints,
+        "actions": actions,
+        "fullSummary": fullSummary,
+        "model": "fallback",
+    }
+
 
 # ===== 기본 앱 구성 =====
 @asynccontextmanager
@@ -145,6 +169,7 @@ async def lifespan(app: FastAPI):
         print(f"❌ lifespan 초기화 실패: {e}")
         raise
 
+
 app = FastAPI(title="Meonjeo Interview Chatbot", version="0.3.6", lifespan=lifespan)
 
 ALLOWED_ORIGINS = [
@@ -155,27 +180,33 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"],  # Authorization 포함
     allow_credentials=True,
 )
 
+# ===== 요청 모델 =====
 class CreateSession(BaseModel):
     user_id: int
     order_item_id: int
-    product_id: int | None = None
+    product_id: Optional[int] = None
+
 
 class ReplyReq(BaseModel):
     user_id: int
     text: str
 
+
 class AcceptReq(BaseModel):
     user_id: int
+    images: Optional[List[str]] = None  # 업로드된 이미지의 퍼블릭 URL 배열
+
 
 class EditReq(BaseModel):
     user_id: int
     instructions: str
 
-def _strip_bearer(auth: str | None) -> str | None:
+
+def _strip_bearer(auth: Optional[str]) -> Optional[str]:
     if not auth:
         return None
     s = auth.strip()
@@ -183,12 +214,15 @@ def _strip_bearer(auth: str | None) -> str | None:
         s = s[7:].strip()
     return s or None
 
+
+# ===== 라우팅 =====
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
 
+
 @app.post("/api/ai/chat/session")
-def create_session(req: CreateSession, authorization: str | None = Header(default=None)):
+def create_session(req: CreateSession, authorization: Optional[str] = Header(default=None)):
     ok, first_question = init_session(
         user_id=req.user_id,
         order_item_id=req.order_item_id,
@@ -203,26 +237,31 @@ def create_session(req: CreateSession, authorization: str | None = Header(defaul
         "step": (get_user_context(str(req.user_id)) or {}).get("stage"),
     }
 
+
 @app.post("/api/ai/chat/reply")
-def chat_reply(req: ReplyReq, authorization: str | None = Header(default=None)):
+def chat_reply(req: ReplyReq, authorization: Optional[str] = Header(default=None)):
     tok = _strip_bearer(authorization)
     if tok:
         update_user_context(str(req.user_id), {"access_token": tok})
     return reply_once(user_id=str(req.user_id), user_text=req.text, bearer=authorization)
 
+
 @app.post("/api/ai/chat/accept")
-def accept(req: AcceptReq, authorization: str | None = Header(default=None)):
+def accept(req: AcceptReq, authorization: Optional[str] = Header(default=None)):
+    # FE가 업로드해 받은 이미지 URL 배열을 images로 전달하면, 컨텍스트에 기록 후 게시
     tok = _strip_bearer(authorization)
     if tok:
         update_user_context(str(req.user_id), {"access_token": tok})
-    ok, msg = accept_now(user_id=str(req.user_id), bearer=authorization)
+    ok, msg = accept_now(user_id=str(req.user_id), bearer=authorization, images=req.images)
     if not ok:
         raise HTTPException(status_code=400, detail=msg or "게시 실패")
     return {"ok": True, "message": msg}
 
+
 @app.post("/api/ai/chat/edit")
 def edit_summary_api(req: EditReq):
     return edit_summary(user_id=str(req.user_id), instructions=req.instructions)
+
 
 # ======================
 # ✅ 전날 데이터 AI 요약
@@ -230,16 +269,17 @@ def edit_summary_api(req: EditReq):
 class DailyPayload(BaseModel):
     date: str
     productId: int
-    productName: str | None = None
-    category: str | None = None
-    overallAvg: float | None = None
-    stars: dict | None = None               # { "1": n, "2": n, ... }
-    demographics: dict | None = None        # { "20대": n, ... }
-    buyerSample: int | None = None
-    byQuestionAvg: list | None = None       # [{questionId,label,average}]
-    byQuestionChoice: list | None = None    # [{questionId,label,buckets}]
-    feedbackTexts: list[str] | None = None  # 전날 텍스트 n개
-    previousSummary: str | None = None      # 전전일 요약 전문
+    productName: Optional[str] = None
+    category: Optional[str] = None
+    overallAvg: Optional[float] = None
+    stars: Optional[dict] = None               # { "1": n, "2": n, ... }
+    demographics: Optional[dict] = None        # { "20대": n, ... }
+    buyerSample: Optional[int] = None
+    byQuestionAvg: Optional[list] = None       # [{questionId,label,average}]
+    byQuestionChoice: Optional[list] = None    # [{questionId,label,buckets}]
+    feedbackTexts: Optional[List[str]] = None  # 전날 텍스트 n개
+    previousSummary: Optional[str] = None      # 전전일 요약 전문
+
 
 @app.post("/api/ai/summary/daily")
 def ai_daily_summary(p: DailyPayload):
@@ -274,20 +314,22 @@ def ai_daily_summary(p: DailyPayload):
         # LLM 타임아웃/오류 → 즉시 폴백 반환
         return _fallback_from_daily(p)
 
+
 # ======================
 # ✅ 실시간 스냅샷 AI 요약 (금일/최근)
 # ======================
 class RealtimePayload(BaseModel):
     productId: int
-    productName: str | None = None
-    category: str | None = None
-    buyerSample: int | None = None           # 금일 구매건수
-    stars: dict | None = None                # {"1":n, ... , "avg": 4.3}
-    demographics: dict | None = None         # {"20대":n, ...} (선택)
-    byQuestionAvg: list | None = None        # [{label, average}]
-    byQuestionChoice: list | None = None     # [{label, slices:[{label, ratio}]}]
-    feedbackTexts: list[str] | None = None   # 최신 텍스트 N개(선택)
-    period: str | None = "TODAY"             # 표시용
+    productName: Optional[str] = None
+    category: Optional[str] = None
+    buyerSample: Optional[int] = None           # 금일 구매건수
+    stars: Optional[dict] = None                # {"1":n, ... , "avg": 4.3}
+    demographics: Optional[dict] = None         # {"20대":n, ...} (선택)
+    byQuestionAvg: Optional[list] = None        # [{label, average}]
+    byQuestionChoice: Optional[list] = None     # [{label, slices:[{label, ratio}]}]
+    feedbackTexts: Optional[List[str]] = None   # 최신 텍스트 N개(선택)
+    period: Optional[str] = "TODAY"             # 표시용
+
 
 @app.post("/api/ai/summary/realtime")
 def ai_realtime_summary(p: RealtimePayload):

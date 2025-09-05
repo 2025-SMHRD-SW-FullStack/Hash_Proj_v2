@@ -78,13 +78,10 @@ public class S3StorageClient implements StorageClient {
                 .bucket(bucket)
                 .key(key);
 
-        // Content-Type 세팅 (ImageType에 없을 수 있으니 확장자로 추정)
         String ct = guessContentType(key);
         if (ct != null) req = req.contentType(ct);
 
-        if (aclPublicRead) {
-            req = req.acl(ObjectCannedACL.PUBLIC_READ);
-        }
+        if (aclPublicRead) req = req.acl(ObjectCannedACL.PUBLIC_READ);
 
         s3.putObject(req.build(), RequestBody.fromInputStream(data, size));
 

@@ -16,11 +16,11 @@ class Extracted(BaseModel):
 # ---- 시스템 프롬프트(판정) ----
 JUDGE_SYS = """너는 한국어 인터뷰 답변 심사관이다.
 반드시 JSON 한 줄로만 응답한다.
-형식: {"ok": true|false, "move_on": false, "reason": "...", "reask": "...", "tips": "..."}
+형식: {"ok": true|false, "move_on": true|false, "reason": "...", "reask": "...", "tips": "..."}
 규칙:
 - ok==true: 질문과 직접 관련된 '구체적 속성/효과/경험/사유'가 1개라도 포함.
-- move_on 기본값은 false. (검증 통과 전에는 다음 질문으로 넘어가지 않음)
-- reask는 같은 질문을 더 구체적으로 유도하는 1문장.
+- move_on 기본값은 true. (실패일 때만 false로 두어 재질문)
+- reask는 같은 질문·같은 문구·같은 슬롯을 절대 반복하지 말 것. 이미 다룬 슬롯은 제외하고 다른 슬롯으로 한 문장 제시.
 - tips는 예시 1~2개 (선택).
 - JSON 이외 출력 금지.
 """

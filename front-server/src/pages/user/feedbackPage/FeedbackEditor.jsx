@@ -4,7 +4,6 @@ import { submitFeedback } from "../../../service/feedbackService";
 import { uploadImages } from "../../../service/uploadService";
 import { getMyPointBalance } from "../../../service/pointService";
 import Button from "../../../components/common/Button";
-// ChatRoom 제거 (ai-server 직결 컴포넌트로 대체)
 import Icon from "../../../components/common/Icon";
 import CloseIcon from "../../../assets/icons/ic_close.svg";
 import useFeedbackStore from "../../../stores/feedbackStore";
@@ -17,6 +16,32 @@ import { getMyProductDetail } from "../../../service/productService";
 import AIChatBox from "../../../components/feedback/AIChatBox";
 
 const MAX_LENGTH = 1000;
+
+// 카테고리 정규화(백엔드/DB에서 오는 값이 영문/별칭/혼합일 때 대비)
+const CATEGORY_ALIASES = {
+  electronics: "전자제품",
+  appliance: "전자제품",
+  beauty: "화장품",
+  cosmetics: "화장품",
+  service: "무형자산",
+  software: "무형자산",
+  subscription: "무형자산",
+  platform: "무형자산",
+  meal: "밀키트",
+  mealkit: "밀키트",
+  foodkit: "밀키트",
+};
+
+function normalizeCategory(raw) {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (["전자제품", "화장품", "무형자산", "밀키트"].includes(s)) return s;
+  const low = s.toLowerCase();
+  for (const k of Object.keys(CATEGORY_ALIASES)) {
+    if (low.includes(k)) return CATEGORY_ALIASES[k];
+  }
+  return null; // 미매칭 시 가이드 미표시
+}
 
 const FeedbackEditor = () => {
   const [searchParams] = useSearchParams();
@@ -34,11 +59,8 @@ const FeedbackEditor = () => {
 
   // 상품/가이드
   const [product, setProduct] = useState(null);
-  const category = product?.category || "기타";
-  const guidelines = [
-    ...feedbackGuidelines.common,
-    ...(feedbackGuidelines.categories[category] || []),
-  ];
+  const normalized = normalizeCategory(product?.category);
+  const guidelines = (normalized && feedbackGuidelines.categories[normalized]) || [];
 
   // 수기 작성 상태
   const [manualContent, setManualContent] = useState("");
@@ -54,9 +76,11 @@ const FeedbackEditor = () => {
   // 상품 상세(카테고리) 로딩
   useEffect(() => {
     if (!productId) return;
-    getMyProductDetail(productId).then((data) => {
-      if (data?.product) setProduct(data.product);
-    }).catch(() => {});
+    getMyProductDetail(productId)
+      .then((data) => {
+        if (data?.product) setProduct(data.product);
+      })
+      .catch(() => {});
   }, [productId]);
 
   // 이미지 프리뷰
@@ -177,14 +201,16 @@ const FeedbackEditor = () => {
           <p className="text-gray-600 mb-8">상품에 대한 솔직한 피드백을 남겨주세요. 포인트가 지급됩니다.</p>
 
           {/* 작성 가이드 */}
-          <div className="mb-6">
-            <h2 className="font-semibold mb-2">작성 가이드</h2>
-            <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm bg-gray-50 p-4 rounded-lg">
-              {guidelines.map((q, idx) => (
-                <li key={idx}>{q}</li>
-              ))}
-            </ul>
-          </div>
+          {guidelines.length > 0 && (
+            <div className="mb-6">
+              <h2 className="font-semibold mb-2">작성 가이드</h2>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm bg-gray-50 p-4 rounded-lg">
+                {guidelines.map((q, idx) => (
+                  <li key={idx}>{q}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="relative">
             <textarea
