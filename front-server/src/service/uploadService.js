@@ -3,7 +3,7 @@ import api from '../config/axiosInstance'
 
 /**
  * 여러 이미지 업로드 후 서버가 반환한 파일 메타정보 배열을 그대로 돌려줌.
- * @param {'PROFILE'|'EXCHANGE'|'PRODUCT_THUMB'|'PRODUCT_CONTENT'|'AD'|'FEEDBACK'} type
+ * @param {'PROFILE'|'EXCHANGE'|'PRODUCT_THUMB'|'PRODUCT_CONTENT'|'AD'|'FEEDBACK'|'CHAT'} type
  * @param {File[]} files
  * @returns {Promise<Array<{url:string, originalName:string, size:number}>>}
  */
