@@ -150,6 +150,7 @@ app = FastAPI(title="Meonjeo Interview Chatbot", version="0.3.6", lifespan=lifes
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "*"
 ]
 app.add_middleware(
     CORSMiddleware,
