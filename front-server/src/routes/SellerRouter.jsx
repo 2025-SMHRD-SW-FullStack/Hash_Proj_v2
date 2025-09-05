@@ -10,7 +10,6 @@ import AdsPayCompletePage from '../pages/seller/AdsPayCompletePage'
 import AdsManagementPage from '../pages/seller/AdsManagementPage'
 import FeedbacksManagePage from '../pages/seller/Feedbacks/FeedbacksManagePage'
 import FeedbacksStatsPage from '../pages/seller/Feedbacks/FeedbacksStatsPage'
-import ExchangeManagementPage from '../pages/seller/ExchangeManagementPage'
 import ProductsPage from '../pages/seller/product/ProductsPage'
 import ProductNewPage from '../pages/seller/product/ProductNewPage'
 import ProductDetailPage from '../pages/seller/product/ProductDetailPage'
@@ -48,7 +47,6 @@ const SellerRouter = () => {
         {/* 주문/정산/광고/교환 */}
         <Route path="orders" element={<OrdersPage />} />
         <Route path="payouts" element={<PayoutsPage />} />
-        <Route path="exchanges/pending" element={<ExchangeManagementPage />} />
         <Route path="ads">
           <Route path="power" element={<AdsPowerPage />} />
           <Route path="management" element={<AdsManagementPage />} />

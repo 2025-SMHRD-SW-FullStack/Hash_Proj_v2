@@ -292,8 +292,17 @@ export const getProductFeedbacks = (productId, { page = 0, size = 5 } = {}) =>
   api.get(`/api/feedbacks/products/${productId}`, { params: { page, size } }).then(r => r.data)
 
 /** 관리자 삭제 */
-export const adminDeleteFeedback = (feedbackId) =>
-  api.delete(`/api/admin/feedbacks/${feedbackId}`)
+export async function deleteFeedbackByAdmin(feedbackId) {
+  if (!feedbackId) throw new Error('feedbackId is required');
+  const res = await api.delete(`/api/admin/feedbacks/${feedbackId}`, {
+    validateStatus: () => true,
+  });
+  if (res.status < 200 || res.status >= 300) {
+    const msg = res?.data?.message || `삭제 실패 (${res.status})`;
+    throw new Error(msg);
+  }
+  return res.data; // 200 OK
+}
 
 /**
  * 피드백 제출: 성공 시 해당 상품의 AI 요약 즉시 생성 트리거
@@ -344,3 +353,20 @@ export async function fetchProductsByCategory(category) {
 // [셀러] 피드백 상세
 export const getSellerFeedbackDetail = (feedbackId) =>
   api.get(`/api/seller/feedbacks/${feedbackId}`).then(r => r.data)
+
+
+// (신규) 피드백 수정
+export const updateFeedback = async (id, { content, images = [] }) => {
+  const body = {
+    content,
+    imagesJson: JSON.stringify(images), // Swagger: imagesJson(string)
+  };
+  const res = await api.patch(`/api/feedbacks/${id}`, body, {
+    validateStatus: () => true,
+  });
+  if (res.status < 200 || res.status >= 300) {
+    const msg = res?.data?.message || `피드백 수정 실패 (${res.status})`;
+    throw new Error(msg);
+  }
+  return res?.data?.data ?? res?.data;
+};

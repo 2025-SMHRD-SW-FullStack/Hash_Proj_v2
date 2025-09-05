@@ -1,3 +1,4 @@
+// src/pages/ProductDetailPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
@@ -31,6 +32,35 @@ const ProductDetailPage = () => {
   const [error, setError] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
 
+  // 배송비 (무형자산 0원)
+  const deliverFee = useMemo(() => {
+    if (productData?.product?.category === '무형자산') return 0;
+    return 3000;
+  }, [productData]);
+
+  // ✅ 총 재고 계산: product.stockTotal 우선, 없으면 variants[].stock 합
+  const totalStock = useMemo(() => {
+    if (!productData) return 0;
+    const { product, variants } = productData;
+    if (product?.stockTotal != null) return product.stockTotal;
+    return Array.isArray(variants)
+      ? variants.reduce((sum, v) => sum + (v?.stock ?? 0), 0)
+      : 0;
+  }, [productData]);
+
+  // ✅ 선택된 옵션 중 품절(재고 0 이하) 포함 여부
+  const hasAnySelectedSoldOut = useMemo(() => {
+    if (!productData || !Array.isArray(selectedItems) || selectedItems.length === 0) return false;
+    const { variants } = productData;
+    return selectedItems.some(item => {
+      const v = variants.find(v => v.id === parseInt(item.variantId));
+      return (v?.stock ?? 0) <= 0;
+    });
+  }, [productData, selectedItems]);
+
+  // ✅ 전체 품절 여부
+  const isSoldOut = useMemo(() => (totalStock ?? 0) <= 0, [totalStock]);
+
   const [feedbacks, setFeedbacks] = useState([]);
   const [feedbacksLoading, setFeedbacksLoading] = useState(true);
   const [feedbackPage, setFeedbackPage] = useState(0);
@@ -44,18 +74,14 @@ const ProductDetailPage = () => {
   const [isFeedbackInfoModalOpen, setFeedbackInfoModalOpen] = useState(false);
   const [isOptionsPanelOpen, setIsOptionsPanelOpen] = useState(false);
 
-  // --- 메모이제이션 ---
-  const deliverFee = useMemo(() => {
-    if (productData?.product?.category === '무형자산') return 0;
-    return 3000;
-  }, [productData]);
-
+  // 옵션 사용 여부
   const useOptions = useMemo(() => {
     if (!productData) return false;
     const { product, variants } = productData;
-    return !!product.option1Name && variants.length > 0;
+    return !!product.option1Name && Array.isArray(variants) && variants.length > 0;
   }, [productData]);
 
+  // 총 금액
   const totalPrice = useMemo(() => {
     if (!productData) return 0;
     const itemsTotal = selectedItems.reduce((total, currentItem) => {
@@ -83,6 +109,7 @@ const ProductDetailPage = () => {
     loadFeedbacks(0, true);
   }, [productId]);
 
+  // 단일상품일 때 기본 선택
   useEffect(() => {
     if (!useOptions && productData && selectedItems.length === 0) {
       setSelectedItems([{
@@ -101,7 +128,7 @@ const ProductDetailPage = () => {
       setHasMoreFeedbacks(!data.last);
       setFeedbackPage(page);
     } catch (err) {
-      console.error("피드백 로딩 실패:", err);
+      console.error('피드백 로딩 실패:', err);
     } finally {
       setFeedbacksLoading(false);
     }
@@ -126,6 +153,7 @@ const ProductDetailPage = () => {
   };
 
   const handlePurchase = () => {
+    if (isSoldOut || hasAnySelectedSoldOut) return; // ✅ 품절 차단
     if (!isLoggedIn) {
       setIsAuthModalOpen(true);
       return;
@@ -141,20 +169,22 @@ const ProductDetailPage = () => {
     const itemsQuery = selectedItems.map(item => `${item.variantId}_${item.quantity}`).join(',');
     navigate(`/user/order?productId=${productId}&items=${itemsQuery}`);
   };
-  
+
   const handleAddToCart = async () => {
+    if (isSoldOut || hasAnySelectedSoldOut) return; // ✅ 품절 차단
     if (!isLoggedIn) {
       setIsAuthModalOpen(true);
       return;
     }
     if (useOptions && selectedItems.length === 0) {
-        alert('옵션을 선택해주세요.');
-        return;
+      alert('옵션을 선택해주세요.');
+      return;
     }
     if (selectedItems.length === 0) {
-        alert('상품 정보를 불러오는 중입니다.');
-        return;
+      alert('상품 정보를 불러오는 중입니다.');
+      return;
     }
+
     const { product, variants } = productData;
     const labels = [product.option1Name, product.option2Name, product.option3Name, product.option4Name, product.option5Name];
 
@@ -207,6 +237,7 @@ const ProductDetailPage = () => {
 
   // --- 구매 옵션 패널 컴포넌트 ---
   const PurchaseOptionsPanel = () => {
+    if (!productData) return null;
     const { product, variants } = productData;
 
     const optionCategories = useMemo(() => {
@@ -222,8 +253,8 @@ const ProductDetailPage = () => {
 
     const placeholderOption = { value: '', label: '옵션을 선택해주세요.' };
 
-    const handleOptionChange = selectedOption => {
-      const selectedVariantId = selectedOption.value;
+    const handleOptionChange = (selectedOption) => {
+      const selectedVariantId = selectedOption?.value;
       if (!selectedVariantId) return;
 
       const isAlreadySelected = selectedItems.some(item => item.variantId === String(selectedVariantId));
@@ -234,30 +265,31 @@ const ProductDetailPage = () => {
       setSelectedItems(prev => [...prev, { variantId: String(selectedVariantId), quantity: 1 }]);
     };
 
-    const handleQuantityInputChange = (variantId, value) => {
-        const quantity = parseInt(value, 10);
-        setSelectedItems(prev =>
-            prev.map(item =>
-                item.variantId === variantId ? { ...item, quantity: isNaN(quantity) || quantity < 1 ? 1 : quantity } : item
-            )
-        );
+    const handleQuantityChange = (variantId, amount) => {
+      setSelectedItems(prev =>
+        prev
+          .map(item =>
+            item.variantId === variantId
+              ? { ...item, quantity: Math.max(1, item.quantity + amount) }
+              : item
+          )
+      );
     };
 
-    const handleQuantityChange = (variantId, amount) => {
-        setSelectedItems(prev =>
-            prev.map(item =>
-            item.variantId === variantId
-                ? { ...item, quantity: Math.max(1, item.quantity + amount) }
-                : item
-            ).filter(item => item.quantity > 0)
-        );
+    const handleQuantityInputChange = (variantId, value) => {
+      const quantity = parseInt(value, 10);
+      setSelectedItems(prev =>
+        prev.map(item =>
+          item.variantId === variantId
+            ? { ...item, quantity: isNaN(quantity) || quantity < 1 ? 1 : quantity }
+            : item
+        )
+      );
     };
-    
-    const handleRemoveItem = variantId => {
+
+    const handleRemoveItem = (variantId) => {
       setSelectedItems(prev => prev.filter(item => item.variantId !== variantId));
     };
-
-    if (!productData) return null;
 
     return (
       <div className="p-4 bg-white flex-1 flex flex-col">
@@ -282,7 +314,11 @@ const ProductDetailPage = () => {
         <div className="pr-1 space-y-3">
           {useOptions && (
             <div className="mb-4">
-              <CategorySelect categories={optionCategories} selected={placeholderOption} onChange={handleOptionChange} />
+              <CategorySelect
+                categories={optionCategories}
+                selected={placeholderOption}
+                onChange={handleOptionChange}
+              />
             </div>
           )}
 
@@ -316,21 +352,12 @@ const ProductDetailPage = () => {
                       className="h-full w-6 p-1 cursor-pointer"
                     />
                     <input
-    type="number"
-    min={1}
-    value={item.quantity}
-    onChange={(e) => {
-      const value = parseInt(e.target.value);
-      if (!isNaN(value) && value > 0) {
-        setSelectedItems(prev =>
-          prev.map(si =>
-            si.variantId === item.variantId ? { ...si, quantity: value } : si
-          )
-        );
-      }
-    }}
-    className="w-14 text-center text-base font-semibold border border-gray-300 rounded-md focus:ring-1 focus:ring-primary focus:outline-none"
-  />
+                      type="number"
+                      min={1}
+                      value={item.quantity}
+                      onChange={(e) => handleQuantityInputChange(item.variantId, e.target.value)}
+                      className="w-14 text-center text-base font-semibold border border-gray-300 rounded-md focus:ring-1 focus:ring-primary focus:outline-none"
+                    />
                     <Icon
                       src={Plus}
                       alt="증가"
@@ -352,11 +379,25 @@ const ProductDetailPage = () => {
               <span className="text-2xl font-bold text-primary">{totalPrice.toLocaleString()}원</span>
             </div>
           )}
-          <Button className="mb-2 w-full h-12 text-lg" onClick={handlePurchase}>
-            구매하기
+          {/* ✅ 품절이면 라벨 '품절', 비활성화 */}
+          <Button
+            className="mb-2 w-full h-12 text-lg"
+            onClick={handlePurchase}
+            disabled={isSoldOut || hasAnySelectedSoldOut}
+            aria-disabled={isSoldOut || hasAnySelectedSoldOut}
+            title={(isSoldOut || hasAnySelectedSoldOut) ? '품절 상품은 구매할 수 없습니다' : '구매하기'}
+          >
+            {(isSoldOut || hasAnySelectedSoldOut) ? '품절' : '구매하기'}
           </Button>
           <div className="flex gap-2">
-            <Button variant="signUp" className="flex-1" onClick={handleAddToCart}>
+            <Button
+              variant="signUp"
+              className="flex-1"
+              onClick={handleAddToCart}
+              disabled={isSoldOut || hasAnySelectedSoldOut}
+              aria-disabled={isSoldOut || hasAnySelectedSoldOut}
+              title={(isSoldOut || hasAnySelectedSoldOut) ? '품절 상품은 장바구니에 담을 수 없습니다' : '장바구니'}
+            >
               장바구니
             </Button>
             <Button variant="signUp" className="flex-1" onClick={handleOpenChat} disabled={chatLoading}>
@@ -449,17 +490,35 @@ const ProductDetailPage = () => {
           </div>
         </div>
 
-        <aside className="hidden lg:block sticky top-8 w-full lg:w-1/4 h-[calc(100vh-4rem)] flex-shrink-0 p-4 lg:p-8">
+        <aside className="hidden lg:block sticky top-8 w/full lg:w-1/4 h-[calc(100vh-4rem)] flex-shrink-0 p-4 lg:p-8">
           <PurchaseOptionsPanel />
         </aside>
       </div>
 
+      {/* ✅ 모바일 하단바: 품절 시 라벨/비활성화 */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white p-3 border-t shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-40 flex items-center gap-2">
-        <Button variant="outline" className="flex-1" onClick={handleAddToCart}>
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={handleAddToCart}
+          disabled={isSoldOut || hasAnySelectedSoldOut}
+          aria-disabled={isSoldOut || hasAnySelectedSoldOut}
+          title={(isSoldOut || hasAnySelectedSoldOut) ? '품절 상품은 장바구니에 담을 수 없습니다' : '장바구니'}
+        >
           장바구니
         </Button>
-        <Button className="flex-1" onClick={useOptions ? () => setIsOptionsPanelOpen(true) : handlePurchase}>
-          구매하기
+        <Button
+          className="flex-1"
+          onClick={
+            (isSoldOut || hasAnySelectedSoldOut)
+              ? undefined
+              : (useOptions ? () => setIsOptionsPanelOpen(true) : handlePurchase)
+          }
+          disabled={isSoldOut || hasAnySelectedSoldOut}
+          aria-disabled={isSoldOut || hasAnySelectedSoldOut}
+          title={(isSoldOut || hasAnySelectedSoldOut) ? '품절 상품은 구매할 수 없습니다' : '구매하기'}
+        >
+          {(isSoldOut || hasAnySelectedSoldOut) ? '품절' : '구매하기'}
         </Button>
       </div>
 
@@ -469,7 +528,7 @@ const ProductDetailPage = () => {
         title="옵션 선택"
       >
         <div className="max-h-[70vh]">
-            <PurchaseOptionsPanel />
+          <PurchaseOptionsPanel />
         </div>
       </Modal>
 
