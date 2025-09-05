@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from "../../../components/common/Button";
-import {
-  getCart, updateCartItemQty, removeCartItem, clearCart
-} from "../../../service/cartService";
-import TestImg from "../../../assets/images/ReSsol_TestImg.png";
+import MinusIcon from '../../../assets/icons/ic_minus.svg';
+import PlusIcon from '../../../assets/icons/ic_plus.svg';
+import TestImg from '../../../assets/images/ReSsol_TestImg.png';
+import { getCart, updateCartItemQty, removeCartItem, clearCart } from '../../../service/cartService';
 
-const SHIPPING_FEE_PER_SELLER = 3000;
+const SHIPPING_FEE_PER_SELLER  = 3000;
 
 // 빈 옵션이면 공백, 있으면 "(색상: 핑크 · 사이즈: M)" 형태로
 const formatOptionsText = (optionsJson) => {
@@ -40,74 +40,92 @@ const formatOptionsText = (optionsJson) => {
   }
 }
 
-export default function MyCartPage() {
+const MyCartPage = () => {
   const navi = useNavigate();
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [cartData, setCartData] = useState({ items: [], totalPrice: 0, shippingFee: 0 });
   const [selectedIds, setSelectedIds] = useState(new Set());
 
-  const reload = async () => {
-    setLoading(true);
+  // 옵션 JSON을 파싱하여 표시 가능한 문자열로 변환하는 헬퍼 함수
+  const getOptionsString = (optionsJson) => {
+    if (!optionsJson) return null;
     try {
+      const options = JSON.parse(optionsJson);
+      const values = Object.values(options).filter(Boolean); // null이나 빈 문자열 값 제외
+      if (values.length === 0 || (values.length === 1 && values[0] === '기본')) {
+        return null; // 의미 없는 옵션은 표시하지 않음
+      }
+      return values.join(' / ');
+    } catch (e) {
+      return null; // JSON 파싱 실패 시 표시하지 않음
+    }
+  };
+
+  const fetchCart = async () => {
+    try {
+      setLoading(true);
+      setError(null);
       const data = await getCart();
-      setCart(data || { items: [] });
-      // 기본적으로 전체 선택
-      setSelectedIds(new Set((data?.items ?? []).map(it => it.cartItemId)));
-      return data;
+      setCartData(data || { items: [], totalPrice: 0, shippingFee: 0 });
+      setSelectedIds(new Set((data?.items || []).map(it => it.cartItemId)));
+    } catch (err) {
+      setError("장바구니 정보를 불러오는 데 실패했습니다.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => {
+    fetchCart();
+  }, []);
 
-  const items = cart?.items ?? [];
+  const items = cartData.items || [];
+
   const selectedItems = useMemo(
-    () => items.filter(it => selectedIds.has(it.cartItemId)),
+    () => items.filter(item => selectedIds.has(item.cartItemId)),
     [items, selectedIds]
   );
 
-  /** 셀러 수 (선택된 상품 기준) */
+  const itemsTotal = useMemo(
+    () => selectedItems.reduce((sum, r) => sum + r.subtotal, 0),
+    [selectedItems]
+  );
+
+  // 셀러 카운트 계산
   const distinctSellerCount = useMemo(() => {
-    if (selectedItems.length === 0) return 0;
-    const ids = new Set(
-      selectedItems
-        .map(r => r?.sellerId ?? r?.sellerID ?? r?.seller ?? r?.ownerId ?? null)
-        .filter(v => v !== null && v !== undefined)
-    );
-    return ids.size > 0 ? ids.size : 1;
+    const ids = selectedItems.map(it => it.sellerId).filter(Boolean);
+    return new Set(ids).size || 1; // sellerId 없으면 최소 1
   }, [selectedItems]);
 
-  /** 합계 (선택된 상품 기준) */
-  const itemsTotal = useMemo(() => {
-    if (selectedItems.length === 0) return 0;
-    return selectedItems.reduce((sum, r) => {
-      if (typeof r?.subtotal === "number") return sum + r.subtotal;
-      return sum + (Number(r?.unitPrice ?? 0) * Number(r?.qty ?? 0));
-    }, 0);
-  }, [selectedItems]);
-
-  /** 배송비 계산 로직 */
   const computedShippingFee = useMemo(() => {
+    console.log("Recalculating shipping fee...");
+    console.log("Selected items:", selectedItems);
     if (selectedItems.length === 0) return 0;
 
-    // 무형자산 포함 → 배송비 0원
-    const hasIntangible = selectedItems.some(it => it.category === "무형자산");
-    if (hasIntangible) return 0;
+    // 무형자산 포함 → 배송비 0원 (이제 it.category에 접근 가능)
+    // const hasIntangible = selectedItems.some(it => it.category === "무형자산");
+    // if (hasIntangible) return 0;
+
+    // 위 코드를 gpt가 이걸로 바꾸라해서 바꿈 확인 바람
+    const allIntangible = selectedItems.every(it => it.category === "무형자산");
+    if (allIntangible) return 0;
 
     // 기본 로직 (셀러 수 × 3000)
     return SHIPPING_FEE_PER_SELLER * Math.max(1, distinctSellerCount);
-  }, [selectedItems, distinctSellerCount]);
+  }, [selectedItems, cartData.shippingFee]);
 
   const computedPayableBase = useMemo(
     () => itemsTotal + computedShippingFee,
     [itemsTotal, computedShippingFee]
   );
 
-  const canCheckout = selectedItems.length > 0;
+  const canCheckout = useMemo(() => selectedItems.length > 0, [selectedItems]);
 
-  const handleSelectAll = (checked) => {
-    if (checked) {
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
       setSelectedIds(new Set(items.map(it => it.cartItemId)));
     } else {
       setSelectedIds(new Set());
@@ -120,76 +138,90 @@ export default function MyCartPage() {
     setSelectedIds(newIds);
   };
 
-  const onQtyChange = async (row, next) => {
-    if (next < 1) return;
-    await updateCartItemQty(row.cartItemId, next);
-    await reload();
+  const onQtyChange = async (cartItemId, newQuantity) => {
+    if (newQuantity < 1) return;
+    try {
+      await updateCartItemQty(cartItemId, newQuantity);
+      await fetchCart();
+    } catch {
+      alert("수량 변경에 실패했습니다.");
+    }
   };
 
-  const onRemove = async (row) => {
+  const onRemove = async (cartItemId) => {
     if (!confirm("이 항목을 삭제할까요?")) return;
-    await removeCartItem(row.cartItemId);
-    await reload();
+    try {
+      await removeCartItem(cartItemId);
+      await fetchCart();
+    } catch {
+      alert("상품 삭제에 실패했습니다.");
+    }
   };
 
   const onClear = async () => {
     if (!confirm("장바구니를 모두 비울까요?")) return;
-    await clearCart();
-    await reload();
+    try {
+      await clearCart();
+      await fetchCart();
+    } catch {
+      alert("장바구니 비우기에 실패했습니다.");
+    }
   };
 
   const onCheckout = () => {
     if (!canCheckout) return;
-    const ids = Array.from(selectedIds)            // Set → Array
-    const qs = ids.length ? `&items=${ids.join(',')}` : ''
-    navi(`/user/order?mode=cart${qs}`)
+    // 숫자 정규화 (문자 섞여도 안전)
+    const ids = Array.from(selectedIds)
+      .map(v => Number(v))
+      .filter(n => Number.isFinite(n));
+    const qs = ids.length ? `&items=${ids.join(',')}` : '';
+    navi(`/user/order?mode=cart${qs}`);
   }
 
   if (loading) return <div className="p-4">장바구니를 불러오는 중...</div>;
   if (error) return <div className="p-4 text-red-500">{error}</div>;
 
   return (
-    <div className="p-4">
-      {/* 헤더 */}
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="hidden md:block text-xl font-semibold">장바구니</h1>
-        {items.length > 0 && (
-          <button
-            onClick={onClear}
-            className="h-9 px-3 rounded-lg border hover:bg-gray-50 text-sm"
-          >
-            모두 비우기
-          </button>
-        )}
-      </div>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* 메인 컨텐츠 */}
+      <div className="flex-1 max-w-6xl mx-auto w-full pb-36">
+        {/* 헤더 */}
+        <div className="mb-4 flex items-center justify-between">
+          <h1 className="text-xl font-bold">장바구니</h1>
+          {items.length > 0 && (
+            <button
+              onClick={onClear}
+              className="text-sm text-red-500 hover:underline"
+            >
+              모두 비우기
+            </button>
+          )}
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
         {/* 리스트 */}
         <div className="rounded-2xl border bg-white">
-          {loading ? (
-            <div className="p-6 text-sm text-gray-500">불러오는 중…</div>
-          ) : items.length === 0 ? (
+          {items.length === 0 ? (
             <div className="p-6 text-sm text-gray-600">장바구니가 비어 있습니다.</div>
           ) : (
             <>
-              {/* 전체 선택 */}
               <div className="flex items-center p-4 border-b text-sm">
                 <input
                   type="checkbox"
+                  id="selectAll"
                   className="mr-2"
                   checked={items.length > 0 && selectedIds.size === items.length}
-                  onChange={e => handleSelectAll(e.target.checked)}
+                  onChange={handleSelectAll}
                 />
-                <span>전체 선택 ({selectedIds.size}/{items.length})</span>
+                <label htmlFor="selectAll">
+                  전체 선택 ({selectedIds.size}/{items.length})
+                </label>
               </div>
 
               <ul className="divide-y">
                 {items.map(row => (
                   <li
                     key={row.cartItemId}
-                    className={`p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${
-                      !row.inStock ? "bg-red-50" : ""
-                    }`}
+                    className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
                   >
                     {/* 상품 정보 */}
                     <div className="flex items-start sm:items-center">
@@ -204,7 +236,7 @@ export default function MyCartPage() {
                         alt={row.productName}
                         className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
                         onError={(e) => {
-                          e.target.onerror = null;
+                          e.target.onerror = null; // 무한 루프 방지
                           e.target.src = TestImg;
                         }}
                       />
@@ -214,10 +246,9 @@ export default function MyCartPage() {
                           {formatOptionsText(row.optionsJson)}
                         </div>
                         {!row.inStock && (
-                          <div className="text-xs text-red-600 mt-1">품절 또는 재고 부족</div>
-                        )}
-                        {row.category === "무형자산" && (
-                          <div className="text-xs text-blue-600 mt-1">무형자산 상품 (배송비 없음)</div>
+                          <div className="text-xs text-red-600 mt-1">
+                            품절 또는 재고 부족
+                          </div>
                         )}
                       </div>
                     </div>
@@ -226,25 +257,25 @@ export default function MyCartPage() {
                     <div className="flex items-center justify-between sm:justify-end gap-4">
                       <div className="flex items-center border rounded-lg overflow-hidden">
                         <button
-                          className="px-3 py-1 hover:bg-gray-50"
-                          onClick={() => onQtyChange(row, row.qty - 1)}
+                          className="p-2 hover:bg-gray-50"
+                          onClick={() => onQtyChange(row.cartItemId, row.qty - 1)}
                         >
-                          -
+                          <img src={MinusIcon} alt="-" className="w-3 h-3" />
                         </button>
                         <span className="px-3 text-sm">{row.qty}</span>
                         <button
-                          className="px-3 py-1 hover:bg-gray-50"
-                          onClick={() => onQtyChange(row, row.qty + 1)}
+                          className="p-2 hover:bg-gray-50"
+                          onClick={() => onQtyChange(row.cartItemId, row.qty + 1)}
                         >
-                          +
+                          <img src={PlusIcon} alt="+" className="w-3 h-3" />
                         </button>
                       </div>
                       <div className="w-24 text-right text-sm font-semibold">
-                        {(row.subtotal ?? (row.unitPrice ?? 0) * (row.qty ?? 0)).toLocaleString()}원
+                        {row.subtotal.toLocaleString()}원
                       </div>
                       <button
                         className="text-xs text-red-500 hover:underline"
-                        onClick={() => onRemove(row)}
+                        onClick={() => onRemove(row.cartItemId)}
                       >
                         삭제
                       </button>
@@ -255,32 +286,33 @@ export default function MyCartPage() {
             </>
           )}
         </div>
+      </div>
 
-        {/* 요약/CTA */}
-        <div className="rounded-2xl border bg-white p-4 h-fit sticky top-6">
-          <div className="mb-3">
-            <div className="flex items-center justify-between text-sm">
-              <span>상품 합계</span>
-              <span>{itemsTotal.toLocaleString()}원</span>
+      {/* 하단 고정 푸터 */}
+      <div className="fixed bottom-0 left-0 right-0 border-t bg-white shadow-lg">
+        <div className="max-w-6xl mx-auto w-full px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* 금액 정보 */}
+          <div className="flex flex-col text-sm sm:flex-row sm:items-center sm:gap-6">
+            <div className="flex justify-between sm:gap-2">
+              <span className="text-gray-600">상품 합계</span>
+              <span className="font-medium ml-2">{itemsTotal.toLocaleString()}원</span>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span>
-                배송비
-                {computedShippingFee === 0 && selectedItems.some(it => it.category === "무형자산") ? (
-                  <em className="ml-1 text-xs text-blue-500">(무형자산 상품 → 배송비 없음)</em>
-                ) : distinctSellerCount > 1 ? (
-                  <em className="ml-1 text-xs text-gray-500">(셀러 {distinctSellerCount}곳 × 3,000원)</em>
-                ) : null}
-              </span>
-              <span>{computedShippingFee.toLocaleString()}원</span>
+            <div className="flex justify-between sm:gap-2">
+              <span className="text-gray-600">배송비</span>
+              <span className="font-medium ml-2">{computedShippingFee.toLocaleString()}원</span>
             </div>
-            <div className="mt-2 border-t pt-2 flex items-center justify-between font-semibold">
+            <div className="flex justify-between sm:gap-2 font-semibold text-base">
               <span>결제 예정금액</span>
-              <span>{computedPayableBase.toLocaleString()}원</span>
+              <span className="ml-2">{computedPayableBase.toLocaleString()}원</span>
             </div>
           </div>
 
-          <Button className="w-full" disabled={!canCheckout || loading} onClick={onCheckout}>
+          {/* 결제 버튼 */}
+          <Button
+            className="w-full sm:w-56 h-12 text-base"
+            disabled={!canCheckout}
+            onClick={onCheckout}
+          >
             결제하기
           </Button>
         </div>
@@ -288,3 +320,5 @@ export default function MyCartPage() {
     </div>
   );
 }
+
+export default MyCartPage

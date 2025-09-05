@@ -90,6 +90,23 @@ public class CartService {
         cartRepo.deleteByUserId(uid());
     }
 
+    @Transactional
+    public void clearSelected(List<Long> selectedIds){
+        Long userId = uid();
+        if (selectedIds == null || selectedIds.isEmpty()) {
+            clear(); // 기존 전체 비우기 재사용
+            return;
+        }
+        Set<Long> allow = new HashSet<>(selectedIds);
+        List<CartItem> mine = cartRepo.findByUserIdOrderByIdDesc(userId)
+                .stream().filter(it -> allow.contains(it.getId()))
+                .collect(Collectors.toList());
+        if (!mine.isEmpty()) {
+            cartRepo.deleteAllInBatch(mine);
+        }
+    }
+
+
     /** 장바구니 조회(현재 가격/재고로 계산) */
     @Transactional
     public CartViewResponse getView(){
@@ -115,9 +132,9 @@ public class CartService {
             ProductVariant v = variantMap.get(it.getVariantId());
             if (p == null || v == null) {
                 // 상품/옵션이 삭제되었을 경우
-//                CartItemView view = new CartItemView(it.getId(), it.getProductId(), "(삭제됨)", null, it.getVariantId(),
-//                        it.getSelectedOptionsJson(), 0, it.getQty(), 0, false);
-//                views.add(view);
+                CartItemView view = new CartItemView(it.getId(), it.getProductId(), "(삭제됨)", null,null, it.getVariantId(),
+                        it.getSelectedOptionsJson(), 0, it.getQty(), 0, false);
+                views.add(view);
                 allItemsAreIntangible = false; // 삭제된 상품은 유형을 알 수 없으므로 배송비 부과
                 continue;
             }
@@ -133,11 +150,11 @@ public class CartService {
             int subtotal = unit * it.getQty();
             total += subtotal;
 
-//            CartItemView view = new CartItemView(
-//                    it.getId(), p.getId(), p.getName(), p.getThumbnailUrl(), v.getId(),
-//                    it.getSelectedOptionsJson(), unit, it.getQty(), subtotal, inStock
-//            );
-//            views.add(view);
+            CartItemView view = new CartItemView(
+                    it.getId(), p.getId(), p.getName(), p.getThumbnailUrl(),p.getCategory(),
+                    v.getId(), it.getSelectedOptionsJson(), unit, it.getQty(), subtotal, inStock
+            );
+            views.add(view);
         }
 
         // 모든 상품이 무형자산일 경우 배송비를 0원으로, 그렇지 않으면 3000원으로 설정
@@ -146,13 +163,44 @@ public class CartService {
         return new CartViewResponse(views, total, shipping, total + shipping);
     }
 
-    /** 체크아웃에 넣을 CheckoutItem용 (라벨→값 맵) 생성 */
-    @Transactional
-    public List<com.meonjeo.meonjeo.order.dto.CheckoutItem> buildCheckoutItems(){
-        Long userId = uid();
-        List<CartItem> items = cartRepo.findByUserIdOrderByIdDesc(userId);
-        if (items.isEmpty()) throw new ResponseStatusException(HttpStatus.CONFLICT, "CART_EMPTY");
+//    /** 체크아웃에 넣을 CheckoutItem용 (라벨→값 맵) 생성 */
+//    @Transactional
+//    public List<com.meonjeo.meonjeo.order.dto.CheckoutItem> buildCheckoutItems(){
+//        Long userId = uid();
+//        List<CartItem> items = cartRepo.findByUserIdOrderByIdDesc(userId);
+//        if (items.isEmpty()) throw new ResponseStatusException(HttpStatus.CONFLICT, "CART_EMPTY");
+//
+//        Map<Long, Product> productMap = productRepo.findAllById(
+//                items.stream().map(CartItem::getProductId).collect(Collectors.toSet())
+//        ).stream().collect(Collectors.toMap(Product::getId, x -> x));
+//
+//        Map<Long, ProductVariant> variantMap = variantRepo.findAllById(
+//                items.stream().map(CartItem::getVariantId).collect(Collectors.toSet())
+//        ).stream().collect(Collectors.toMap(ProductVariant::getId, x -> x));
+//
+//        List<com.meonjeo.meonjeo.order.dto.CheckoutItem> list = new ArrayList<>();
+//        for (CartItem it : items){
+//            Product p = productMap.get(it.getProductId());
+//            ProductVariant v = variantMap.get(it.getVariantId());
+//            if (p == null || v == null)
+//                throw new ResponseStatusException(HttpStatus.CONFLICT, "CART_CONTAINS_INVALID_ITEM");
+//
+//            // 라벨 → 값 맵 구성 (OrderService가 라벨 키를 선호)
+//            Map<String,String> options = new LinkedHashMap<>();
+//            if (p.getOption1Name() != null) options.put(p.getOption1Name(), v.getOption1Value());
+//            if (p.getOption2Name() != null) options.put(p.getOption2Name(), v.getOption2Value());
+//            if (p.getOption3Name() != null) options.put(p.getOption3Name(), v.getOption3Value());
+//            if (p.getOption4Name() != null) options.put(p.getOption4Name(), v.getOption4Value());
+//            if (p.getOption5Name() != null) options.put(p.getOption5Name(), v.getOption5Value());
+//
+//            list.add(new com.meonjeo.meonjeo.order.dto.CheckoutItem(p.getId(), it.getQty(), options));
+//        }
+//        return list;
+//    }
 
+    /** 내부: 전달된 items 리스트로만 CheckoutItem 변환 (재조회 금지) */
+    @Transactional
+    private List<com.meonjeo.meonjeo.order.dto.CheckoutItem> buildFromItems(List<CartItem> items){
         Map<Long, Product> productMap = productRepo.findAllById(
                 items.stream().map(CartItem::getProductId).collect(Collectors.toSet())
         ).stream().collect(Collectors.toMap(Product::getId, x -> x));
@@ -180,6 +228,32 @@ public class CartService {
         }
         return list;
     }
+
+    /** 전체 카트 → CheckoutItem (기존 동작 동일) */
+    @Transactional
+    public List<com.meonjeo.meonjeo.order.dto.CheckoutItem> buildCheckoutItems(){
+        Long userId = uid();
+        List<CartItem> items = cartRepo.findByUserIdOrderByIdDesc(userId);
+        if (items.isEmpty()) throw new ResponseStatusException(HttpStatus.CONFLICT, "CART_EMPTY");
+        return buildFromItems(items);
+    }
+
+    /** 선택 ID만 사용한 CheckoutItem (선택 결제용) */
+    @Transactional
+    public List<com.meonjeo.meonjeo.order.dto.CheckoutItem> buildCheckoutItems(List<Long> selectedIds){
+        Long userId = uid();
+        List<CartItem> items = cartRepo.findByUserIdOrderByIdDesc(userId);
+
+        if (selectedIds != null && !selectedIds.isEmpty()) {
+            Set<Long> allow = new HashSet<>(selectedIds);
+            items = items.stream().filter(it -> allow.contains(it.getId())).collect(Collectors.toList());
+            if (items.isEmpty()) throw new ResponseStatusException(HttpStatus.CONFLICT, "CART_SELECTION_EMPTY");
+        } else if (items.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CART_EMPTY");
+        }
+        return buildFromItems(items);
+    }
+
 
     // ===== helpers =====
     private static Map<String,String> normalize(Map<String,String> in){

@@ -31,6 +31,21 @@ const ORDER_STATUS_CHIPS = [
   { value: 'EXCHANGE', label: '교환요청' },
 ]
 
+function getSelectedCartIdsFromQuery() {
+  try {
+    const sp = new URLSearchParams(window.location.search);
+    const mode = (sp.get('mode') || '').toLowerCase();
+    const raw = sp.get('items') || '';
+    const ids = raw
+      .split(',')
+      .map(s => Number(s.trim()))
+      .filter(n => Number.isFinite(n));
+    return { mode, ids };
+  } catch {
+    return { mode: null, ids: [] };
+  }
+}
+
 // 리스트 높이(10행 기준)
 const SCROLL_Y = 48 * 10 + 44 // rowH * 10 + headerH
 
@@ -41,6 +56,11 @@ export default function OrdersPage() {
   const from = searchParams.get('from') || ''
   const to = searchParams.get('to') || ''
   const isExchange = status === 'EXCHANGE'
+
+  const { mode: orderModeFromQuery, ids: selectedCartItemIdsFromQuery } = React.useMemo(
+    () => getSelectedCartIdsFromQuery(),
+    []
+  );
 
   // 모바일 화면 여부 확인 (최대 767px) ⬅️ 추가
   const isMobile = useMediaQuery({ maxWidth: 767 })
