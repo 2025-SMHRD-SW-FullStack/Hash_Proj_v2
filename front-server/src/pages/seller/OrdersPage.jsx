@@ -1,6 +1,7 @@
 // src/pages/seller/OrdersPage.jsx
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useMediaQuery } from 'react-responsive' // ⬅️ 추가
 import StatusChips from '../../components/seller/StatusChips'
 import Button from '../../components/common/Button'
 import Modal from '../../components/common/Modal'
@@ -14,19 +15,20 @@ import BaseTable from '../../components/common/table/BaseTable'
 import { TableToolbar } from '../../components/common/table/TableToolbar'
 import { useOrderStore } from '../../stores/orderStore'
 import { getExchangeStatusLabel } from '../../constants/exchange'
+import CategorySelect from '../../components/common/CategorySelect' // ⬅️ 추가
 
 // ---- UI 토큰
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 
 // 서버 enum에 맞춘 칩 (백엔드 OrderStatus와 일치)
 const ORDER_STATUS_CHIPS = [
-  { key: 'ALL', label: '전체' },
-  { key: 'PAID', label: '신규주문' },
-  { key: 'READY', label: '배송준비중' },
-  { key: 'IN_TRANSIT', label: '배송중' },
-  { key: 'DELIVERED', label: '배송완료' },
-  { key: 'CONFIRMED', label: '구매확정' },
-  { key: 'EXCHANGE', label: '교환요청' },
+  { value: 'ALL', label: '전체' }, // ⬅️ key -> value 로 변경
+  { value: 'PAID', label: '신규주문' },
+  { value: 'READY', label: '배송준비중' },
+  { value: 'IN_TRANSIT', label: '배송중' },
+  { value: 'DELIVERED', label: '배송완료' },
+  { value: 'CONFIRMED', label: '구매확정' },
+  { value: 'EXCHANGE', label: '교환요청' },
 ]
 
 // 리스트 높이(10행 기준)
@@ -39,6 +41,9 @@ export default function OrdersPage() {
   const from = searchParams.get('from') || ''
   const to = searchParams.get('to') || ''
   const isExchange = status === 'EXCHANGE'
+
+  // 모바일 화면 여부 확인 (최대 767px) ⬅️ 추가
+  const isMobile = useMediaQuery({ maxWidth: 767 })
 
   // 전역 주문 상태
   const {
@@ -70,7 +75,7 @@ export default function OrdersPage() {
   const [detailRow, setDetailRow] = useState(null)
 
   // 운송장 입력/편집
-  const [shipForm, setShipForm] = useState({})     // { [orderId]: { carrierCode, trackingNo } }
+  const [shipForm, setShipForm] = useState({}) // { [orderId]: { carrierCode, trackingNo } }
   const [editing, setEditing] = useState(new Set())// Set<orderId>
 
   // 교환 발송 모달
@@ -223,7 +228,7 @@ export default function OrdersPage() {
       feedbackText: gridRow.feedbackText ?? gridRow.feedback ?? '',
     }
 
-    setDetailRow({ ...gridRow, ...normalized })   // ← 원본 + 보정치 동시 전달
+    setDetailRow({ ...gridRow, ...normalized }) // ← 원본 + 보정치 동시 전달
     setDetailOpen(true)
   }
 
@@ -485,8 +490,12 @@ export default function OrdersPage() {
     },
   ]), [load, setGlobalForceRefresh])
 
+  const selectedStatusItem = useMemo(() => {
+    return ORDER_STATUS_CHIPS.find(chip => chip.value === status) || ORDER_STATUS_CHIPS[0];
+  }, [status]);
+
   return (
-    <div className="mx-auto w-full max-w-7xl">
+    <div className="mx-auto w-full max-w-7xl px-4 md:px-6 lg:px-8"> {/* ⬅️ 추가: 패딩 추가 */}
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">주문 관리</h1>
       </div>
@@ -507,13 +516,22 @@ export default function OrdersPage() {
             )
           }
         >
-          <StatusChips
-            items={ORDER_STATUS_CHIPS}
-            value={status}
-            onChange={(v) => setParam({ status: v })}
-            size="sm"
-            variant="admin"
-          />
+          {isMobile ? (
+            <CategorySelect
+              categories={ORDER_STATUS_CHIPS}
+              selected={selectedStatusItem}
+              onChange={(item) => setParam({ status: item.value })}
+              className="w-full"
+            />
+          ) : (
+            <StatusChips
+              items={ORDER_STATUS_CHIPS}
+              value={status}
+              onChange={(v) => setParam({ status: v })}
+              size="sm"
+              variant="admin"
+            />
+          )}
         </TableToolbar>
       </section>
 

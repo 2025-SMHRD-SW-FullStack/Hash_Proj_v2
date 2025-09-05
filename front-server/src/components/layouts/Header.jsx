@@ -86,12 +86,12 @@ const Header = () => {
           {/* 모바일 버튼 */}
           <div className="sm:hidden">
             {isLoggedIn && isAdmin && (
-              <Button variant="admin" size="sm" onClick={handleAdminToggle}>
+              <Button variant={mode === 'user' ? 'admin' : 'signUp'} size="sm" onClick={handleAdminToggle}>
                 {mode === 'user' ? '관리자 페이지' : '유저 페이지'}
               </Button>
             )}
             {isLoggedIn && isSeller && (
-              <Button variant="admin" size="sm" onClick={toggleMode}>
+              <Button variant={mode === 'user' ? 'admin' : 'signUp'} size="sm" onClick={toggleMode}>
                 {mode === 'user' ? '셀러 페이지' : '유저 페이지'}
               </Button>
             )}
@@ -100,12 +100,12 @@ const Header = () => {
           {/* 데스크탑 버튼 */}
           <div className="hidden sm:flex items-center space-x-2">
             {isLoggedIn && isAdmin && (
-              <Button variant="admin" size="md" onClick={handleAdminToggle}>
+              <Button variant={mode === 'user' ? 'admin' : 'signUp'} size="md" onClick={handleAdminToggle}>
                 {mode === 'user' ? '관리자 페이지' : '유저 페이지'}
               </Button>
             )}
             {isLoggedIn && isSeller && (
-              <Button variant="admin" size="md" onClick={toggleMode}>
+              <Button variant={mode === 'user' ? 'admin' : 'signUp'} size="md" onClick={toggleMode}>
                 {mode === 'user' ? '셀러 페이지' : '유저 페이지'}
               </Button>
             )}

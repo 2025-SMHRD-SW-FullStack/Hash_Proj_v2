@@ -90,9 +90,9 @@ export default function SellerLayout({ children }) {
         </div>
       </div>
 
-      <div className="flex w-full gap-8 py-2 sm:py-6 justify-center">
+      <div className="flex w-full gap-8 justify-center">
         {/* 사이드바(데스크톱) */}
-        <aside className="hidden fixed left-0 z-0 shadow-sm w-56 shrink-0 lg:block">
+        <aside className="hidden fixed left-0 z-0 h-full shadow-sm w-56 sm:pt-4 shrink-0 lg:block">;
           <nav className="space-y-2">
             {navItems.map((it) => {
               if (it.type !== 'group') {
@@ -244,7 +244,7 @@ export default function SellerLayout({ children }) {
         </AnimatePresence>
 
         {/* 콘텐츠 */}
-        <section className="max-w-[1600px] px-4 sm:px-6 flex-1">
+        <section className="w-full max-w-[1600px] p-4 sm:p-6 flex-1">
           {children || <Outlet />}
         </section>
       </div>
