@@ -316,7 +316,7 @@ export default function SellerMain() {
   }, [settleSummary, fallbackSettlement])
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-7xl lg:px-8">
       {/* 상단 제목 */}
       <div className="mb-4">
         <h1 className="text-xl font-bold">셀러 대시보드</h1>
@@ -513,8 +513,6 @@ export default function SellerMain() {
           </Button>
         </section>
       </div>
-
-      <div className="h-8" />
     </div>
   )
 }

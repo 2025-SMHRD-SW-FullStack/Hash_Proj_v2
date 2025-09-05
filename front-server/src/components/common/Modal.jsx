@@ -46,7 +46,7 @@ const Modal = ({
           >
             {/* 헤더 */}
             {title && (
-              <div className="flex items-center justify-between border-b px-4 mb-4">
+              <div className="flex items-center justify-between border-b px-4">
                 <h3 className="text-lg font-semibold">{title}</h3>
                 <button className="border-none bg-transparent" onClick={onClose}>
                   <img src={CloseIcon} alt="닫기" className="w-6 h-6" />
@@ -55,7 +55,7 @@ const Modal = ({
             )}
 
             {/* 본문 */}
-            <div className="max-h-[70vh] overflow-y-auto overflow-x-hidden">
+            <div className="mx-4 max-h-[70vh] overflow-y-auto overflow-x-hidden">
               {children}
             </div>
 

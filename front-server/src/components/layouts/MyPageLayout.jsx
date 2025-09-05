@@ -124,7 +124,7 @@ const MyPageLayout = () => {
         </div>
 
         {/* 데스크탑 nav */}
-        <nav className="hidden md:block mt-4">
+        <nav className="hidden md:block mt-4 mr-6">
           <ul className="space-y-2 p-0 list-none">
             {navItems.map((item) => (
               <li key={item.to}>

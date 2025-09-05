@@ -376,8 +376,8 @@ const ProductDetailPage = () => {
 
   return (
     <div className="pb-24 lg:pb-0">
-      <div className="flex flex-col lg:flex-row items-start">
-        <div className="w-full lg:w-3/4 px-4 lg:px-10">
+      <div className="flex flex-col px-4 lg:flex-row items-start">
+        <div className="w-full lg:w-3/4 lg:px-10">
           <div className="flex flex-col items-center">
             <div className="w-full flex justify-between items-center my-4">
               <h2 className="text-xl sm:text-2xl font-bold">[{product.brand}] {product.name}</h2>
