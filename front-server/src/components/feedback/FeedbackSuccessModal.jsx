@@ -1,3 +1,4 @@
+// src/components/feedback/FeedbackSuccessModal.jsx
 import React from 'react';
 import Button from '../common/Button';
 import Modal from '../common/Modal'; // 기존에 만들어둔 Modal 컴포넌트 재활용

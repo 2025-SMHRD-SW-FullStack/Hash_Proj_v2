@@ -214,6 +214,9 @@ public class FeedbackService {
         Product product = productRepo.findById(fb.getProductId()).orElse(null);
         String productImageUrl = (product != null) ? product.getThumbnailUrl() : null;
 
+        Long me = auth.currentUserId(); // ✅ 현재 로그인 사용자 ID
+
+
         return new FeedbackResponse(
                 fb.getId(),
                 fb.getOrderItemId(),
@@ -231,7 +234,8 @@ public class FeedbackService {
                 fb.getScoresJson(),
                 authorNickname,
                 authorProfileImageUrl,
-                productImageUrl
+                productImageUrl,
+                Objects.equals(me, fb.getUserId())
         );
     }
 
@@ -259,6 +263,9 @@ public class FeedbackService {
                 .toList();
         Map<Long, Product> productMap = productRepo.findAllById(productIds).stream()
                 .collect(Collectors.toMap(Product::getId, Function.identity()));
+
+        // ✅ 현재 로그인 사용자 id (목록 변환에서도 한 번만 구해서 재사용)
+            Long me = auth.currentUserId();
 
         return feedbacks.stream().map(fb -> {
             OrderItem mainOrderItem = orderItemMap.get(fb.getOrderItemId());
@@ -313,7 +320,8 @@ public class FeedbackService {
                     fb.getScoresJson(),
                     nickname,
                     profileImg,
-                    productImageUrl
+                    productImageUrl,
+                    Objects.equals(me, fb.getUserId())   // ✅ mine
             );
         }).filter(Objects::nonNull).collect(Collectors.toList());
     }

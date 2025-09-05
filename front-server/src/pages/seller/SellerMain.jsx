@@ -14,7 +14,8 @@ import useAuthStore from '../../stores/authStore'
 import chatSocket from '../../service/chatSocket'   // ✅ 실시간 갱신용
 
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
-const kpi = 'flex items-center justify-between py-2 text-sm'
+const kpi = 'flex items-center justify-center py-2 text-sm text-center w-full'
+
 
 // 금액 추출 유틸 (orderUtils.getAmount 우선, 폴백)
 const getAmount = (row) => {
@@ -291,55 +292,70 @@ export default function SellerMain() {
       {/* 상단 요약 */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* 주문 */}
-        <section className={box}>
-          <h2 className="mb-2 text-base font-semibold">주문</h2>
-          <Button
-            variant="admin"
-            className="w-full justify-between"
-            onClick={() => navigate('/seller/orders?status=READY')}
-            disabled={loading || statsLoading}
-          >
-            <span className={kpi}>신규주문</span>
-            <strong>{statsLoading ? '...' : fmt(counts.newOrders)}건</strong>
-          </Button>
+         <section className={box}>
+           <h2 className="mb-2 text-base font-semibold">주문</h2>
+           <Button
+             variant="admin"
+             className="w-full justify-between"
+             onClick={() => navigate('/seller/orders?status=PAID')}  // 신규주문: READY 상태
+             disabled={loading || statsLoading}
+           >
+             <span className={kpi}>신규주문</span>
+             {/* <strong>{statsLoading ? '...' : fmt(counts.newOrders)}건</strong> */}
+           </Button>
 
-          <Button
-            variant="admin"
-            className="mt-1 w-full justify-between"
-            onClick={() => navigate('/seller/exchanges/pending')}
-            disabled={loading}
-          >
-            <span className={kpi}>교환요청</span>
-            <strong>0건</strong>
-          </Button>
+           <Button
+             variant="admin"
+             className="mt-1 w-full justify-between"
+             onClick={() => navigate('/seller/orders?status=EXCHANGE')}
+             disabled={loading}
+           >
+             <span className={kpi}>교환요청</span>
+             {/* <strong>0건</strong> */}
+           </Button>
 
-          <Button
-            variant="admin"
-            className="mt-1 w-full justify-between"
-            onClick={() => navigate('/seller/feedbacks/manage?status=NEW_WRITE')}
-            disabled={loading || statsLoading}
-          >
-            <span className={kpi}>신규 피드백</span>
-            <strong>{statsLoading ? '...' : fmt(counts.newFeedbacks)}건</strong>
-          </Button>
-        </section>
+           <Button
+             variant="admin"
+             className="mt-1 w-full justify-between"
+             onClick={() => navigate('/seller/feedbacks/manage?status=NEW')}
+             disabled={loading || statsLoading}
+           >
+             <span className={kpi}>신규 피드백</span>
+             {/* <strong>{statsLoading ? '...' : fmt(counts.newFeedbacks)}건</strong> */}
+           </Button>
+         </section>
 
-        {/* 배송 */}
-        <section className={box}>
-          <h2 className="mb-2 text-base font-semibold">배송</h2>
-          <Button variant="admin" className="w-full justify-between" onClick={() => navigate('/seller/orders?status=READY')} disabled={loading}>
-            <span className={kpi}>배송준비</span>
-            <strong>{fmt(counts.shipReady)}건</strong>
-          </Button>
-          <Button variant="admin" className="mt-1 w-full justify-between" onClick={() => navigate('/seller/orders?status=IN_TRANSIT')} disabled={loading}>
-            <span className={kpi}>배송중</span>
-            <strong>{fmt(counts.shipping)}건</strong>
-          </Button>
-          <Button variant="admin" className="mt-1 w-full justify-between" onClick={() => navigate('/seller/orders?status=DELIVERED')} disabled={loading}>
-            <span className={kpi}>배송완료</span>
-            <strong>{fmt(counts.shipped)}건</strong>
-          </Button>
-        </section>
+                 {/* 배송 */}
+         <section className={box}>
+           <h2 className="mb-2 text-base font-semibold">배송</h2>
+           <Button
+             variant="admin"
+             className="w-full justify-between"
+             onClick={() => navigate('/seller/orders?status=READY')}
+             disabled={loading}
+           >
+             <span className={kpi}>배송준비</span>
+             {/* <strong>{fmt(counts.shipReady)}건</strong> */}
+           </Button>
+           <Button
+             variant="admin"
+             className="mt-1 w-full justify-between"
+             onClick={() => navigate('/seller/orders?status=IN_TRANSIT')}
+             disabled={loading}
+           >
+             <span className={kpi}>배송중</span>
+             {/* <strong>{fmt(counts.shipping)}건</strong> */}
+           </Button>
+                       <Button
+              variant="admin"
+              className="mt-1 w-full justify-between"
+              onClick={() => navigate('/seller/orders?status=DELIVERED')}
+              disabled={loading}
+            >
+              <span className={kpi}>배송완료</span>
+              {/* <strong>{fmt(counts.shipped)}건</strong> */}
+            </Button>
+         </section>
 
         {/* 정산 (오늘자) */}
         <section className={box}>
@@ -427,10 +443,6 @@ export default function SellerMain() {
               </ul>
             </div>
           )}
-
-          <Button variant="admin" className="mt-3 w-full" onClick={() => navigate('/seller/chat')}>
-            채팅 페이지로 이동
-          </Button>
         </section>
       </div>
     </div>
