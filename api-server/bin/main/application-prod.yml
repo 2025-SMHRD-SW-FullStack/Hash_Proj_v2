@@ -1,39 +1,63 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
+  forward-headers-strategy: framework
+
+logging:
+  level:
+    com.meonjeo.meonjeo.chat: INFO
+    org.springframework.messaging: INFO
+    org.springframework.web.socket: INFO
 
 spring:
-
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
-    locations: classpath:db/migration
-
   datasource:
-    url: jdbc:mysql://project-db-campus.smhrd.com:3307/campus_25SW_FS_p3_1?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: campus_25SW_FS_p3_1
-    password: ${PASSWORD}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
-      ddl-auto: migration
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
     properties:
       hibernate:
         format_sql: true
+        show_sql: true
     database-platform: org.hibernate.dialect.MySQL8Dialect
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DB:0}
 
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
-
-  redis:
-    host: localhost
-    port: 6379
+      # 업로드 모듈 가이드: 1파일 ≤10MB, 총합 ≤30MB
+      max-file-size: 12MB
+      max-request-size: 40MB
 
   jackson:
     serialization:
       fail-on-empty-beans: false
+
+# ===== 파일 스토리지 (PROD) =====
+storage:
+  mode: s3
+  local:
+    base-dir: ./uploads
+  s3:
+    bucket: ${STORAGE_S3_BUCKET}
+    region: ${STORAGE_S3_REGION}
+    endpoint: ${STORAGE_S3_ENDPOINT}
+    path-style: ${STORAGE_S3_PATH_STYLE:true}
+    public-base-url: ${STORAGE_S3_PUBLIC_BASE_URL}
+    acl-public-read: ${STORAGE_S3_ACL_PUBLIC_READ:true}
+
+phone:
+  short-token:
+    validity-seconds: 600
+  code:
+    ttl-seconds: 180
+    max-attempts: 5
 
 ai:
   base-url: http://hash-proj-v2.eba-ijnehrgn.ap-northeast-2.elasticbeanstalk.com:8001
@@ -75,4 +99,3 @@ sweettracker:
   api-key: ${SWEETTRACKER_API_KEY}
   base-url: https://info.sweettracker.co.kr
   timeout-ms: 3000
-

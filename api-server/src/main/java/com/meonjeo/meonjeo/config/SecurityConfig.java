@@ -101,7 +101,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/shipping/webhooks/**", "/api/shipping/events").permitAll()
                         .requestMatchers("/api/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/ads/active/**").permitAll() // ✅ 광고 조회 공개
-
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.HEAD, "/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )

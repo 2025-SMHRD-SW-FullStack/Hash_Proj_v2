@@ -5,6 +5,7 @@ import BaseTable from '../../components/common/table/BaseTable';
 import TableToolbar from '../../components/common/table/TableToolbar';
 import { qnaService } from '../../service/qnaService';
 import Button from '../../components/common/Button';
+import QnAImageGallery from '../../components/common/qna/QnAImageGallery';
 
 /** 상태 표시 뱃지 */
 const StatusBadge = ({ status }) => {
@@ -202,7 +203,9 @@ const QnAManagementPage = () => {
             <div className="bg-gray-50 p-4 rounded-md min-h-[150px] mb-4">
               {qnaDetail.content}
             </div>
-            
+            {/* 첨부 이미지 */}
+            <QnAImageGallery imagesJson={qnaDetail.imagesJson} title="첨부 이미지" />
+            <div className="mt-4" />
             {qnaDetail.status === 'WAITING' ? (
               <>
                 <h4 className="font-semibold mb-2">답변</h4>
