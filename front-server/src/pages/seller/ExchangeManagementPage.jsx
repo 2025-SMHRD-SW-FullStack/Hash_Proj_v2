@@ -1,8 +1,8 @@
 // /src/pages/seller/ExchangeManagementPage.jsx
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Button from '/src/components/common/Button'
-import { fetchPendingExchanges, approveExchange, rejectExchange, shipExchange } from '/src/service/exchangeService'
+import Button from '../../components/common/Button'
+import { fetchPendingExchanges, approveExchange, rejectExchange, shipExchange } from '../../../src/service/exchangeService'
 
 export default function ExchangeManagementPage() {
   const navigate = useNavigate()

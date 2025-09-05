@@ -1,9 +1,9 @@
 // /src/utils/apiTest.js
 // 백엔드 API 연동 상태 테스트 유틸리티
 
-import api from '/src/config/axiosInstance'
-import { fetchSellerOrders, mapStatusForDisplay } from '/src/service/orderService'
-import { fetchDailySettlementSummary } from '/src/service/settlementService'
+import api from '../config/axiosInstance'
+import { fetchSellerOrders, mapStatusForDisplay } from '../service/orderService'
+import { fetchDailySettlementSummary } from '../service/orderService'
 
 /**
  * 셀러 주문 API 연동 상태 테스트

@@ -1,7 +1,7 @@
 // src/pages/seller/product/ProductDetailPage.jsx
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getMyProductDetail, deleteMyProduct } from '/src/service/productService'
+import { getMyProductDetail, deleteMyProduct } from '../../../service/productService'
 
 // UI
 const box = 'rounded-xl border bg-white p-4 shadow-sm'

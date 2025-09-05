@@ -1,11 +1,11 @@
 // /src/pages/seller/product/ProductsPage.jsx
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import StatusChips from '/src/components/seller/StatusChips'
-import Button from '/src/components/common/Button'
-import Modal from '/src/components/common/Modal'
-import { getMyProducts, deleteMyProduct as deleteProduct, deleteProduct as _aliasDelete } from '/src/service/productService'
-import { fmtYmd } from '/src/util/orderUtils'
+import StatusChips from '../../../components/seller/StatusChips'
+import Button from '../../../components/common/Button'
+import Modal from '../../../components/common/Modal'
+import { getMyProducts, deleteMyProduct as deleteProduct, deleteProduct as _aliasDelete } from '../../../service/productService'
+import { fmtYmd } from '../../../util/orderUtils'
 
 // ---- UI 토큰 (OrdersPage 스타일과 동일한 톤)
 const box = 'rounded-xl border bg-white p-4 shadow-sm'

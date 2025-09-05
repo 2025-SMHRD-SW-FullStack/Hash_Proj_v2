@@ -2,8 +2,8 @@
 import React, { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import Header from './Header'
-import adminNav from '/src/config/adminNav'
-import Button from '/src/components/common/Button'
+import adminNav from '../../config/adminNav'
+import Button from '../common/Button'
 
 const itemBase   = 'block w-full rounded-xl px-3 py-2 text-sm transition-colors select-none text-center focus:outline-none'
 const itemIdle   = 'text-gray-900 hover:bg-gray-100'

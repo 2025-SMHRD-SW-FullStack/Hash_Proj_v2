@@ -1,9 +1,9 @@
 // src/pages/admin/AdsPage.jsx
 import React, { useEffect, useMemo, useState } from 'react'
-import BaseTable from '/src/components/common/table/BaseTable'
-import { TableToolbar } from '/src/components/common/table/TableToolbar'
-import Button from '/src/components/common/Button'
-import { adminActivateAd, adminCancelAd, adminFetchAdBookings } from '/src/service/adminAdsService'
+import BaseTable from '../../components/common/table/BaseTable'
+import { TableToolbar } from '../../components/common/table/TableToolbar'
+import Button from '../../components/common/Button'
+import { adminActivateAd, adminCancelAd, adminFetchAdBookings } from '../../../src/service/adminAdsService'
 
 // 날짜 포맷: YYYY.MM.DD
 const fmtDate = (d) => {

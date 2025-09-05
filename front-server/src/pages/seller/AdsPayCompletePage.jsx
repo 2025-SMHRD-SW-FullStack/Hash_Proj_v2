@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { confirmAdPayment } from '/src/service/adsService'
+import { confirmAdPayment } from '../../../src/service/adsService'
 import Button from '../../components/common/Button'
 
 const AdsPayCompletePage = () => {

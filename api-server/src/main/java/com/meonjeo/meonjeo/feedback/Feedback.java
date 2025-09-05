@@ -52,14 +52,12 @@ public class Feedback {
 
     /** 업로드 완료된 이미지 URL 리스트 JSON */
     @Lob
+    @Column(name = "images_json", columnDefinition = "MEDIUMTEXT")
     private String imagesJson;
 
     @Builder.Default
     @Column(name = "reported", nullable = false, columnDefinition = "bit(1)")
     private boolean reported = false;
-
-    public boolean isReported() { return reported; }
-    public void setReported(boolean reported) { this.reported = reported; }
 
     /** 생성/수정/마감 시각 */
     private LocalDateTime createdAt;

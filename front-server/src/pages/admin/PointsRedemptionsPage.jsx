@@ -1,13 +1,13 @@
 // src/pages/admin/PointsRedemptionsPage.jsx
 import React, { useEffect, useMemo, useState } from 'react'
-import BaseTable from '/src/components/common/table/BaseTable'
-import { TableToolbar } from '/src/components/common/table/TableToolbar'
-import Button from '/src/components/common/Button'
+import BaseTable from '../../components/common/table/BaseTable'
+import { TableToolbar } from '../../components/common/table/TableToolbar'
+import Button from '../../components/common/Button'
 import {
   fetchRequestedRedemptions,
   approveRedemption,
   rejectRedemption,
-} from '/src/service/adminPointsService'
+} from '../../../src/service/adminPointsService'
 
 // 상태 뱃지
 const StatusChip = ({ status }) => {

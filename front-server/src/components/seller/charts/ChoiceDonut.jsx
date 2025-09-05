@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { ResponsiveContainer, PieChart, Pie, Tooltip, Legend, Cell } from 'recharts'
 import * as AgePalette from './AgeDonut'
-import { CHART } from '/src/constants/chartTheme'
+import { CHART } from '../../../constants/chartTheme'
 
 const r1 = (n) => (Number.isFinite(n) ? Math.round(n * 10) / 10 : 0)
 

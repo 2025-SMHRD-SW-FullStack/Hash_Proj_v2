@@ -1,5 +1,5 @@
 // /src/service/aiService.js
-import axiosAI from '/src/config/axiosAI'
+import axiosAI from "../config/axiosAI"
 
 // 날짜 포맷 유틸
 const pad = (n) => (n < 10 ? `0${n}` : `${n}`)

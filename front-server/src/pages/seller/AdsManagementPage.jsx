@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../components/common/Button'
-import { fetchMyAds } from '/src/service/adsService'
-import { AD_STATUS, AD_STATUS_COLOR, AD_STATUS_LABEL } from '/src/constants/ads'
+import { fetchMyAds } from '../../../src/service/adsService'
+import { AD_STATUS, AD_STATUS_COLOR, AD_STATUS_LABEL } from '../../constants/ads'
 
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 

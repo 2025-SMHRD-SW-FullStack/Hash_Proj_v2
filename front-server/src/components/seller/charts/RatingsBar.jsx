@@ -1,7 +1,7 @@
 // /src/components/seller/charts/RatingsBar.jsx
 import React from 'react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
-import { CHART } from '/src/constants/chartTheme'
+import { CHART } from '../../../constants/chartTheme'
 
 // ✔︎ 긴 라벨을 2~3줄로 나눠 그려주는 커스텀 Tick
 function MultiLineTick({ x, y, payload, maxChars = 8 }) {

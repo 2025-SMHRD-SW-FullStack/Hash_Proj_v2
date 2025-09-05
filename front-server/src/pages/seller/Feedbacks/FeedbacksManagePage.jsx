@@ -4,10 +4,8 @@ import React, { useEffect, useMemo, useState, memo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../../../components/common/Button'
 import Modal from '../../../components/common/Modal'
-import OrderDetailContent from '../../../components/seller/OrderDetailContent'
+import FeedbackDetailContent from '../../../components/seller/feedbacks/FeedbackDetailContent';
 import ReportModal from '../../../components/seller/feedbacks/ReportModal'
-// import BaseTable from '../../../components/common/table/BaseTable'
-// import TableToolbar from '../../../components/common/table/TableToolbar'
 import FeedbackRow from '../../../components/seller/feedbacks/FeedbackRow';
 import { fetchSellerFeedbackGrid } from '../../../service/feedbackService';
 import useFeedbackFilters from '../../../components/seller/feedbacks/useFeedbackFilters';
@@ -49,6 +47,10 @@ export default function FeedbacksManagePage() {
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
+  const resolveFeedbackId = (r) =>
+  r?.feedbackId ?? r?.id ?? r?.feedback?.id ??
+  (Array.isArray(r?.feedbacks) && r.feedbacks[0]?.id) ??
+  r?.feedback_id ?? null;
   const [reportOpen, setReportOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
 
@@ -94,6 +96,7 @@ export default function FeedbacksManagePage() {
   const onRequestReport = (row) => {
     // feedbackId 우선, 없으면 중첩 객체/대체 키도 시도
     const feedbackId = row?.feedbackId ?? row?.feedback?.id ?? row?.id;
+    console.log('[OPEN_REPORT_MODAL]', { feedbackId, row });
     setReportTarget({ ...row, feedbackId });
     setReportOpen(true);
   };
@@ -178,9 +181,9 @@ export default function FeedbacksManagePage() {
         </div>
       </section>
 
-      <Modal isOpen={detailOpen} onClose={() => setDetailOpen(false)} title="주문 상세">
+      <Modal isOpen={detailOpen} onClose={() => setDetailOpen(false)} title="피드백 상세">
         <div className="p-4">
-          <OrderDetailContent row={selectedRow} />
+          <FeedbackDetailContent feedbackId={resolveFeedbackId(selectedRow)} />
         </div>
       </Modal>
 

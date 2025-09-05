@@ -11,7 +11,7 @@ import { uploadImages } from '../../../service/uploadService'
 
 
 // 실서버 API
-import { getMyProductDetail, updateMyProduct } from '/src/service/productService'
+import { getMyProductDetail, updateMyProduct } from '../../../service/productService'
 
 const sheet = 'w-full rounded-2xl border bg-white shadow-sm divide-y'
 const pad = 'px-6 py-6'

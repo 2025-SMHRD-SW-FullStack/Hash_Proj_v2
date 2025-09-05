@@ -1,12 +1,12 @@
 import React from 'react'
 import { Route, Routes, Navigate } from 'react-router-dom'
-import AdminLayout from '/src/components/layouts/AdminLayout'
+import AdminLayout from '../components/layouts/AdminLayout'
 
-import SellerApprovalsPage from '/src/pages/admin/SellerApprovalsPage'
-import FeedbackReportsPage from '/src/pages/admin/FeedbackReportsPage'
-import AdsPage from '/src/pages/admin/AdsPage'
-import PointPage from '/src/pages/admin/PointsRedemptionsPage'
-import MemberManagementPage from '/src/pages/admin/MemberManagementPage' // 1. Import 추가
+import SellerApprovalsPage from '../pages/admin/SellerApprovalsPage'
+import FeedbackReportsPage from '../pages/admin/FeedbackReportsPage'
+import AdsPage from '../pages/admin/AdsPage'
+import PointPage from '../pages/admin/PointsRedemptionsPage'
+import MemberManagementPage from '../pages/admin/MemberManagementPage' // 1. Import 추가
 import QnAManagementPage from '../pages/admin/QnAManagementPage'
 
 export default function AdminRouter() {

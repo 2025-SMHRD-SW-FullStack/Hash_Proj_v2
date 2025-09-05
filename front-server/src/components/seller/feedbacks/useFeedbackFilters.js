@@ -1,8 +1,8 @@
 // src/components/seller/feedbacks/useFeedbackFilters.js
 import { useMemo } from 'react';
 // ✅ FEEDBACK_FILTERS와 TAB_KEYS를 모두 import 합니다.
-import { FEEDBACK_FILTERS, TAB_KEYS } from '/src/constants/sellerfeedbacks';
-import { computeFeedbackState as classify } from '/src/util/feedbacksStatus';
+import { FEEDBACK_FILTERS, TAB_KEYS } from '../../../../src/constants/sellerfeedbacks';
+import { computeFeedbackState as classify} from '../../../util/FeedbacksStatus';
 
 export default function useFeedbackFilters(rows = [], statusKey = TAB_KEYS.ALL) {
   const counts = useMemo(() => {

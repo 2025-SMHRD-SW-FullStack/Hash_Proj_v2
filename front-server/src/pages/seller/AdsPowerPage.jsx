@@ -3,9 +3,9 @@ import React, { useMemo, useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../components/common/Button'
 import { CATEGORIES } from '../../constants/products'
-import { getMyProducts } from '/src/service/productService' // 셀러 소유 상품 전용
-import { createAdWithImage, fetchAdUnavailableDates, fetchAdInventory } from '/src/service/adsService'
-import { AD_SLOT_TYPES } from '/src/constants/ads'
+import { getMyProducts } from '../../service/productService' // 셀러 소유 상품 전용
+import { createAdWithImage, fetchAdUnavailableDates, fetchAdInventory } from '../../../src/service/adsService'
+import { AD_SLOT_TYPES } from '../../constants/ads'
 import { loadTossPayments } from '@tosspayments/payment-sdk'
 
 import { DayPicker } from 'react-day-picker'

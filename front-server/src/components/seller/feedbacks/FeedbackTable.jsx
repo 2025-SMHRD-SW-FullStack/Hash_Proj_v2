@@ -1,7 +1,7 @@
 // /src/components/seller/feedbacks/FeedbackTable.jsx
 
 import React from 'react'
-import { UI } from '/src/constants/sellerfeedbacks'
+import { UI } from '../../../src/constants/sellerfeedbacks'
 import FeedbackRow from './FeedbackRow'
 
 export default function FeedbackTable({ rows, loading, error, onOpenOrder, onRequestReport }) {

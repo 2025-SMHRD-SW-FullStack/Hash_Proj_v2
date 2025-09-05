@@ -7,7 +7,12 @@ import { toOrderNo, truncate10 } from '../../../util/orderUtils'
 // ---- 안전 필드 해석기 (키 변동 대비)
 const firstF = (r) => (Array.isArray(r?.feedbacks) && r.feedbacks.length > 0 ? r.feedbacks[0] : null)
 const resolveFeedbackId = (r) =>
-  r?.feedbackId ?? r?.feedback?.id ?? firstF(r)?.id ?? null
+  r?.feedbackId
+  ?? r?.id                      // ← 백엔드/서비스에서 row.id=feedbackId 로 내려오는 케이스 지원
+  ?? r?.feedback?.id
+  ?? firstF(r)?.id
+  ?? r?.feedback_id             // ← 혹시 스네이크 케이스 대응
+  ?? null
 
 const resolveFeedbackDate = (r) =>
   r?.writtenAt
@@ -44,12 +49,22 @@ export default function FeedbackRow({ row, onOpenOrder, onRequestReport }) {
   const badge = statusBadge(row)
 
   // 내용 존재 여부(키 가드)
-  const hasContent = !!resolveFeedbackContent(row)
+  const hasContent =
+    String(resolveFeedbackContent(row) ?? '').trim().length > 0
+    || (Array.isArray(row?.images) && row.images.length > 0)
+    || !!(row?.feedbackAt || row?.feedbackCreatedAt || row?.createdAt)
 
   // 신고 상태(이미 신고했으면 비활성화: PENDING/APPROVED)
   const fid = resolveFeedbackId(row)
   const reported = resolveReportStatus(row)
   const canReport = !!fid && hasContent && !['PENDING', 'APPROVED'].includes(reported)
+
+  // 👇 로그: 이 값 중 하나라도 false면 버튼이 비활성
+  console.debug('[ROW_REPORT_DEBUG]', {
+    fid, reported, hasContent,
+    contentLen: String(resolveFeedbackContent(row) ?? '').length,
+    orderUid: row?.orderUid
+  })
 
   // 작성일 표시
   const writtenDate = toYmd(resolveFeedbackDate(row))
@@ -99,6 +114,7 @@ export default function FeedbackRow({ row, onOpenOrder, onRequestReport }) {
           size="sm"
           variant="admin"
           disabled={!canReport}
+          title={!canReport ? `disabled: fid=${fid}, reported=${reported}, hasContent=${hasContent}` : '신고'}
           onClick={() => onRequestReport?.(row)}
         >
           신고
