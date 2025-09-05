@@ -15,7 +15,6 @@ import useAppModeStore from '../../stores/appModeStore'
 import QRCodeDisplay from '../common/QRCode'
 import { motion, AnimatePresence } from 'framer-motion'
 
-
 const Header = () => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -34,6 +33,7 @@ const Header = () => {
   // 경로 기반 모드 자동 동기화
   useEffect(() => {
     if (location.pathname.startsWith('/seller')) setMode('seller')
+    else if (location.pathname.startsWith('/admin')) setMode('admin')
     else setMode('user')
   }, [location.pathname, setMode])
 
@@ -65,23 +65,55 @@ const Header = () => {
     setIsMobileMenuOpen(false)
   }
 
+  const handleAdminToggle = () => {
+    if (mode === 'user') {
+      setMode('admin')
+      navigate('/admin')
+    } else {
+      setMode('user')
+      navigate('/')
+    }
+    setIsMobileMenuOpen(false)
+  }
+
   return (
     <header className="sticky top-0 z-50 bg-white shadow-md">
       <div className="flex h-16 sm:h-20 items-center justify-between px-3 sm:px-8">
 
         {/* 왼쪽 데스크탑 버튼 영역 */}
         <div className="flex flex-1 items-center space-x-2 sm:space-x-3">
-          {isLoggedIn && isAdmin && (
-            <Button variant="admin" size="sm" className="hidden sm:block" onClick={() => navigate('/admin')}>
-              관리자 페이지
-            </Button>
-          )}
-          {isLoggedIn && isSeller && (
-            <Button variant="admin" size="sm" className="hidden sm:block" onClick={toggleMode}>
-              {mode === 'user' ? '셀러 페이지' : '유저 페이지'}
-            </Button>
-          )}
-        </div>
+
+          {/* 모바일 버튼 */}
+          <div className="sm:hidden">
+            {isLoggedIn && isAdmin && (
+              <Button variant="admin" size="sm" onClick={handleAdminToggle}>
+                {mode === 'user' ? '관리자 페이지' : '유저 페이지'}
+              </Button>
+            )}
+            {isLoggedIn && isSeller && (
+              <Button variant="admin" size="sm" onClick={toggleMode}>
+                {mode === 'user' ? '셀러 페이지' : '유저 페이지'}
+              </Button>
+            )}
+          </div>
+
+          {/* 데스크탑 버튼 */}
+          <div className="hidden sm:flex items-center space-x-2">
+            {isLoggedIn && isAdmin && (
+              <Button variant="admin" size="md" onClick={handleAdminToggle}>
+                {mode === 'user' ? '관리자 페이지' : '유저 페이지'}
+              </Button>
+            )}
+            {isLoggedIn && isSeller && (
+              <Button variant="admin" size="md" onClick={toggleMode}>
+                {mode === 'user' ? '셀러 페이지' : '유저 페이지'}
+              </Button>
+            )}
+          </div>
+
+</div>
+
+
 
         {/* 가운데 로고 */}
         <div className="flex flex-1 justify-center">
@@ -99,10 +131,7 @@ const Header = () => {
             <>
               {/* 모바일: 로그아웃 + 햄버거 */}
               <div className="flex items-center sm:hidden">
-                <Button
-                  onClick={logout}
-                  className="text-xs px-2 py-1 mr-2"
-                >
+                <Button size='sm' onClick={logout}>
                   로그아웃
                 </Button>
                 <button onClick={() => setIsMobileMenuOpen(true)} className='border-none bg-transparent'>
@@ -112,18 +141,18 @@ const Header = () => {
 
               {/* 데스크탑 아이콘들 */}
               <div className="hidden sm:flex items-center space-x-4">
-                <Button onClick={logout} className="text-sm px-3 py-1">
+                <Button size='md' onClick={logout}>
                   로그아웃
                 </Button>
-                <Icon src={User} alt="마이 페이지" size={6} onClick={() => navigate('/user/mypage')} />
-                <Icon src={Notification} alt="알림" size={6} />
-                <Icon src={Message} alt="채팅" size={6} onClick={() => navigate('/user/chat')} />
-                <Icon src={BasketIcon} alt="장바구니" size={6} onClick={() => navigate('/user/mypage/cart')} />
+                <Icon src={User} alt="마이 페이지" className='!w-6 !h-6' onClick={() => navigate('/user/mypage')} />
+                <Icon src={Notification} alt="알림" className='!w-6 !h-6' />
+                <Icon src={Message} alt="채팅" className='!w-6 !h-6' onClick={() => navigate('/user/chat')} />
+                <Icon src={BasketIcon} alt="장바구니" className='!w-6 !h-6' onClick={() => navigate('/user/mypage/cart')} />
                 <div className="relative">
                   <Icon
                     src={QRcode}
                     alt="QR 코드"
-                    size={6}
+                    className='!w-6 !h-6'
                     onClick={() => setIsQRDropdownOpen(prev => !prev)}
                   />
                   {isQRDropdownOpen && (
@@ -135,8 +164,7 @@ const Header = () => {
               </div>
             </>
           ) : (
-            // 로그인 안한 경우: 로그인 버튼만
-            <Button onClick={() => navigate('/login')} className="text-sm px-3 py-1">
+            <Button size='sm' className='sm:size-md' onClick={() => navigate('/login')} >
               로그인
             </Button>
           )}
@@ -169,21 +197,18 @@ const Header = () => {
                   <img src={CloseIcon} alt="닫기" className="w-6 h-6" />
                 </button>
               </div>
+              
+              {/* 모바일 메뉴 버튼 */}
               <div className="flex flex-col p-4 space-y-3">
-                {/* 메뉴들 */}
-                <Button onClick={() => { navigate('/user/mypage'); setIsMobileMenuOpen(false) }}>마이페이지</Button>
-                <Button onClick={() => { navigate('/user/chat'); setIsMobileMenuOpen(false) }}>채팅</Button>
-                <Button onClick={() => { navigate('/user/mypage/cart'); setIsMobileMenuOpen(false) }}>장바구니</Button>
-                <Button onClick={() => { /* 알림 */ setIsMobileMenuOpen(false) }}>알림</Button>
-                <Button onClick={() => { /* QR 코드 */ setIsMobileMenuOpen(false) }}>QR 코드</Button>
+                <Button variant='signUp' onClick={() => { navigate('/user/mypage'); setIsMobileMenuOpen(false) }}>마이페이지</Button>
+                <Button variant='signUp' onClick={() => { navigate('/user/chat'); setIsMobileMenuOpen(false) }}>채팅</Button>
+                <Button variant='signUp' onClick={() => { navigate('/user/mypage/cart'); setIsMobileMenuOpen(false) }}>장바구니</Button>
+                <Button variant='signUp' onClick={() => { /* 알림 */ setIsMobileMenuOpen(false) }}>알림</Button>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
-
-
-
     </header>
   )
 }
