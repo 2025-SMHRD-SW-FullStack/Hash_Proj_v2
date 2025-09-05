@@ -23,18 +23,16 @@ services:
 #    networks:
 #      - app-network
 #
-#  ai-server:
-#    build:
-#      context: ./ai-server
-#      dockerfile: Dockerfile
-#    ports:
-#      - "7777:7777"
-#    environment:
-#      - TZ=Asia/Seoul
-#      - AWS_ACCESS_KEY_ID
-#      - AWS_SECRET_ACCESS_KEY
-#    networks:
-#      - app-network
+  ai-server:
+    build:
+      context: ./ai-server
+      dockerfile: Dockerfile
+    ports:
+      - "80000:8000"
+    environment:
+      - TZ=Asia/Seoul
+    networks:
+      - app-network
 
   nginx:
     image: nginx:latest
