@@ -100,7 +100,6 @@ export default function AdsManagementPage() {
                   <th className="pb-3">기간</th>
                   <th className="pb-3">상태</th>
                   <th className="pb-3">금액</th>
-                  <th className="pb-3">관리</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -109,13 +108,6 @@ export default function AdsManagementPage() {
                     {/* 1. '위치' 열: 이미지와 텍스트를 한 셀에 넣기 */}
                     <td className="py-4 pl-4">
                       <div className="flex items-start gap-3">
-                        {ad.imageUrl && (
-                          <img
-                            src={ad.imageUrl}
-                            alt="광고 이미지"
-                            className="h-16 w-16 rounded-lg object-cover"
-                          />
-                        )}
                         <div className="flex-1">
                           <div className="text-sm text-gray-900">
                             {ad.positionLabel || ad.position}
@@ -132,9 +124,6 @@ export default function AdsManagementPage() {
                       <div className="text-sm text-gray-900">
                         {formatDate(ad.startDate)} ~ {formatDate(ad.endDate)}
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {ad.period ? `${ad.period}일` : '-'}
-                      </div>
                     </td>
 
                     {/* 3. '상태' 열 */}
@@ -149,12 +138,6 @@ export default function AdsManagementPage() {
                       <div className="text-sm font-medium text-gray-900">
                         {formatPrice(ad.price)}원
                       </div>
-                    </td>
-
-                    {/* 5. '관리' 열 (원래 코드에 없었으므로 필요하다면 추가) */}
-                    <td className="py-4 text-center">
-                      {/* 여기에 관리 버튼이나 링크 등 추가 */}
-                      -
                     </td>
                   </tr>
                 ))}
