@@ -6,6 +6,7 @@ import Button from '/src/components/common/Button'
 import Modal from '/src/components/common/Modal'
 import { getMyProducts, deleteMyProduct as deleteProduct, deleteProduct as _aliasDelete } from '/src/service/productService'
 import { fmtYmd } from '/src/util/orderUtils'
+import { TableToolbar } from '../../../components/common/table/TableToolbar'
 
 // ---- UI 토큰 (OrdersPage 스타일과 동일한 톤)
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
@@ -19,8 +20,8 @@ const tableMaxH = `${ROW_H * MAX_ROWS + HEADER_H}px`
 
 // 제품 상태 칩(OrdersPage의 STATUS_ITEMS 형태와 동일 인터페이스)
 const STATUS_ITEMS = [
-  { key: 'ONSALE', label: '판매중' },
   { key: 'ALL', label: '전체' }, // = 판매중 + 품절(판매종료 포함)
+  { key: 'ONSALE', label: '판매중' },
 ]
 
 // ---- 정렬 유틸: updatedAt → createdAt → id, "나이순(오래된 순, ASC)"
@@ -162,42 +163,39 @@ export default function ProductsPage() {
   return (
     <div className="mx-auto w-full max-w-7xl">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">상품관리</h1>
+        <h1 className="text-xl font-bold">상품 관리</h1>
       </div>
 
-      {/* 필터바 (OrdersPage 스타일 복제) */}
+      {/* 필터바 */}
       <section className={`${box} mb-4`}>
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusChips
-            items={STATUS_ITEMS}
-            value={status}
-            onChange={(v) => setParam({ status: v })}
-            size="sm"
-            variant="admin"
-          />
-          <input
-            value={q}
-            onChange={(e) => setParam({ q: e.target.value })}
-            placeholder="상품명/브랜드 검색"
-            className="w-64 rounded-lg border px-3 py-2 text-sm outline-none focus:ring"
-          />
-          <Button
-            size="sm"
-            variant="admin"
-            onClick={handleReset}
-          >
-            초기화
-          </Button>
-          <Button
-            size="sm"
-            className="ml-auto"
-            variant="admin"
-            onClick={() => window.location.assign('/seller/products/new')}
-          >
-            상품 등록
-          </Button>
-        </div>
+        <TableToolbar
+          statusChips={STATUS_ITEMS.map(item => ({ value: item.key, label: item.label }))}
+          selectedStatus={status}
+          onSelectStatus={(v) => setParam({ status: v })}
+          searchValue={q}
+          onChangeSearch={(val) => setParam({ q: val })}
+          onSubmitSearch={() => setParam({ q })}
+          right={
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="admin"
+                onClick={handleReset}
+              >
+                초기화
+              </Button>
+              <Button
+                size="sm"
+                variant="admin"
+                onClick={() => window.location.assign('/seller/products/new')}
+              >
+                상품 등록
+              </Button>
+            </div>
+          }
+        />
       </section>
+
 
       {/* 목록 (주문관리 표 스타일: 내부 양방향 스크롤 + sticky header) */}
       <section className={box}>

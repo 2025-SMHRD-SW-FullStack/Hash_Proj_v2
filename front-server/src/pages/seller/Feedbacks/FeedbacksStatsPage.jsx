@@ -70,8 +70,8 @@ export default function FeedbacksStatsPage() {
   }, [summary, stars])
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-8 py-6 max-lg:px-6 max-sm:px-3">
-      <div className='flex items-center space-x-2'>
+    <div className="mx-auto w-full max-w-7xl px-4 md:px-6 lg:px-8">
+      <div className='flex items-center space-x-2 justify-between'>
         <h1 className="mb-4 text-xl font-semibold">피드백 통계</h1>
         <Button variant='unselected' className='text-sub' onClick={() => navigate('/seller/feedbacks/manage')} >피드백 관리 보기</Button>
       </div>

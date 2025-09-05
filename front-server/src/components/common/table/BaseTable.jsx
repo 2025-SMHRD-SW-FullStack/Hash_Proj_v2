@@ -34,7 +34,7 @@ export default function BaseTable({
       className={`relative w-full overflow-x-auto rounded-xl border bg-white ${className}`} // 부모 div에 overflow-x-auto 유지
       style={yStyle}
     >
-      <table className="w-max text-center text-sm min-w-full"> {/* ⬅️ 수정: w-max와 min-w-full 추가 */}
+      <table className="w-max text-center text-sm min-w-full">
         <thead className="sticky top-0 bg-gray-50 text-xs text-gray-600">
           <tr className="border-b">
             {withCheckbox && (

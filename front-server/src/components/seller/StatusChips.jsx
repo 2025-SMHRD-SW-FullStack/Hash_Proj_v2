@@ -75,7 +75,7 @@ export default function StatusChips({
           '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
         )}
       >
-        {items.map(({ value: itemValue, label, count }) => {
+        {items.map(({ value: itemValue, label, count }, index) => {
           const selected = value === itemValue
           const base =
             'shrink-0 snap-start rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black/30'
@@ -85,7 +85,7 @@ export default function StatusChips({
 
           return (
             <button
-              key={itemValue}               // ← 수정
+              key={`${itemValue}-${index}`}
               type="button"
               role="tab"
               aria-selected={selected}

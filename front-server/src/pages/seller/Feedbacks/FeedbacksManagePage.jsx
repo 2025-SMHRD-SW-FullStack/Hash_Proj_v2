@@ -2,16 +2,15 @@
 
 import React, { useEffect, useMemo, useState, memo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import Button from '../../../components/common/Button'
-import Modal from '../../../components/common/Modal'
-import OrderDetailContent from '../../../components/seller/OrderDetailContent'
-import ReportModal from '../../../components/seller/feedbacks/ReportModal'
-// import BaseTable from '../../../components/common/table/BaseTable'
-// import TableToolbar from '../../../components/common/table/TableToolbar'
+import Button from '../../../components/common/Button';
+import Modal from '../../../components/common/Modal';
+import OrderDetailContent from '../../../components/seller/OrderDetailContent';
+import ReportModal from '../../../components/seller/feedbacks/ReportModal';
 import FeedbackRow from '../../../components/seller/feedbacks/FeedbackRow';
 import { fetchSellerFeedbackGrid } from '../../../service/feedbackService';
 import useFeedbackFilters from '../../../components/seller/feedbacks/useFeedbackFilters';
-import FeedbackFilterChips from '../../../components/seller/feedbacks/FeedbackFilterChips';
+import { TableToolbar } from '../../../components/common/table/TableToolbar';
+import { FEEDBACK_FILTERS } from '/src/constants/sellerfeedbacks';
 
 // --- UI 상수 ---
 const box = 'rounded-xl border bg-white p-4 shadow-sm';
@@ -35,7 +34,7 @@ const COL_WIDTHS = ['140px', '220px', '120px', '130px', '140px', 'auto', '120px'
 
 export default function FeedbacksManagePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const statusKey = searchParams.get('status') || 'ALL';
+  const [statusKey, setStatusKey] = useState(searchParams.get('status') || 'ALL');
   const q = searchParams.get('q') || '';
   const navigate = useNavigate();
 
@@ -51,6 +50,7 @@ export default function FeedbacksManagePage() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
+  
 
   const setParam = useCallback((patch) => {
     const next = new URLSearchParams(searchParams);
@@ -92,7 +92,6 @@ export default function FeedbacksManagePage() {
   };
 
   const onRequestReport = (row) => {
-    // feedbackId 우선, 없으면 중첩 객체/대체 키도 시도
     const feedbackId = row?.feedbackId ?? row?.feedback?.id ?? row?.id;
     setReportTarget({ ...row, feedbackId });
     setReportOpen(true);
@@ -101,44 +100,51 @@ export default function FeedbacksManagePage() {
   const handleReported = () => {
     setReportOpen(false);
     setReportTarget(null);
-    load(); // 신고 후 목록 새로고침
+    load();
   };
 
+  // FEEDBACK_FILTERS + counts → TableToolbar용 items
+  const statusItems = useMemo(() => {
+    return FEEDBACK_FILTERS.map(filter => {
+      const count = counts[filter.key] || 0;
+      const showCount = count > 0 && filter.key !== 'ALL';
+      return {
+        key: filter.key,
+        label: showCount ? `${filter.baseLabel}` : filter.baseLabel,
+        count,
+      };
+    });
+  }, [counts]);
+
   return (
-    <div className="mx-auto w-full max-w-7xl sm:px-6 lg:px-8 ">
-      <div className='flex items-center space-x-2'>
+    <div className="mx-auto w-full max-w-7xl px-4 md:px-6 lg:px-8 ">
+      <div className='flex items-center space-x-2 justify-between'>
         <h1 className="text-xl font-bold mb-4">피드백 관리</h1>
         <Button variant='signUp' className='text-sub' onClick={() => navigate('/seller/feedbacks/stats')}>피드백 통계 보기</Button>
       </div>
 
+      {/* TableToolbar로 교체 */}
       <section className={`${box} mb-4`}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-          <div className="flex-grow mb-2 sm:mb-0">
-            <FeedbackFilterChips
-              counts={counts}
-              value={statusKey}
-              onChange={(key) => setParam({ status: key })}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              value={qInput}
-              onChange={(e) => setQInput(e.target.value)}
-              onCompositionStart={() => setIsComp(true)}
-              onCompositionEnd={() => setIsComp(false)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                  setParam({ q: qInput });
-                }
-              }}
-              placeholder="주문번호/수취인/연락처 검색"
-              className="w-full sm:w-64 rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-300"
-            />
+        <TableToolbar
+          statusChips={FEEDBACK_FILTERS.map(filter => ({
+            value: filter.key,
+            label: filter.baseLabel,
+            count: counts[filter.key],
+          }))}
+          selectedStatus={statusKey}
+          onSelectStatus={(value) => {
+            setParam({ status: value }); // URL param도 업데이트
+            setStatusKey(value);         // 상태 업데이트
+          }}
+          searchValue={qInput}
+          onChangeSearch={setQInput}
+          onSubmitSearch={() => setParam({ q: qInput })}
+          right={(
             <Button size="md" variant="admin" onClick={() => setParam({ q: qInput })}>
               조회
             </Button>
-          </div>
-        </div>
+          )}
+        />
       </section>
 
       <section className={box}>
