@@ -335,7 +335,7 @@ useEffect(() => {
 
       {/* 상단 요약 */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                 {/* 주문 */}
+        {/* 주문 */}
          <section className={box}>
            <h2 className="mb-2 text-base font-semibold">주문</h2>
            <Button

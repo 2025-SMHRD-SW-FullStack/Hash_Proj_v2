@@ -162,7 +162,7 @@ export default function ProductsPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">상품 관리</h1>
       </div>
 
@@ -201,7 +201,7 @@ export default function ProductsPage() {
       <section className={box}>
         {/* ✅ 표 박스 내부에서만 세로/가로 스크롤 */}
         <div className="relative overflow-auto" style={{ maxHeight: tableMaxH }}>
-          <table className="w-full min-w-[1200px] table-fixed text-center text-sm">
+          <table className="w-full table-fixed text-center text-sm">
             <colgroup>
               {[44, 240, 160, 120, 110, 110, 220, 200].map((w, i) => (
                 <col key={i} style={{ width: w }} />

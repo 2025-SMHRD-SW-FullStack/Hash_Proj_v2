@@ -12,7 +12,7 @@ import { uploadImages } from '/src/service/uploadService'
 
 const sheet = 'w-full rounded-2xl border bg-white shadow-sm divide-y'
 const pad = 'px-6 py-6'
-const wrap = 'mx-auto w-full max-w-[1120px] px-6'
+const wrap = 'mx-auto w-full'
 
 // 폭 통일 (Edit 페이지와 동일)
 const longW = 'w-full max-w-[750px]'  // 카테고리

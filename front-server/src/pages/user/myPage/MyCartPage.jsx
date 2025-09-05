@@ -151,7 +151,7 @@ export default function MyCartPage() {
   return (
     <div className="p-4">
       {/* 헤더 */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-xl font-semibold">장바구니</h1>
         {items.length > 0 && (
           <button

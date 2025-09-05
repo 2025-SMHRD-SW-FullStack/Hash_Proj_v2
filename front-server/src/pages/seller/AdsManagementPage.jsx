@@ -49,8 +49,8 @@ export default function AdsManagementPage() {
   }
 
   return (
-    <div className="mx-auto w/full max-w-[1120px] px-4">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto w-full ">
+      <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">광고 관리</h1>
         <Button variant='admin' onClick={() => navigate('/seller/ads/power')}>
           새 광고 신청

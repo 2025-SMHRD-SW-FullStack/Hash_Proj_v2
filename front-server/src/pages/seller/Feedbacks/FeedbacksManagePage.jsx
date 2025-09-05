@@ -117,7 +117,7 @@ export default function FeedbacksManagePage() {
   }, [counts]);
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 md:px-6 lg:px-8 ">
+    <div className="mx-auto w-full max-w-7xl md:px-6 lg:px-8 ">
       <div className='flex items-center space-x-2 justify-between'>
         <h1 className="text-xl font-bold mb-4">피드백 관리</h1>
         <Button variant='signUp' className='text-sub' onClick={() => navigate('/seller/feedbacks/stats')}>피드백 통계 보기</Button>
@@ -149,7 +149,7 @@ export default function FeedbacksManagePage() {
 
       <section className={box}>
         <div className="overflow-x-auto" style={{ maxHeight: tableMaxH }}>
-          <table className="w-full min-w-[1200px] table-fixed text-sm text-center">
+          <table className="w-full table-fixed text-sm text-center">
             <ColGroup widths={COL_WIDTHS} />
             <thead className="sticky top-0 z-10 border-b bg-gray-50 text-[13px] text-gray-600">
               <tr className="h-11">

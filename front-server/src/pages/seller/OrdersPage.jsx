@@ -495,10 +495,8 @@ export default function OrdersPage() {
   }, [status]);
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 md:px-6 lg:px-8"> {/* ⬅️ 추가: 패딩 추가 */}
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">주문 관리</h1>
-      </div>
+    <div className="mx-auto w-full max-w-7xl lg:px-8">
+      <h1 className="text-xl font-bold">주문 관리</h1>
 
       {/* 필터바 */}
       <section className={`${box} mb-4`}>
