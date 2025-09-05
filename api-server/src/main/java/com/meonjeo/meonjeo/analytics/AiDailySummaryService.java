@@ -41,7 +41,7 @@ public class AiDailySummaryService {
     private final ObjectMapper om = new ObjectMapper();
     private final RestTemplate http = new RestTemplate();
 
-    @Value("${ai.server.base-url:http://localhost:8000}")
+    @Value("${ai.server.base-url:http://localhost:8080}")
     private String aiBase;
 
     @Transactional
