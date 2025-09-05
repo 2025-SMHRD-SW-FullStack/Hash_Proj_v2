@@ -56,7 +56,7 @@ phone:
     max-attempts: 5
 
 ai:
-  base-url: http://localhost:8080
+  base-url: http://http://localhost:8000
   timeout:
     connect-ms: 1500
     read-ms: 3000

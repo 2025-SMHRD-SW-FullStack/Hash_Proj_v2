@@ -14,7 +14,7 @@ public class AiSummaryClient {
 
     private final RestTemplate rest = new RestTemplate();
 
-    @Value("${ai.server.base:http://localhost:8080}")
+    @Value("${ai.server.base:http://http://localhost:8000}")
     private String aiBase;
 
     public Map<String, Object> realtime(Map<String, Object> payload) {
