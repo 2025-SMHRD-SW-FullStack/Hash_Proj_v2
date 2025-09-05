@@ -1,31 +1,32 @@
-# 빌드 단계
+# syntax=docker/dockerfile:1.6
+
 FROM gradle:8.7-jdk17 AS build
 WORKDIR /usr/src/app/api-server
 
-# api-server 폴더 내용 복사
-COPY . .
+# 1) 의존성 파일 먼저 복사 (캐시 살리기)
+COPY gradlew gradlew
+COPY gradle gradle
+COPY build.gradle build.gradle
+COPY settings.gradle settings.gradle
 
-# gradlew 실행권한 + CRLF → LF 교정
-RUN apt-get update && apt-get install -y dos2unix \
- && dos2unix gradlew \
+# 2) CRLF -> LF 교정 (dos2unix 대신 sed 사용) + 실행권한
+RUN sed -i 's/\r$//' gradlew \
+ && sed -i 's/\r$//' gradle/wrapper/gradle-wrapper.properties || true \
  && chmod +x gradlew
 
-# gradle-wrapper.properties 도 CRLF 가능성 → 같이 교정
-RUN dos2unix gradle/wrapper/gradle-wrapper.properties || true
+# 3) Gradle 캐시 활용해서 미리 의존성 확인
+RUN --mount=type=cache,target=/home/gradle/.gradle ./gradlew --version
 
-# gradle 동작 확인
-RUN ./gradlew --version
+# 4) 소스만 복사 (변경 최소화)
+COPY src src
 
-# 빌드
-RUN ./gradlew clean build -x test
+# 5) 빌드 (clean 제거: 증분 빌드 빠름)
+RUN --mount=type=cache,target=/home/gradle/.gradle ./gradlew build -x test
 
-# 실행 단계
-FROM openjdk:17-jdk-slim
+# ---- Runtime ----
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app/api-server/build/libs/*.jar app.jar
-
 ENV TZ=Asia/Seoul
-RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && echo "Asia/Seoul" > /etc/timezone
-
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=prod"]
+ENTRYPOINT ["java","-jar","app.jar","--spring.profiles.active=prod"]
