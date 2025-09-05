@@ -519,7 +519,6 @@ export default function OrdersPage() {
           selectedStatus={status}
           onSelectStatus={(v) => setParam({ status: v })}
         >
-          {/* children은 더 이상 필요 없음 */}
         </TableToolbar>
 
       </section>
