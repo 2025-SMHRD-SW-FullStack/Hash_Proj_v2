@@ -147,18 +147,19 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Meonjeo Interview Chatbot", version="0.3.6", lifespan=lifespan)
 
-ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "*"
-]
+# ALLOWED_ORIGINS = [
+#     "http://localhost:5173",
+#     "http://127.0.0.1:5173",
+#     "*"
+# ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"],  # 임시. 추후 수정
     allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],  # 요청을 허용할 HTTP 메소드
+    allow_headers=["*"],  # 임시. 추후 수정
 )
+
 
 class CreateSession(BaseModel):
     user_id: int
