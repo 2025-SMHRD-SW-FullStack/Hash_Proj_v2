@@ -28,9 +28,10 @@ services:
       context: ./ai-server
       dockerfile: Dockerfile
     ports:
-      - "80000:8000"
+      - "8000:8000"
     environment:
       - TZ=Asia/Seoul
+      - real_db_server
     networks:
       - app-network
 
