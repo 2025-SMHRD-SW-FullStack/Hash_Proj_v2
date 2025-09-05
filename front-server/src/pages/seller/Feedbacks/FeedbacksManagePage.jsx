@@ -1,7 +1,7 @@
 // src/pages/seller/Feedbacks/FeedbacksManagePage.jsx
 
 import React, { useEffect, useMemo, useState, memo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../../../components/common/Button'
 import Modal from '../../../components/common/Modal'
 import OrderDetailContent from '../../../components/seller/OrderDetailContent'
@@ -37,6 +37,7 @@ export default function FeedbacksManagePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const statusKey = searchParams.get('status') || 'ALL';
   const q = searchParams.get('q') || '';
+  const navigate = useNavigate();
 
   const [qInput, setQInput] = useState(q);
   const [isComp, setIsComp] = useState(false);
@@ -105,7 +106,10 @@ export default function FeedbacksManagePage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-      <h1 className="text-xl font-bold mb-4">피드백 관리</h1>
+      <div className='flex items-center space-x-2'>
+        <h1 className="text-xl font-bold mb-4">피드백 관리</h1>
+        <Button variant='signUp' className='text-[#D6BAE9]' onClick={() => navigate('/seller/feedbacks/stats')}>피드백 통계 보기</Button>
+      </div>
 
       <section className={`${box} mb-4`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
