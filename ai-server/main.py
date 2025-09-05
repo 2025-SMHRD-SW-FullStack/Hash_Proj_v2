@@ -155,7 +155,7 @@ app = FastAPI(title="Meonjeo Interview Chatbot", version="0.3.6", lifespan=lifes
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # 임시. 추후 수정
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],  # 요청을 허용할 HTTP 메소드
     allow_headers=["*"],  # 임시. 추후 수정
 )
