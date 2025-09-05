@@ -1,5 +1,3 @@
-// /src/components/layouts/SellerLayout.jsx
-
 import React, { useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import Header from './Header'
@@ -76,29 +74,27 @@ export default function SellerLayout({ children }) {
   const selectedLinkStyle = 'bg-[#CFADE5] text-white font-semibold'
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
 
       {/* 모바일 상단 바 */}
       <div className="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 lg:hidden">
-        <div className="flex items-center justify-between px-4 py-2">
-          <div className="mt-4 lg:hidden">
-            <Button variant="admin" size="sm" onClick={() => setMobileOpen(true)}>
+          <div className="pl-4 mt-4 lg:hidden">
+            <Button variant="admin" size="md" onClick={() => setMobileOpen(true)}>
               메뉴
             </Button>
           </div>
-        </div>
       </div>
 
       <div className="flex w-full gap-8 justify-center">
         {/* 사이드바(데스크톱) */}
-        <aside className="hidden fixed left-0 z-0 h-full shadow-sm w-56 sm:pt-4 shrink-0 lg:block">;
+        <aside className="hidden fixed left-0 z-0 h-full bg-white shadow-sm w-56 sm:p-4 shrink-0 lg:block">
           <nav className="space-y-2">
             {navItems.map((it) => {
               if (it.type !== 'group') {
                 const isOrders = it.to === ORDERS_PATH
                 return (
-                  <div key={it.to} className="space-y-1">
+                  <div key={it.to} className="space-y-1 pr-6">
                     <NavLink
                       to={it.to}
                       end={it.to === '/seller'}

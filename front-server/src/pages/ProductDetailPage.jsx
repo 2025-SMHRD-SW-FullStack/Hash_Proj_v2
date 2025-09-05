@@ -347,7 +347,7 @@ const ProductDetailPage = () => {
 
         <div className="pt-4 border-t border-gray-200 mt-auto">
           {selectedItems.length > 0 && (
-            <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center justify-between">
               <span className="text-lg font-bold">총 상품 금액</span>
               <span className="text-2xl font-bold text-primary">{totalPrice.toLocaleString()}원</span>
             </div>

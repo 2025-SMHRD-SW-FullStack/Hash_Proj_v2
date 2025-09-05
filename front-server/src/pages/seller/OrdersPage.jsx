@@ -12,7 +12,7 @@ import { toOrderNo, getAmount, truncate10, makeAndDownloadCSV, resolveFeedbackDu
 import { fetchPendingExchanges, approveExchange, rejectExchange, shipExchange } from '../../service/exchangeService'
 import ExchangeShipDialog from '../../components/seller/ExchangeShipDialog'
 import BaseTable from '../../components/common/table/BaseTable'
-import { TableToolbar } from '../../components/common/table/TableToolbar'
+import TableToolbar from '../../components/common/table/TableToolbar'
 import { useOrderStore } from '../../stores/orderStore'
 import { getExchangeStatusLabel } from '../../constants/exchange'
 import CategorySelect from '../../components/common/CategorySelect' // ⬅️ 추가
@@ -515,10 +515,8 @@ export default function OrdersPage() {
   }, [status]);
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 md:px-6 lg:px-8"> {/* ⬅️ 추가: 패딩 추가 */}
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">주문 관리</h1>
-      </div>
+    <div className="mx-auto w-full max-w-7xl lg:px-8">
+      <h1 className="text-xl font-bold">주문 관리</h1>
 
       {/* 필터바 */}
       <section className={`${box} mb-4`}>
@@ -535,24 +533,12 @@ export default function OrdersPage() {
               </Button>
             )
           }
+          statusChips={ORDER_STATUS_CHIPS}
+          selectedStatus={status}
+          onSelectStatus={(v) => setParam({ status: v })}
         >
-          {isMobile ? (
-            <CategorySelect
-              categories={ORDER_STATUS_CHIPS}
-              selected={selectedStatusItem}
-              onChange={(item) => setParam({ status: item.value })}
-              className="w-full"
-            />
-          ) : (
-            <StatusChips
-              items={ORDER_STATUS_CHIPS}
-              value={status}
-              onChange={(v) => setParam({ status: v })}
-              size="sm"
-              variant="admin"
-            />
-          )}
         </TableToolbar>
+
       </section>
 
       {/* 목록 */}

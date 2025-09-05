@@ -9,6 +9,9 @@ import {
   adminRejectSeller,
   adminSearchSellerApplications,
 } from '../../service/adminSellerService.js'
+import TableToolbar from '../../components/common/table/TableToolbar'
+import CategorySelect from '../../components/common/CategorySelect'
+
 
 // 날짜 포맷(간단)
 const fmt = (d) =>
@@ -28,6 +31,19 @@ const statusBadge = (status) => {
   if (status === 'REJECTED') return <span className={`${base} bg-red-100 text-red-700`}>반려</span>
   return <span className={`${base} bg-yellow-100 text-yellow-700`}>승인중</span>
 }
+
+const STATUS_CHIPS = [
+    { value: 'PENDING', label: '승인중' },
+    { value: 'APPROVED', label: '승인 완료' },
+    { value: 'REJECTED', label: '반려' },
+    { value: 'ALL', label: '전체' },
+];
+
+const PAGE_SIZE_OPTIONS = [
+    { value: 10, label: '10개씩' },
+    { value: 20, label: '20개씩' },
+    { value: 50, label: '50개씩' },
+];
 
 const SellerApprovalsPage = () => {
   const [rows, setRows] = useState([])
@@ -191,56 +207,48 @@ const SellerApprovalsPage = () => {
     },
   ]
 
+  const handleSizeChange = (selectedOption) => {
+    setPage(0); // 페이지 크기가 바뀌면 첫 페이지로 이동
+    setSize(selectedOption.value);
+  };
+
+  const selectedSizeOption = PAGE_SIZE_OPTIONS.find(option => option.value === size);
+
   return (
     <div>
       <h2 className="mb-4 text-xl font-semibold">셀러 승인 관리</h2>
 
       {/* 검색/필터 바 */}
-      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-        <select
-          value={status}
-          onChange={(e) => {
-            setPage(0)
-            setStatus(e.target.value)
-          }}
-          className="h-10 rounded-lg border px-3"
-        >
-          <option value="PENDING">승인중</option>
-          <option value="APPROVED">승인 완료</option>
-          <option value="REJECTED">반려</option>
-          <option value="ALL">전체</option>
-        </select>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && (setPage(0), fetchList())}
-          placeholder="이메일/닉네임/상호/사업자번호 검색"
-          className="h-10 flex-1 rounded-lg border px-3"
-        />
-        <Button variant="whiteBlack" onClick={() => (setPage(0), fetchList())}>
-          검색
-        </Button>
-        <Button variant="whiteBlack" onClick={() => (setQ(''), setPage(0), fetchList())}>
-          초기화
-        </Button>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">페이지 크기</span>
-          <select
-            value={size}
-            onChange={(e) => {
-              setPage(0)
-              setSize(Number(e.target.value))
-            }}
-            className="h-10 rounded-lg border px-2"
-          >
-            {[10, 20, 50].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <TableToolbar
+        statusChips={STATUS_CHIPS}
+        selectedStatus={status}
+        onSelectStatus={(newStatus) => {
+            setPage(0);
+            setStatus(newStatus);
+        }}
+        searchValue={q}
+        onChangeSearch={setQ}
+        onSubmitSearch={() => {
+            setPage(0);
+            fetchList();
+        }}
+        onReset={() => {
+            setStatus('PENDING');
+            setQ('');
+            setPage(0);
+        }}
+        right={
+            <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 shrink-0">페이지 크기</span>
+                <CategorySelect
+                    categories={PAGE_SIZE_OPTIONS}
+                    selected={selectedSizeOption}
+                    onChange={handleSizeChange}
+                    className="w-28"
+                />
+            </div>
+        }
+      />
 
       <BaseTable
         columns={columns}

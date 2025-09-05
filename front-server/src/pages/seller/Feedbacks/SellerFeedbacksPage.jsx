@@ -133,7 +133,7 @@ export default function SellerFeedbacksPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">피드백 관리</h1>
       </div>
 
