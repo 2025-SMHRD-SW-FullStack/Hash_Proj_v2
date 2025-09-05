@@ -32,6 +32,8 @@ services:
     environment:
       - TZ=Asia/Seoul
       - DATABASE_URL
+    depends_on:
+      - redis
     networks:
       - app-network
 
