@@ -92,13 +92,13 @@ export default function SellerLayout({ children }) {
 
       <div className="flex w-full gap-8 justify-center">
         {/* 사이드바(데스크톱) */}
-        <aside className="hidden fixed left-0 z-0 h-full shadow-sm w-56 sm:pt-4 shrink-0 lg:block">;
+        <aside className="hidden fixed left-0 z-0 h-full shadow-sm w-56 sm:p-4 shrink-0 lg:block">
           <nav className="space-y-2">
             {navItems.map((it) => {
               if (it.type !== 'group') {
                 const isOrders = it.to === ORDERS_PATH
                 return (
-                  <div key={it.to} className="space-y-1">
+                  <div key={it.to} className="space-y-1 pr-6">
                     <NavLink
                       to={it.to}
                       end={it.to === '/seller'}

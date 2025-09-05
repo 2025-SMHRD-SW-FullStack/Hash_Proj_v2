@@ -108,7 +108,7 @@ export default function FeedbacksManagePage() {
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
       <div className='flex items-center space-x-2'>
         <h1 className="text-xl font-bold mb-4">피드백 관리</h1>
-        <Button variant='signUp' className='text-[#D6BAE9]' onClick={() => navigate('/seller/feedbacks/stats')}>피드백 통계 보기</Button>
+        <Button variant='signUp' className='text-sub' onClick={() => navigate('/seller/feedbacks/stats')}>피드백 통계 보기</Button>
       </div>
 
       <section className={`${box} mb-4`}>
