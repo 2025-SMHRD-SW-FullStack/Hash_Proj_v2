@@ -75,8 +75,8 @@ export default function StatusChips({
           '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
         )}
       >
-        {items.map(({ key, label, count }) => {
-          const selected = value === key
+        {items.map(({ value: itemValue, label, count }) => {
+          const selected = value === itemValue
           const base =
             'shrink-0 snap-start rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black/30'
           const tone = selected
@@ -85,11 +85,11 @@ export default function StatusChips({
 
           return (
             <button
-              key={key}
+              key={itemValue}               // ← 수정
               type="button"
               role="tab"
               aria-selected={selected}
-              onClick={() => onChange?.(key)}
+              onClick={() => onChange?.(itemValue)} // ← 수정
               className={cx(base, sizes[size], tone)}
             >
               <span>{label}</span>
@@ -107,6 +107,7 @@ export default function StatusChips({
             </button>
           )
         })}
+
       </div>
     </div>
   )

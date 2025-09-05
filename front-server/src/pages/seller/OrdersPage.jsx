@@ -515,24 +515,13 @@ export default function OrdersPage() {
               </Button>
             )
           }
+          statusChips={ORDER_STATUS_CHIPS}
+          selectedStatus={status}
+          onSelectStatus={(v) => setParam({ status: v })}
         >
-          {isMobile ? (
-            <CategorySelect
-              categories={ORDER_STATUS_CHIPS}
-              selected={selectedStatusItem}
-              onChange={(item) => setParam({ status: item.value })}
-              className="w-full"
-            />
-          ) : (
-            <StatusChips
-              items={ORDER_STATUS_CHIPS}
-              value={status}
-              onChange={(v) => setParam({ status: v })}
-              size="sm"
-              variant="admin"
-            />
-          )}
+          {/* children은 더 이상 필요 없음 */}
         </TableToolbar>
+
       </section>
 
       {/* 목록 */}
