@@ -144,15 +144,14 @@ const Header = () => {
                 <Button size='md' onClick={logout}>
                   로그아웃
                 </Button>
-                <Icon src={User} alt="마이 페이지" className='!w-6 !h-6' onClick={() => navigate('/user/mypage')} />
-                <Icon src={Notification} alt="알림" className='!w-6 !h-6' />
-                <Icon src={Message} alt="채팅" className='!w-6 !h-6' onClick={() => navigate('/user/chat')} />
-                <Icon src={BasketIcon} alt="장바구니" className='!w-6 !h-6' onClick={() => navigate('/user/mypage/cart')} />
+                <Icon src={User} alt="마이 페이지" onClick={() => navigate('/user/mypage')} />
+                <Icon src={Notification} alt="알림" />
+                <Icon src={Message} alt="채팅" onClick={() => navigate('/user/chat')} />
+                <Icon src={BasketIcon} alt="장바구니" onClick={() => navigate('/user/mypage/cart')} />
                 <div className="relative">
                   <Icon
                     src={QRcode}
                     alt="QR 코드"
-                    className='!w-6 !h-6'
                     onClick={() => setIsQRDropdownOpen(prev => !prev)}
                   />
                   {isQRDropdownOpen && (

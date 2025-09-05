@@ -13,7 +13,7 @@ import {
 const StatusChip = ({ status }) => {
   const map = {
     REQUESTED: { text: '대기중', cls: 'bg-gray-200 text-gray-700' },
-    APPROVED: { text: '승인', cls: 'bg-[#ADD973]/20 text-[#6a9231]' },
+    APPROVED: { text: '승인', cls: 'bg-sub/20 text-[#683192]' },
     REJECTED: { text: '반려', cls: 'bg-red-100 text-red-600' },
   }
   const s = map[status] || map.REQUESTED

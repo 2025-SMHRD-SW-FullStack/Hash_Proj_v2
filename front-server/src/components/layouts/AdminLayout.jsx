@@ -34,10 +34,11 @@ export default function AdminLayout() {
         </div>
       </div>
 
-      <div className="flex w-full gap-8 justify-center lg:justify-start px-4 lg:px-6 pb-6">
+      {/* aside + main 컨테이너 */}
+      <div className="flex flex-col lg:flex-row w-full h-full gap-2">
         {/* 사이드바(데스크톱) */}
-        <aside className="hidden fixed left-0 top-0 h-full w-56 shadow-sm shrink-0 lg:block p-4">
-          <nav className="space-y-2">
+        <aside className="hidden lg:block w-60 pr-4 shrink-0 shadow-sm bg-white ">
+          <nav className=" space-y-2 p-4  pr-10 ">
             {adminNav.map(({ to, label }) => (
               <NavLink
                 key={to}
@@ -100,7 +101,7 @@ export default function AdminLayout() {
         </AnimatePresence>
 
         {/* 본문: Outlet */}
-        <main className="w-full max-w-[1600px] p-4 sm:p-6 flex-1">
+        <main className="flex-1 p-4 sm:p-6 min-h-[calc(100vh-64px)] max-w-[1600px] bg-gray-50">
           <Outlet />
         </main>
       </div>

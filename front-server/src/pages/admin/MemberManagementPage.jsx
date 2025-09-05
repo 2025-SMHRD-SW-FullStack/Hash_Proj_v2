@@ -110,7 +110,7 @@ const MemberManagementPage = () => {
                         <option value="permanent">영구</option>
                         <option value="release">해제</option>
                     </select>
-                    <Button size="sm" onClick={(e) => { e.stopPropagation(); handleSanction(row.id); }}>
+                    <Button variant='admin' size="md" onClick={(e) => { e.stopPropagation(); handleSanction(row.id); }}>
                         적용
                     </Button>
                 </div>

@@ -105,7 +105,7 @@ export default function AdsPage() {
   const StatusChip = ({ status }) => {
     if (status === 'ACTIVE')
       return (
-        <span className="rounded-full bg-[#ADD973]/20 px-2 py-1 text-xs font-medium text-[#6a9231]">
+        <span className="rounded-full bg-sub/20 px-2 py-1 text-xs font-medium text-[#683192]">
           노출중
         </span>
       )
