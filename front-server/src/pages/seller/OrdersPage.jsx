@@ -12,7 +12,7 @@ import { toOrderNo, getAmount, truncate10, makeAndDownloadCSV, resolveFeedbackDu
 import { fetchPendingExchanges, approveExchange, rejectExchange, shipExchange } from '../../service/exchangeService'
 import ExchangeShipDialog from '../../components/seller/ExchangeShipDialog'
 import BaseTable from '../../components/common/table/BaseTable'
-import { TableToolbar } from '../../components/common/table/TableToolbar'
+import TableToolbar from '../../components/common/table/TableToolbar'
 import { useOrderStore } from '../../stores/orderStore'
 import { getExchangeStatusLabel } from '../../constants/exchange'
 import CategorySelect from '../../components/common/CategorySelect' // ⬅️ 추가

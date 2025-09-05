@@ -9,7 +9,7 @@ import ReportModal from '../../../components/seller/feedbacks/ReportModal';
 import FeedbackRow from '../../../components/seller/feedbacks/FeedbackRow';
 import { fetchSellerFeedbackGrid } from '../../../service/feedbackService';
 import useFeedbackFilters from '../../../components/seller/feedbacks/useFeedbackFilters';
-import { TableToolbar } from '../../../components/common/table/TableToolbar';
+import TableToolbar from '../../../components/common/table/TableToolbar';
 import { FEEDBACK_FILTERS } from '/src/constants/sellerfeedbacks';
 
 // --- UI 상수 ---

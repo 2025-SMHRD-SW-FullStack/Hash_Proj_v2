@@ -217,7 +217,7 @@ const SellerApprovalsPage = () => {
           placeholder="이메일/닉네임/상호/사업자번호 검색"
           className="h-10 flex-1 rounded-lg border px-3"
         />
-        <Button variant="whiteBlack" onClick={() => (setPage(0), fetchList())}>
+        <Button variant="admin" onClick={() => (setPage(0), fetchList())}>
           검색
         </Button>
         <Button variant="whiteBlack" onClick={() => (setQ(''), setPage(0), fetchList())}>

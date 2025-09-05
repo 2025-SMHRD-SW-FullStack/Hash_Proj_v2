@@ -4,7 +4,7 @@ import Button from '../Button'
 import StatusChips from '../../seller/StatusChips'
 import CategorySelect from '../CategorySelect'
 
-export function TableToolbar({
+export default function TableToolbar({
   searchPlaceholder = '검색',
   searchValue,
   onChangeSearch,

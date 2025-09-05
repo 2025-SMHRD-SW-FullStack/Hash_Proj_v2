@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import BaseTable from '/src/components/common/table/BaseTable';
 import Button from '/src/components/common/Button';
-import { TableToolbar } from '/src/components/common/table/TableToolbar';
+import TableToolbar from '/src/components/common/table/TableToolbar';
 import { adminSearchUsers, adminSanctionUser } from '/src/service/adminUserService';
 
 // 날짜 포맷 유틸
@@ -13,6 +13,12 @@ const fmtDateTime = (iso) => {
         return '-';
     }
 };
+
+const ROLE_STATUS_CHIPS = [
+    { value: 'ALL', label: '전체' },
+    { value: 'USER', label: '사용자' },
+    { value: 'SELLER', label: '셀러' },
+];
 
 const MemberManagementPage = () => {
     const [rows, setRows] = useState([]);
@@ -120,18 +126,16 @@ const MemberManagementPage = () => {
                 searchValue={searchTerm}
                 onChangeSearch={setSearchTerm}
                 onSubmitSearch={fetchUsers}
-                onReset={() => { setSearchTerm(''); setRoleFilter('ALL'); setPage(0); fetchUsers(); }}
-            >
-                <select 
-                    value={roleFilter} 
-                    onChange={e => { setRoleFilter(e.target.value); setPage(0); }}
-                    className="h-10 rounded-lg border px-3"
-                >
-                    <option value="ALL">전체</option>
-                    <option value="USER">사용자</option>
-                    <option value="SELLER">셀러</option>
-                </select>
-            </TableToolbar>
+                onReset={() => {
+                    setSearchTerm('');
+                    setRoleFilter('ALL');
+                    setPage(0);
+                }}
+                // --- 필터(토글) 기능에 필요한 props 전달 ---
+                statusChips={ROLE_STATUS_CHIPS}
+                selectedStatus={roleFilter}
+                onSelectStatus={setRoleFilter} // 필터 상태 변경 함수 전달
+            />
 
             <BaseTable
                 columns={columns}
@@ -142,9 +146,9 @@ const MemberManagementPage = () => {
 
             {/* Pagination */}
             <div className="mt-4 flex justify-center items-center gap-2">
-                <Button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>이전</Button>
+                <Button variant='signUp' className='text-sub' onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>이전</Button>
                 <span>{page + 1} / {totalPages}</span>
-                <Button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page + 1 >= totalPages}>다음</Button>
+                <Button variant='signUp' className='text-sub' onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page + 1 >= totalPages}>다음</Button>
             </div>
         </div>
     );

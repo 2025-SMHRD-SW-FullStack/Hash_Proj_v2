@@ -1,7 +1,7 @@
 // src/pages/admin/PointsRedemptionsPage.jsx
 import React, { useEffect, useMemo, useState } from 'react'
 import BaseTable from '/src/components/common/table/BaseTable'
-import { TableToolbar } from '/src/components/common/table/TableToolbar'
+import TableToolbar from '/src/components/common/table/TableToolbar'
 import Button from '/src/components/common/Button'
 import {
   fetchRequestedRedemptions,
@@ -24,6 +24,13 @@ const StatusChip = ({ status }) => {
   )
 }
 
+const STATUS_CHIPS = [
+    { value: 'REQUESTED', label: '대기중' },
+    { value: 'APPROVED', label: '승인' },
+    { value: 'REJECTED', label: '반려' },
+    { value: 'ALL', label: '전체' },
+];
+
 // 날짜 포맷: YYYY.MM.DD hh:mm (값이 없으면 '-')
 const fmtDate = (d) => {
   if (!d) return '-'
@@ -45,6 +52,7 @@ export default function PointsRedemptionsPage() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('') // 닉네임 검색어
+  const [statusFilter, setStatusFilter] = useState('REQUESTED'); 
   const [data, setData] = useState({
     content: [],
     number: 0,
@@ -53,34 +61,35 @@ export default function PointsRedemptionsPage() {
     totalPages: 1,
   })
 
-  const load = async (p1 = 1, q = '') => {
-    setLoading(true)
-    try {
-      // 대기중(REQUESTED)만 가져오고, 닉네임 검색(q)
-      const res = await fetchRequestedRedemptions({
-        page: p1 - 1,
-        size: PAGE_SIZE,
-        q,
-      })
-      setData(res)
-      setPage((res.number ?? 0) + 1)
-    } catch (e) {
-      console.error(e)
-      alert('교환 목록을 불러오지 못했습니다.')
-    } finally {
-      setLoading(false)
-    }
+  const load = async (p1 = 1, q = '', status = 'REQUESTED') => {
+      setLoading(true)
+      try {
+          const res = await fetchRequestedRedemptions({
+              page: p1 - 1,
+              size: PAGE_SIZE,
+              q,
+              status: status === 'ALL' ? null : status, // 'ALL'이면 파라미터 제외
+          })
+          setData(res)
+          setPage((res.number ?? 0) + 1)
+      } catch (e) {
+          console.error(e)
+          alert('교환 목록을 불러오지 못했습니다.')
+      } finally {
+          setLoading(false)
+      }
   }
 
   useEffect(() => {
-    load(1, '')
-  }, [])
+        load(1, search, statusFilter)
+    }, [statusFilter])
 
-  const onSubmitSearch = () => load(1, search.trim())
-  const onReset = () => {
-    setSearch('')
-    load(1, '')
-  }
+    const onSubmitSearch = () => load(1, search.trim(), statusFilter)
+    const onReset = () => {
+        setSearch('')
+        setStatusFilter('REQUESTED') // 초기화 시 기본값으로
+        load(1, '', 'REQUESTED')
+    }
 
   const goto = async (p) => {
     const totalPages = Math.max(1, data.totalPages || 1)
@@ -202,13 +211,17 @@ export default function PointsRedemptionsPage() {
 
       {/* 검색(닉네임) */}
       <TableToolbar
-        searchPlaceholder="닉네임으로 검색"
-        searchValue={search}
-        onChangeSearch={(v) => setSearch(v)}
-        onSubmitSearch={onSubmitSearch}
-        onReset={onReset}
-        className="mb-4"
-      />
+            searchPlaceholder="닉네임으로 검색"
+            searchValue={search}
+            onChangeSearch={(v) => setSearch(v)}
+            onSubmitSearch={onSubmitSearch}
+            onReset={onReset}
+            className="mb-4"
+            // --- 필터(토글) 기능에 필요한 props ---
+            statusChips={STATUS_CHIPS}
+            selectedStatus={statusFilter}
+            onSelectStatus={setStatusFilter}
+        />
 
       {/* 표 */}
       <BaseTable
