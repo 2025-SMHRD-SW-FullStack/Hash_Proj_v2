@@ -16,8 +16,8 @@ export default function StatusChips({
   const [shadow, setShadow] = useState({ left: false, right: false })
 
   // ▶ Button admin 팔레트에 맞춘 기본값
-  const ADMIN_ACTIVE = 'bg-[#ADD973] border-[#ADD973] text-white hover:brightness-95'
-  const ADMIN_IDLE   = 'bg-white border border-[#ADD973] text-[#ADD973] hover:bg-[#F3F9E9]'
+  const ADMIN_ACTIVE = 'bg-sub border-none text-white hover:brightness-95'
+  const ADMIN_IDLE   = 'bg-white border-sub text-sub hover:bg-gray-300'
 
   useEffect(() => {
     const el = wrapRef.current
@@ -97,7 +97,7 @@ export default function StatusChips({
                 <span
                   className={cx(
                     'ml-2 inline-flex items-center justify-center rounded-full leading-none',
-                    selected ? 'bg-white/20 text-white' : 'bg-[#EAF6D9] text-[#5E7F33]',
+                    selected ? 'bg-white/20 text-white' : 'bg-[#DAB5F3] text-white',
                     size === 'sm' ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-0.5 text-xs'
                   )}
                 >
