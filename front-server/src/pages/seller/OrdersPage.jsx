@@ -451,7 +451,7 @@ export default function OrdersPage() {
   return (
     <div className="mx-auto w-full max-w-7xl">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">주문관리</h1>
+        <h1 className="text-xl font-bold">주문 관리</h1>
       </div>
 
       {/* 필터바 */}

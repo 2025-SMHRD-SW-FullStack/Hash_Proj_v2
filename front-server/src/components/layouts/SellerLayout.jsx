@@ -92,7 +92,7 @@ export default function SellerLayout({ children }) {
 
       <div className="flex w-full gap-8 py-2 sm:py-6 justify-center">
         {/* 사이드바(데스크톱) */}
-        <aside className="hidden fixed left-0 z-0 bg-white shadow-sm w-56 shrink-0 lg:block">
+        <aside className="hidden fixed left-0 z-0 shadow-sm w-56 shrink-0 lg:block">
           <nav className="space-y-2">
             {navItems.map((it) => {
               if (it.type !== 'group') {
