@@ -26,12 +26,10 @@ export default function AdminLayout() {
       <Header />
 
       {/* 모바일 상단 바 */}
-      <div className="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 lg:hidden">
-        <div className="pl-4 mt-4 lg:hidden">
-          <Button variant="admin" size="md" onClick={() => setMobileOpen(true)}>
-            메뉴
-          </Button>
-        </div>
+      <div className="pl-4 mt-4 lg:hidden">
+        <Button variant="admin" size="md" onClick={() => setMobileOpen(true)}>
+          메뉴
+        </Button>
       </div>
 
       {/* aside + main 컨테이너 */}
@@ -101,7 +99,7 @@ export default function AdminLayout() {
         </AnimatePresence>
 
         {/* 본문: Outlet */}
-        <main className="flex-1 p-4 sm:p-6 min-h-[calc(100vh-64px)] max-w-[1600px] bg-gray-50">
+        <main className="w-full flex-1 min-h-[calc(100vh-64px)] max-w-[1600px] bg-gray-50 p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
