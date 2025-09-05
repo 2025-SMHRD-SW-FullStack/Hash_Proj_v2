@@ -3,24 +3,26 @@ import { motion, AnimatePresence } from "framer-motion";
 import Button from "./Button";
 import CloseIcon from '../../assets/icons/ic_close.svg'
 
-const Modal = ({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
-  footer, 
-  maxWidth = "max-w-2xl" 
+const Modal = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  footer,
+  maxWidth = "max-w-2xl"
 }) => {
   // ESC로 닫기 + body 스크롤 잠금
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e) => e.key === "Escape" && onClose?.();
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
     };
   }, [isOpen, onClose]);
 

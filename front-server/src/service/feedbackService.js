@@ -14,14 +14,37 @@ export const getSurveyTemplate = (productId) =>
 export const submitSurvey = (orderItemId, payload) =>
   api.post(`/api/surveys/answers`, { orderItemId, ...payload }).then(r => r.data)
 
-/** 셀러 피드백 그리드 */
+// 셀러 피드백
+
+// [셀러] 피드백 관리 그리드: 피드백 전용 API로 교체
 export const fetchSellerFeedbackGrid = async ({ from, to, q, page = 0, size = 100 } = {}) => {
-  const params = { page, size }
-  if (from) params.from = from
-  if (to) params.to = to
-  if (q && q.trim()) params.q = q.trim()
-  const { data } = await api.get('/api/seller/orders/grid', { params })
-  return data
+  // 백엔드는 페이지네이션만 사용 (from/to/q는 현재 미사용이므로 클라에서 쓰고 싶으면 필터링으로 처리)
+  const { data } = await api.get('/api/seller/feedbacks', { params: { page, size } })
+
+  // 서버가 Page 형태({content, totalElements...}) 또는 배열로 줄 수 있으니 모두 방어
+  const list = Array.isArray(data) ? data : (data?.content ?? [])
+
+  // 화면 컴포넌트(FeedbackRow / useFeedbackFilters)가 기대하는 키로 매핑
+  const content = list.map(d => ({
+    id: d.id,                                   // feedbackId
+    orderUid: d.orderUid,                       // 주문번호: toOrderNo(row)에서 가장 먼저 읽음
+    productName: d.productName,                 // 상품명
+    buyerName: d.buyer,                         // 구매자 닉네임 (FeedbackRow는 buyerName/receiver/name 순으로 읽음)
+    feedbackContent: d.feedbackContent,         // 피드백 내용
+    createdAt: d.feedbackCreatedAt,             // 작성일: FeedbackRow는 writtenAt/feedbackAt/createdAt 순으로 읽음
+    deliveredAt: d.deliveredAt,                 // 상태 계산용
+    deadlineAt: d.deadlineAt,                   // 상태 계산용(배송완료+7일 00:00)
+    reportStatus: d.reportStatus ?? null,       // 신고 상태(버튼/뱃지 제어)
+  }))
+
+  // 페이지 메타도 그대로 보존 (페이지네이션 확장 대비)
+  return {
+    content,
+    totalElements: data?.totalElements ?? content.length,
+    totalPages: data?.totalPages ?? 1,
+    page: data?.page ?? page,
+    size: data?.size ?? size,
+  }
 }
 
 /** 피드백 신고(셀러) */

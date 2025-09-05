@@ -14,6 +14,83 @@ export const fmtYmd = (s) => {
   return `${y}-${m}-${day}`
 }
 
+/** 날짜 안전 파싱: 'YYYY-MM-DD'/ISO/타임스탬프(초·ms) 모두 처리, 날짜만으로 정규화 */
+export const parseDateSafe = (v) => {
+  if (!v) return null
+  if (v instanceof Date) return new Date(v.getFullYear(), v.getMonth(), v.getDate())
+
+  const asNumber = (n) => {
+    if (!Number.isFinite(n)) return null
+    const ms = n < 1e12 ? n * 1000 : n   // 초 단위면 ms로 보정
+    const d = new Date(ms)
+    return Number.isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  }
+
+  if (typeof v === 'number') return asNumber(v)
+  if (typeof v === 'string') {
+    const t = v.trim()
+    // 'YYYY-MM-DD' 우선
+    const m = t.match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3])
+    // 숫자 문자열(타임스탬프)
+    const n = Number(t)
+    if (Number.isFinite(n)) return asNumber(n)
+    // 일반 Date 파싱
+    const d = new Date(t)
+    if (!Number.isNaN(d.getTime())) return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  }
+  return null
+}
+
+const _pick = (...vals) => vals.find((x) => x != null && x !== '')
+
+/** 피드백 마감일: (서버 제공값 우선) 없으면 배송완료일 + N일, 둘 다 없으면 '-' */
+export const resolveFeedbackDue = (row, days = 7) => {
+  // 1) 배송완료일을 최우선으로 사용
+  // 1) deliveredAt 우선
+  const deliveredRaw = _pick(
+    row?.deliveredAt,
+    row?.deliveryCompletedAt,
+    row?.deliveredDate,
+    row?.deliveredOn,
+    row?.shipment?.deliveredAt,
+    row?.tracking?.deliveredAt
+  )
+  const delivered = parseDateSafe(deliveredRaw)
+  if (delivered) {
+    const due = new Date(delivered.getFullYear(), delivered.getMonth(), delivered.getDate() + days)
+    return fmtYmd(due)
+  }
+
+  // 2) delivered 없는데 '배송완료/구매확정' 상태면 orderDate(+7)로 추정 표시
+  const statusRaw = String(row?.status ?? row?.statusText ?? '').toUpperCase();
+  const statusKo = String(row?.statusText ?? '');
+  const deliveredLike =
+    /DELIVER|CONFIRM/.test(statusRaw) || /배송완료|구매확정/.test(statusKo);
+  if (deliveredLike) {
+    const baseRaw = _pick(
+      row?.orderDate, row?.orderedAt, row?.paidAt, row?.createdAt
+    );
+    const base = parseDateSafe(baseRaw);
+    if (base) {
+      const due = new Date(base.getFullYear(), base.getMonth(), base.getDate() + days);
+      return fmtYmd(due);
+    }
+  }
+
+  // 3) 그 외에는 서버 제공값이 정상 범위면 사용
+  const predef = _pick(row?.feedbackDue, row?.feedbackDeadline, row?.feedbackAt, row?.deadlineAt)
+  const predefDate = parseDateSafe(predef)
+  if (predefDate && predefDate.getFullYear() >= 2015 && predefDate.getFullYear() <= 2100) {
+    return fmtYmd(predefDate)
+  }
+
+  // 4) 둘 다 없으면 표시 불가
+  return '-'
+}
+
+
+
 /** 숫자만 남기기 */
 export const digitsOnly = (v) => String(v ?? '').replace(/\D/g, '')
 
@@ -69,12 +146,12 @@ export const getAmount = (row) => {
 
   // 1) 즉시 매칭되는 평면 키들 (camel/snake 아우름)
   const directKeys = [
-    'payAmount','paymentAmount','paidAmount','totalAmount','orderAmount','totalPaymentAmount',
-    'totalPrice','finalPrice','finalAmount','orderPrice','settlementAmount','actualPayment',
-    'actualPay','grandTotal','amount','price',
-    'pay_amount','payment_amount','paid_amount','total_amount','order_amount','total_payment_amount',
-    'total_price','final_price','final_amount','order_price','settlement_amount','actual_payment',
-    'actual_pay','grand_total','paymentAmt','payAmt','paid_price','totalPaidAmount'
+    'payAmount', 'paymentAmount', 'paidAmount', 'totalAmount', 'orderAmount', 'totalPaymentAmount',
+    'totalPrice', 'finalPrice', 'finalAmount', 'orderPrice', 'settlementAmount', 'actualPayment',
+    'actualPay', 'grandTotal', 'amount', 'price',
+    'pay_amount', 'payment_amount', 'paid_amount', 'total_amount', 'order_amount', 'total_payment_amount',
+    'total_price', 'final_price', 'final_amount', 'order_price', 'settlement_amount', 'actual_payment',
+    'actual_pay', 'grand_total', 'paymentAmt', 'payAmt', 'paid_price', 'totalPaidAmount'
   ]
   for (const k of directKeys) {
     if (hasKey(row, k)) {

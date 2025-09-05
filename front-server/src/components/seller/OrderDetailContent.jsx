@@ -1,22 +1,13 @@
 // /src/components/seller/OrderDetailContent.jsx
-import React from 'react'
-import { carrierLabel } from '/src/constants/carriers'
+import React, { useMemo } from 'react'
+import { toOrderNo, fmtYmd, resolveFeedbackDue } from '../../util/orderUtils'
+import { carrierLabel, resolveCarrier as resolveCarrierByName } from '../../constants/carriers'
 
-// ---- 유틸 (OrdersPage와 동일 로직)
+// 공통 pick
+const pick = (...vals) => vals.find(v => v != null && v !== '')
+
+// ---- 상태 뱃지
 const pill = 'inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[12px] font-medium'
-const toDate = (s) => (s ? new Date(s + 'T00:00:00') : null)
-const addDays = (d, n) => new Date(d.getTime() + n * 86400000)
-const today0 = () => { const t = new Date(); t.setHours(0, 0, 0, 0); return t }
-const feedbackDeadline = (deliveredAt) => { const d = toDate(deliveredAt); return d ? addDays(d, 7) : null }
-const isPurchaseConfirmed = (o) => {
-  if (!o?.deliveredAt) return false
-  const deadline = feedbackDeadline(o.deliveredAt)
-  if (!deadline) return false
-  const now = today0()
-  if (now > deadline) return true
-  if (o.feedbackAt) return new Date(o.feedbackAt) <= deadline
-  return false
-}
 const statusKind = (s) => {
   if (!s) return 'other'
   if (s === '구매확정') return 'confirmed'
@@ -39,48 +30,85 @@ const StatusPill = ({ status }) => {
             : `${pill} bg-slate-50 text-slate-700 ring-1 ring-slate-200`
   return <span className={cls}>{status || '-'}</span>
 }
-const DeadlinePill = ({ deliveredAt, feedbackAt }) => {
-  if (!deliveredAt) return <span className={`${pill} bg-gray-100 text-gray-600`}>-</span>
-  const deadline = feedbackDeadline(deliveredAt)
-  if (!deadline) return <span className={`${pill} bg-gray-100 text-gray-600`}>-</span>
-  if (feedbackAt && new Date(feedbackAt) <= deadline) {
-    return <span className={`${pill} bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200`}>작성완료</span>
-  }
-  const dday = Math.ceil((deadline.getTime() - today0().getTime()) / 86400000)
-  if (dday < 0) return <span className={`${pill} bg-rose-50 text-rose-700 ring-1 ring-rose-200`}>미작성</span>
-  return <span className={`${pill} bg-slate-50 text-slate-700 ring-1 ring-slate-200`}>D-{dday}</span>
+
+// ---- row 해석기(하드코딩 회피용)
+const resolveOrderedAt = (r) =>
+  fmtYmd(pick(r?.orderedAt, r?.orderDate, r?.createdAt, r?.paidAt))
+
+const resolveStatusText = (r) =>
+  pick(r?.statusText, r?.status) || '-'
+
+const resolveCarrierName = (r) => {
+  const code = pick(r?.carrierCode, r?.courierCode, resolveCarrierByName(r?.courierName || '')?.code)
+  return pick(carrierLabel(code || ''), r?.courierName) || '-'
+}
+const resolveTrackingNo = (r) =>
+  pick(r?.trackingNo, r?.trackingNumber) || '-'
+
+const resolveProductName = (r) =>
+  pick(r?.productName, r?.product?.name, r?.product) || '-'
+
+const resolveBuyerName = (r) =>
+  pick(r?.buyer, r?.receiver, r?.buyerName, r?.buyer?.name) || '-'
+
+const resolvePhone = (r) =>
+  pick(r?.phone, r?.receiverPhone, r?.buyer?.phone) || '-'
+
+const resolveAddress = (r) =>
+  pick(r?.address, r?.deliveryAddress, r?.address1) || '-'
+
+const resolveRequest = (r) =>
+  pick(r?.requestMemo, r?.requestNote, r?.deliveryMemo) || '-'
+
+const resolveFeedbackWrittenAt = (r) => {
+  const arr0 = Array.isArray(r?.feedbacks) && r.feedbacks.length > 0 ? r.feedbacks[0] : null
+  const raw = pick(r?.feedbackAt, r?.feedbackWrittenAt, r?.feedback?.createdAt, r?.feedback?.created_at, arr0?.createdAt, arr0?.created_at)
+  return fmtYmd(raw)
+}
+
+// ✅ 피드백 내용 해석기 (단일/배열/중첩 모두 커버)
+const resolveFeedbackText = (r) => {
+  const arr0 = Array.isArray(r?.feedbacks) && r.feedbacks.length > 0 ? r.feedbacks[0] : null
+  // 우선순위: row.feedbackText → row.feedback.content → row.feedbacks[0].content → row.feedback(문자형)
+  return pick(r?.feedbackText, r?.feedback?.content, arr0?.content, r?.feedback) || '-'
 }
 
 export default function OrderDetailContent({ row }) {
   if (!row) return null
-  const displayStatus = isPurchaseConfirmed(row) ? '구매확정' : (row.status || '-')
 
-  // ⚠️ 가격(결제금액) 행 제거한 배열
+  // 표기 값들: 어떤 스키마가 와도 위 resolver가 알아서 처리
+  const displayOrderNo      = useMemo(() => toOrderNo(row), [row])
+  const displayOrderedAt    = useMemo(() => resolveOrderedAt(row), [row])
+  const displayStatus       = useMemo(() => resolveStatusText(row), [row])
+  const displayFeedbackDue  = useMemo(() => resolveFeedbackDue(row), [row])
+  const displayFeedbackAt   = useMemo(() => resolveFeedbackWrittenAt(row), [row])
+  const displayCarrierName  = useMemo(() => resolveCarrierName(row), [row])
+  const displayTrackingNo   = useMemo(() => resolveTrackingNo(row), [row])
+  const displayProduct      = useMemo(() => resolveProductName(row), [row])
+  const displayBuyer        = useMemo(() => resolveBuyerName(row), [row])
+  const displayPhone        = useMemo(() => resolvePhone(row), [row])
+  const displayAddress      = useMemo(() => resolveAddress(row), [row])
+  const displayRequest      = useMemo(() => resolveRequest(row), [row])
+  const displayFeedbackText = useMemo(() => resolveFeedbackText(row), [row])
+
   const rows = [
-    ['주문번호', <span className="font-mono">{row.id}</span>],
-    ['주문일', row.orderedAt || '-'],
+    ['주문번호', <span className="font-mono">{displayOrderNo}</span>],
+    ['주문일', displayOrderedAt],
     ['상태', <StatusPill status={displayStatus} />],
-    ['판매자', (
-      <div className="text-sm">
-        <div className="font-medium">{row.sellerName || row.shopName || row.seller?.name || row.seller?.shopName || '-'}</div>
-        {row.sellerId && <div className="text-xs text-gray-500">ID: {row.sellerId}</div>}
-      </div>
-    )],
-    ['피드백 마감', <DeadlinePill deliveredAt={row.deliveredAt} feedbackAt={row.feedbackAt} />],
-    ['피드백 작성일', row.feedbackAt || '-'],
-    ['택배사', carrierLabel(row.carrierCode || '') || '-'],
-    ['운송장', row.trackingNo || '-'],
-    ['상품명', row.product || '-'],
-    // ['가격', ...]  ← 제거
-    ['받는이', row.buyer || '-'],
-    ['연락처', row.phone || '-'],
-    ['주소', row.address || '-'],
-    ['배송요청사항', row.requestNote || '-'],
-    ['피드백 내용', row.feedbackText || row.feedback || '-'],
+    ['피드백 마감', displayFeedbackDue],
+    ['피드백 작성일', displayFeedbackAt],
+    ['택배사', displayCarrierName],
+    ['운송장', displayTrackingNo],
+    ['상품명', displayProduct],
+    ['받는이', displayBuyer],
+    ['연락처', displayPhone],
+    ['주소', displayAddress],
+    ['배송요청사항', displayRequest],
+    ['피드백 내용', displayFeedbackText],
   ]
 
   return (
-    <div className="max-h-[70vh] overflow-auto">
+    <div className="px-4">
       <table className="w-full table-fixed text-sm border-separate [border-spacing:0]">
         <tbody className="divide-y divide-gray-200">
           {rows.map(([label, value], idx) => (

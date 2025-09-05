@@ -17,6 +17,38 @@ import TestImg from '../../../assets/images/ReSsol_TestImg.png'
 
 const SHIPPING_FEE = 3000;
 
+const formatOptionsText = (optionsJson) => {
+  if (!optionsJson) return '';
+  try {
+    const data = typeof optionsJson === 'string' ? JSON.parse(optionsJson) : optionsJson;
+    if (!data) return '';
+
+    if (Array.isArray(data)) {
+      const parts = data.map(it => {
+        if (!it) return '';
+        if (typeof it === 'string') return it;
+        const name = it.name ?? it.optionName ?? it.key ?? '';
+        const value = it.value ?? it.optionValue ?? '';
+        const text = [name, value].filter(Boolean).join(': ');
+        return text;
+      }).filter(Boolean);
+      return parts.length ? `(${parts.join(' · ')})` : '';
+    }
+
+    if (typeof data === 'object') {
+      const keys = Object.keys(data);
+      if (!keys.length) return '';
+      const parts = keys.map(k => (data[k] ? `${k}: ${data[k]}` : '')).filter(Boolean);
+      return parts.length ? `(${parts.join(' · ')})` : '';
+    }
+
+    return '';
+  } catch {
+    return '';
+  }
+};
+
+
 const OrderPage = () => {
   const [sp] = useSearchParams();
   const mode = (sp.get('mode') || sp.get('source') || '').toLowerCase();
@@ -24,6 +56,16 @@ const OrderPage = () => {
   const addressIdParam = sp.get('addressId');
   const productId = sp.get('productId');
   const itemsQuery = sp.get('items');
+
+  // 선택 결제: ?items=1,2,3 → [1,2,3]
+  const selectedCartItemIds = useMemo(() => {
+    if (!isCartMode) return [];
+    const raw = itemsQuery || '';
+    if (!raw) return [];
+    return raw.split(',').map(s => parseInt(s, 10)).filter(Boolean);
+  }, [isCartMode, itemsQuery]);
+
+  const isSelectedCart = isCartMode && selectedCartItemIds.length > 0;
 
   const [busy, setBusy] = useState(false);
   const [uiMsg, setUiMsg] = useState('');
@@ -70,7 +112,7 @@ const OrderPage = () => {
       try {
         const bal = await getMyPointBalance();
         setPointBalance(bal);
-      } catch {}
+      } catch { }
     })();
   }, [addressIdParam]);
 
@@ -81,12 +123,29 @@ const OrderPage = () => {
       try {
         setCartLoading(true);
         const data = await getCart();
-        setCartData(data || { items: [], totalPrice: 0, shippingFee: 0, payableBase: 0 });
+        let next = data || { items: [], totalPrice: 0, shippingFee: 0, payableBase: 0 };
+
+        if (selectedCartItemIds.length) {
+          // ✅ 선택된 항목만 남김
+          const filtered = (next.items || []).filter(it => selectedCartItemIds.includes(it.cartItemId));
+          const total = filtered.reduce((sum, r) => sum + (r.subtotal || 0), 0);
+
+          // 선택 모드에선 합계 강제 재계산 (서버 payableBase 무시)
+          next = {
+            ...next,
+            items: filtered,
+            totalPrice: total,
+            payableBase: undefined, // 서버 전체값 덮어쓰기 방지
+          };
+        }
+
+        setCartData(next);
       } finally {
         setCartLoading(false);
       }
     })();
-  }, [isCartMode]);
+  }, [isCartMode, selectedCartItemIds]);
+
 
   // 단건 모드 데이터
   useEffect(() => {
@@ -139,23 +198,30 @@ const OrderPage = () => {
     }, 0);
   }, [orderItems, singleBasePrice]);
 
+  // 장바구니(선택 적용 후) 합계
+  const cartItemsSum = useMemo(
+    () => (cartData.items || []).reduce((s, r) => s + (r.subtotal || 0), 0),
+    [cartData.items]
+  );
+
+
   const deliveryFee = useMemo(() => {
     // 단건(바로구매) 모드이고, 상품 카테고리가 '무형자산'인 경우 배송비 0원
     if (!isCartMode && productInfo?.category === '무형자산') {
-    return 0;
+      return 0;
     }
-      // 장바구니 모드이거나 그 외 모든 상품
-      return isCartMode ? (cartData.shippingFee ?? SHIPPING_FEE) : SHIPPING_FEE;
+    // 장바구니 모드이거나 그 외 모든 상품
+    return isCartMode ? (cartData.shippingFee ?? SHIPPING_FEE) : SHIPPING_FEE;
   }, [isCartMode, productInfo, cartData.shippingFee]);
 
 
   const payableBase = isCartMode
-    ? (cartData?.payableBase || (cartData.totalPrice + deliveryFee))
+    ? (isSelectedCart ? (cartItemsSum + deliveryFee) : ((cartData.payableBase ?? (cartItemsSum + deliveryFee))))
     : (singleItemsSum + deliveryFee);
 
-  const desired       = useAllPoint ? payableBase : Math.max(0, Math.floor(Number(pointInput) || 0));
+  const desired = useAllPoint ? payableBase : Math.max(0, Math.floor(Number(pointInput) || 0));
   const finalUsePoint = Math.max(0, Math.min(desired, Math.min(pointBalance, payableBase)));
-  const finalPayAmount= Math.max(0, payableBase - finalUsePoint);
+  const finalPayAmount = Math.max(0, payableBase - finalUsePoint);
 
   const buildOrderName = () => {
     const names = isCartMode
@@ -222,13 +288,19 @@ const OrderPage = () => {
           useAllPoint,
           usePoint: useAllPoint ? 0 : finalUsePoint,
           clearCartAfter: true,
+          ...(selectedCartItemIds.length ? { cartItemIds: selectedCartItemIds } : {}), // ✅ 추가
         });
         const oid = String(res?.orderId || res?.orderUid || '').trim();
         if (!oid) throw new Error('주문번호 생성 실패');
 
         if ((res?.payAmount ?? 0) <= 0) {
-          await confirmTossPayment({ paymentKey: 'ZERO', orderId: oid, amount: 0 });
-          window.location.href = `/pay/success?orderId=${encodeURIComponent(oid)}&paymentKey=ZERO&amount=0`;
+          const confirmRes = await confirmTossPayment({ paymentKey: 'ZERO', orderId: oid, amount: 0 });
+          const dbId = confirmRes?.orderDbId ?? confirmRes?.orderId; // 숫자 ID
+          const successUrl =
+            `${window.location.origin}/user/pay/complete` +
+            `?status=success&orderId=${encodeURIComponent(oid)}` +
+            `&orderDbId=${encodeURIComponent(dbId ?? '')}&paymentKey=ZERO&amount=0`;
+          window.location.href = successUrl;
           return;
         }
 
@@ -270,8 +342,13 @@ const OrderPage = () => {
       createdOrderId = oid;
 
       if ((res?.payAmount ?? 0) <= 0) {
-        await confirmTossPayment({ paymentKey: 'ZERO', orderId: oid, amount: 0 });
-        window.location.href = `/pay/success?orderId=${encodeURIComponent(oid)}&paymentKey=ZERO&amount=0`;
+        const confirmRes = await confirmTossPayment({ paymentKey: 'ZERO', orderId: oid, amount: 0 });
+        const dbId = confirmRes?.orderDbId ?? confirmRes?.orderId;
+        const successUrl =
+          `${window.location.origin}/user/pay/complete` +
+          `?status=success&orderId=${encodeURIComponent(oid)}` +
+          `&orderDbId=${encodeURIComponent(dbId ?? '')}&paymentKey=ZERO&amount=0`;
+        window.location.href = successUrl;
         return;
       }
 
@@ -292,7 +369,7 @@ const OrderPage = () => {
               message: String(e?.message || 'Payment widget cancelled'),
             },
           });
-        } catch (_) {}
+        } catch (_) { }
       }
       setUiMsg(e?.response?.data?.message || e?.message || '결제 처리 중 오류가 발생했습니다.');
     } finally {
@@ -363,7 +440,7 @@ const OrderPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">{row.productName}</div>
-                      <div className="text-xs text-gray-500 break-words">{row.optionsJson}</div>
+                      <div className="text-xs text-gray-500 break-words">{formatOptionsText(row.optionsJson)}</div>
                       {!row.inStock && (
                         <div className="text-xs text-red-600 mt-1">품절 또는 재고 부족</div>
                       )}
@@ -413,7 +490,7 @@ const OrderPage = () => {
             <span>상품 합계</span>
             <b>
               {isCartMode
-                ? (cartData.totalPrice ?? 0).toLocaleString()
+                ? (cartItemsSum ?? 0).toLocaleString()
                 : (singleItemsSum ?? 0).toLocaleString()
               }원
             </b>

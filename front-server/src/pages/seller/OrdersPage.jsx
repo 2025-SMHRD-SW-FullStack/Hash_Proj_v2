@@ -1,26 +1,27 @@
 // src/pages/seller/OrdersPage.jsx
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import StatusChips from '/src/components/seller/StatusChips'
-import Button from '/src/components/common/Button'
-import Modal from '/src/components/common/Modal'
-import OrderDetailContent from '/src/components/seller/OrderDetailContent'
-import { carrierOptions, carrierLabel, resolveCarrier } from '/src/constants/carriers'
-import { fetchSellerOrders, registerShipment, ORDER_STATUS_MAP, mapStatusForDisplay } from '/src/service/orderService'
-import { fmtYmd, toOrderNo, getAmount, truncate10, makeAndDownloadCSV } from '/src/util/orderUtils'
-import { fetchPendingExchanges, approveExchange, rejectExchange, shipExchange } from '/src/service/exchangeService'
-import ExchangeShipDialog from '/src/components/seller/ExchangeShipDialog'
-import BaseTable from '/src/components/common/table/BaseTable'
-import { TableToolbar } from '/src/components/common/table/TableToolbar'                 // ✅ 절대경로 통일
-import { useOrderStore } from '/src/stores/orderStore'
+import StatusChips from '../../components/seller/StatusChips'
+import Button from '../../components/common/Button'
+import Modal from '../../components/common/Modal'
+import OrderDetailContent from '../../components/seller/OrderDetailContent'
+import { carrierOptions, carrierLabel, resolveCarrier } from '../../constants/carriers'
+import { fetchSellerOrders, registerShipment, ORDER_STATUS_MAP, mapStatusForDisplay } from '../../service/orderService'
+import { toOrderNo, getAmount, truncate10, makeAndDownloadCSV, resolveFeedbackDue } from '../../util/orderUtils'
+import { fetchPendingExchanges, approveExchange, rejectExchange, shipExchange } from '../../service/exchangeService'
+import ExchangeShipDialog from '../../components/seller/ExchangeShipDialog'
+import BaseTable from '../../components/common/table/BaseTable'
+import { TableToolbar } from '../../components/common/table/TableToolbar'
+import { useOrderStore } from '../../stores/orderStore'
+import { getExchangeStatusLabel } from '../../constants/exchange'
 
 // ---- UI 토큰
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 
 // 서버 enum에 맞춘 칩 (백엔드 OrderStatus와 일치)
-const STATUS_ITEMS = [
+const ORDER_STATUS_CHIPS = [
   { key: 'ALL', label: '전체' },
-  { key: 'PAID', label: '신규주문' },  // PAID → READY로 변경
+  { key: 'PAID', label: '신규주문' },
   { key: 'READY', label: '배송준비중' },
   { key: 'IN_TRANSIT', label: '배송중' },
   { key: 'DELIVERED', label: '배송완료' },
@@ -110,11 +111,29 @@ export default function OrdersPage() {
     setLoading(true); setError(null)
     try {
       if (isExchange) {
-        const content = await fetchPendingExchanges()
-        const arr = content || []
-        setRows(arr)
-        setSelected(new Set(arr.map(r => r.id)))
-        // 교환 목록은 운송장 편집 폼 사용 안함
+        // ✅ /pending 은 Swagger상 파라미터 없음. 그대로 호출
+        const raw = await fetchPendingExchanges()
+        // 형태 안전화(배열/페이지형 대응)
+        const list = Array.isArray(raw?.content) ? raw.content
+          : Array.isArray(raw) ? raw
+            : Array.isArray(raw?.list) ? raw.list
+              : []
+        // 🔍 디버깅용(필요 시만 확인)
+        console.debug('[exchanges/pending] raw:', raw)
+
+        const mapped = list.map(v => ({
+          id: v.id,
+          orderItemId: v.orderItemId,
+          productId: v.productId,
+          qty: v.qty,
+          status: v.status,
+          reasonText: v.reasonText,
+          createdAt: v.createdAt,
+          // 필요 시 나중에 enrichment(상품명/신청자)로 보강
+        }))
+        setRows(mapped)
+        setPagination(p => ({ ...p, page: 0, size: 200, totalElements: mapped.length, totalPages: 1 }))
+        setSelected(new Set())
       } else {
         // 백엔드 API와 일치하는 상태값 사용
         const apiStatus =
@@ -159,7 +178,7 @@ export default function OrdersPage() {
         })
       }
     } catch (e) {
-      console.error('주문 목록 로드 실패:', e)
+      console.error(isExchange ? '교환 목록 로드 실패:' : '주문 목록 로드 실패:', e)
       setError(e?.response?.data?.message || e.message || '목록을 불러오지 못했습니다.')
       setRows([])
     } finally {
@@ -176,29 +195,35 @@ export default function OrdersPage() {
       (gridRow.courierCode && { code: gridRow.courierCode }) ||
       resolveCarrier(gridRow.courierName || '')
 
-    // 백엔드 응답 구조에 맞춰 매핑
-    const mapped = {
-      id: gridRow.id,
-      orderedAt: gridRow.orderDate || gridRow.createdAt
-        ? new Date(gridRow.orderDate || gridRow.createdAt).toISOString().slice(0, 10)
-        : null,
-      status: mapStatusForDisplay(gridRow.status) || gridRow.statusText || '',
-      deliveredAt: gridRow.deliveredAt ?? null,
-      feedbackAt: gridRow.feedbackAt ?? null,
-      carrierCode: carrier?.code || '',
-      trackingNo: gridRow.trackingNo || '',
-      buyer: gridRow.receiver || gridRow.buyerName || gridRow.buyer?.name || '',
-      phone: gridRow.phone || gridRow.receiverPhone || '',
-      address: gridRow.address || gridRow.address1 || gridRow.deliveryAddress || '',
-      product: gridRow.productName || gridRow.product?.name || gridRow.product || '',
+    // ✅ 원본 gridRow를 먼저 펼치고(모든 키 보존), 필요한 표기용 키만 덮어쓰기
+    const normalized = {
+      // 주문번호 계열(모달에서도 toOrderNo가 주워가도록)
+      orderUid: gridRow.orderUid ?? gridRow.orderNo ?? gridRow.orderId ?? gridRow.id,
+      orderNo: gridRow.orderNo ?? undefined,
+      orderId: gridRow.orderId ?? undefined,
+
+      // 날짜/상태(원본도 보존하고, 사람이 읽기 쉬운 statusText를 함께 둠)
+      orderedAt: gridRow.orderDate ?? gridRow.orderedAt ?? gridRow.createdAt ?? null,
+      status: mapStatusForDisplay(gridRow.status) || gridRow.statusText || gridRow.status || '',
+      statusText: mapStatusForDisplay(gridRow.status) || gridRow.statusText || gridRow.status || '',
+      deliveredAt: gridRow.deliveredAt ?? gridRow.deliveryCompletedAt ?? null,
+      feedbackAt: gridRow.feedbackAt ?? gridRow.feedbackWrittenAt ?? null,
+
+      // 배송/수취/상품
+      carrierCode: gridRow.carrierCode ?? gridRow.courierCode ?? carrier?.code ?? '',
+      trackingNo: gridRow.trackingNo ?? gridRow.trackingNumber ?? '',
+      buyer: gridRow.receiver ?? gridRow.buyerName ?? gridRow.buyer?.name ?? '',
+      phone: gridRow.phone ?? gridRow.receiverPhone ?? gridRow.buyer?.phone ?? '',
+      address: gridRow.address ?? gridRow.deliveryAddress ?? gridRow.address1 ?? '',
+      product: gridRow.productName ?? gridRow.product?.name ?? gridRow.product ?? '',
+
+      // 기타 표시용
       price: amt,
-      requestNote: gridRow.requestMemo || gridRow.requestNote || gridRow.deliveryMemo || '',
-      feedbackText: gridRow.feedbackText || gridRow.feedback || '',
-      // 셀러 정보 추가
-      sellerId: gridRow.sellerId || gridRow.seller?.id,
-      sellerName: gridRow.sellerName || gridRow.shopName || gridRow.seller?.name || gridRow.seller?.shopName,
+      requestNote: gridRow.requestMemo ?? gridRow.requestNote ?? gridRow.deliveryMemo ?? '',
+      feedbackText: gridRow.feedbackText ?? gridRow.feedback ?? '',
     }
-    setDetailRow(mapped)
+
+    setDetailRow({ ...gridRow, ...normalized })   // ← 원본 + 보정치 동시 전달
     setDetailOpen(true)
   }
 
@@ -281,7 +306,7 @@ export default function OrdersPage() {
           String(r?.phone ?? r?.receiverPhone ?? ''),
           String(r?.requestMemo ?? r?.requestNote ?? r?.deliveryMemo ?? ''),
           String(mapStatusForDisplay(r?.status) ?? r?.statusText ?? '-'),
-          fmtYmd(r?.feedbackDue),
+          resolveFeedbackDue(r),
         ]
       },
     })
@@ -358,10 +383,8 @@ export default function OrdersPage() {
       )
     },
     {
-      key: 'due',
-      header: '피드백 마감',
-      width: 120,
-      render: (r) => fmtYmd(r.feedbackDue)
+      key: 'due', header: '피드백 마감', width: 120,
+      render: (r) => resolveFeedbackDue(r)
     },
     {
       key: 'ship', header: '운송장', width: 260,
@@ -410,11 +433,24 @@ export default function OrdersPage() {
   // 교환 컬럼
   const exchangeColumns = useMemo(() => ([
     { key: 'id', header: '교환ID', width: 90 },
-    { key: 'orderId', header: '주문번호', width: 140 },
-    { key: 'productName', header: '상품', width: 260, className: 'text-left' },
-    { key: 'receiver', header: '신청자', width: 120 },
-    { key: 'reason', header: '사유', width: 260, className: 'text-left', render: r => r.reason || '-' },
-    { key: 'requestedAt', header: '신청일', width: 160, render: r => (r.requestedAt || '').slice(0, 16).replace('T', ' ') },
+    { key: 'orderItemId', header: '주문아이템', width: 120 },
+    { key: 'productId', header: '상품ID', width: 120 },
+    { key: 'qty', header: '수량', width: 80 },
+    {
+      key: 'status',
+      header: '상태',
+      width: 110,
+      render: r => (
+        <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-[12px] font-medium text-gray-800">
+          {getExchangeStatusLabel(r.status)}
+        </span>
+      )
+    },
+    { key: 'reasonText', header: '사유', width: 300, className: 'text-left' },
+    {
+      key: 'createdAt', header: '신청일', width: 160,
+      render: r => (r.createdAt || '').toString().slice(0, 16).replace('T', ' ')
+    },
     {
       key: 'actions', header: '작업', width: 240,
       render: r => (
@@ -423,7 +459,8 @@ export default function OrdersPage() {
             e.stopPropagation(); (async () => {
               const reason = window.prompt('반려 사유를 입력하세요.')
               if (!reason) return
-              await rejectExchange(r.id, reason)
+              // ✅ 서버 바디 표준화: { reason }
+              await rejectExchange(r.id, { reason })
               alert('반려 처리되었습니다.')
 
               // 전역 상태 강제 새로고침
@@ -471,7 +508,7 @@ export default function OrdersPage() {
           }
         >
           <StatusChips
-            items={STATUS_ITEMS}
+            items={ORDER_STATUS_CHIPS}
             value={status}
             onChange={(v) => setParam({ status: v })}
             size="sm"
@@ -526,7 +563,11 @@ export default function OrdersPage() {
         onClose={() => setShipTarget(null)}
         onSubmit={async ({ courierCode, trackingNumber }) => {
           if (!shipTarget) return
-          await shipExchange(shipTarget.id, { courierCode, trackingNumber })
+          // ✅ 파라미터 호환(백엔드가 carrier/invoiceNo를 기대해도 안전)
+          await shipExchange(
+            shipTarget.id,
+            { courierCode, trackingNumber, carrier: courierCode, invoiceNo: trackingNumber }
+          )
           alert('교환 발송이 등록되었습니다.')
 
           // 전역 상태 강제 새로고침
