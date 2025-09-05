@@ -1,7 +1,7 @@
-FROM python:3.11
+FROM python:3.12.7
 WORKDIR /usr/src/app/ai-server
 COPY ./requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 # 시간 설정
 RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
     echo "Asia/Seoul" > /etc/timezone
