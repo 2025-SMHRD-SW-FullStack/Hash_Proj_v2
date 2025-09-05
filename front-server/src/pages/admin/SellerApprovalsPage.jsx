@@ -1,16 +1,17 @@
 // src/pages/admin/SellerApprovalsPage.jsx
 import React, { useEffect, useMemo, useState } from 'react'
-import BaseTable from '/src/components/common/table/BaseTable'
-import Button from '/src/components/common/Button'
-import Modal from '/src/components/common/Modal'
+import BaseTable from '../../components/common/table/BaseTable'
+import Button from '../../components/common/Button'
+import Modal from '../../components/common/Modal'
 import {
   adminApproveSeller,
   adminGetSellerApplication,
   adminRejectSeller,
   adminSearchSellerApplications,
-} from '/src/service/adminSellerService.js'
+} from '../../service/adminSellerService.js'
 import TableToolbar from '../../components/common/table/TableToolbar'
 import CategorySelect from '../../components/common/CategorySelect'
+
 
 // 날짜 포맷(간단)
 const fmt = (d) =>

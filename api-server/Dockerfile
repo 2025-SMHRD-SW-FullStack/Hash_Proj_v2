@@ -1,27 +1,32 @@
-# 빌드 단계
+# syntax=docker/dockerfile:1.6
+
 FROM gradle:8.7-jdk17 AS build
 WORKDIR /usr/src/app/api-server
 
-# api-server 폴더만 복사
-COPY api-server/ ./
+# 1) 의존성 파일 먼저 복사 (캐시 살리기)
+COPY gradlew gradlew
+COPY gradle gradle
+COPY build.gradle build.gradle
+COPY settings.gradle settings.gradle
 
-# gradlew 실행 권한 부여
-RUN chmod +x gradlew
+# 2) CRLF -> LF 교정 (dos2unix 대신 sed 사용) + 실행권한
+RUN sed -i 's/\r$//' gradlew \
+ && sed -i 's/\r$//' gradle/wrapper/gradle-wrapper.properties || true \
+ && chmod +x gradlew
 
-RUN ./gradlew clean build -x test
+# 3) Gradle 캐시 활용해서 미리 의존성 확인
+RUN --mount=type=cache,target=/home/gradle/.gradle ./gradlew --version
 
-# 실행 단계 (가벼운 JRE)
-FROM openjdk:17-jdk-slim
+# 4) 소스만 복사 (변경 최소화)
+COPY src src
+
+# 5) 빌드 (clean 제거: 증분 빌드 빠름)
+RUN --mount=type=cache,target=/home/gradle/.gradle ./gradlew build -x test
+
+# ---- Runtime ----
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /usr/src/app
-
-# 빌드 산출물 복사
 COPY --from=build /usr/src/app/api-server/build/libs/*.jar app.jar
-
-# 시간대 설정
-RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
-    echo "Asia/Seoul" > /etc/timezone
-
+ENV TZ=Asia/Seoul
 EXPOSE 8080
-
-# Spring Boot 프로필 prod로 실행
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=prod"]
+ENTRYPOINT ["java","-jar","app.jar","--spring.profiles.active=prod"]

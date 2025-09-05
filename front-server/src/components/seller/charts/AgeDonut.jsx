@@ -1,7 +1,7 @@
 // /src/components/seller/charts/AgeDonut.jsx
 import React from 'react'
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
-import { CHART } from '/src/constants/chartTheme'
+import { CHART } from '../../../constants/chartTheme'
 
  // 다른 차트에서 동일 팔레트 재사용용(ChoiceDonut 등)
  export const AGE_DONUT_COLORS = CHART.palette

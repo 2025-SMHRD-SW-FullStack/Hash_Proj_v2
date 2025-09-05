@@ -36,7 +36,43 @@ spring:
       fail-on-empty-beans: false
 
 ai:
-  base-url: http://localhost:8001
+  base-url: http://hash-proj-v2.eba-ijnehrgn.ap-northeast-2.elasticbeanstalk.com:8001
   timeout:
     connect-ms: 1500
     read-ms: 3000
+
+# ===== 파일 스토리지 (DEV: S3 스토리지 사용) =====
+storage:
+  mode: s3
+  local:
+    base-dir: ./uploads
+  s3:
+    bucket: meonjeo                # 콘솔 버킷명과 정확히 일치
+    region: kr-standard
+    endpoint: https://kr.object.ncloudstorage.com
+    path-style: true
+    public-base-url: https://kr.object.ncloudstorage.com/meonjeo
+    acl-public-read: true          # ← 이거 켜면 객체에만 공개 ACL 붙임
+    accessKey: ${STORAGE_S3_ACCESS_KEY}
+    secretKey: ${STORAGE_S3_SECRET_KEY}
+
+phone:
+  short-token:
+    validity-seconds: 600
+  code:
+    ttl-seconds: 180
+    max-attempts: 5
+
+COOLSMS_API_KEY: ${COOLSMS_API_KEY}
+COOLSMS_API_SECRET: ${COOLSMS_API_SECRET}
+COOLSMS_FROM_NUMBER: ${COOLSMS_FROM_NUMBER}
+
+toss:
+  successUrl: http://hash-proj-v2.eba-ijnehrgn.ap-northeast-2.elasticbeanstalk.com/pay/success
+  failUrl: http://hash-proj-v2.eba-ijnehrgn.ap-northeast-2.elasticbeanstalk.com/pay/fail
+
+sweettracker:
+  api-key: ${SWEETTRACKER_API_KEY}
+  base-url: https://info.sweettracker.co.kr
+  timeout-ms: 3000
+

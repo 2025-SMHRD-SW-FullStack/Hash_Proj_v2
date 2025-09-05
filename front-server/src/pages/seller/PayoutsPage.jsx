@@ -1,9 +1,9 @@
 // /src/pages/seller/PayoutsPage.jsx
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import Button from '/src/components/common/Button'
-import { fetchDailySettlementSummary, fetchDailySettlementList } from '/src/service/settlementService'
-import { fmtYmd as _fmtYmd } from '/src/util/orderUtils'
+import Button from '../../components/common/Button'
+import { fetchDailySettlementSummary, fetchDailySettlementList } from '../../service/settlementService'
+import { fmtYmd as _fmtYmd } from '../../util/orderUtils'
 
 // ---- UI 토큰(기존 톤 유지)
 const box  = 'rounded-xl border bg-white p-4 shadow-sm'

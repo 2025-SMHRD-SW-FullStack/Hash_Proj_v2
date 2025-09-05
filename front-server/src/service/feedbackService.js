@@ -1,5 +1,5 @@
 import api from '../config/axiosInstance'
-import axiosAI from '/src/config/axiosAI'
+import axiosAI from '../config/axiosAI'
 
 // ======================= 기존 API들 =======================
 
@@ -340,3 +340,7 @@ export async function fetchProductsByCategory(category) {
   const norm = v => toCanonicalCategory(v).toLowerCase()
   return all.filter(p => norm(p.category) === norm(key))
 }
+
+// [셀러] 피드백 상세
+export const getSellerFeedbackDetail = (feedbackId) =>
+  api.get(`/api/seller/feedbacks/${feedbackId}`).then(r => r.data)

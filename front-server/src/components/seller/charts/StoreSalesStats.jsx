@@ -1,8 +1,8 @@
 // /src/components/seller/charts/StoreSalesStats.jsx
 import React, { useEffect, useMemo, useState } from 'react'
-import Button from '/src/components/common/Button'
+import Button from '../../common/Button'
 import LineBase from './LineBase'
-import { fetchSalesStats } from '/src/service/statsService'  // 주문 그리드 집계 기반 사용
+import { fetchSalesStats } from '../../../../src/service/statsService'  // 주문 그리드 집계 기반 사용
 
 // 'YYYY-MM-DD' -> 'MM/DD'
 const toMMDD = (ymd) => {

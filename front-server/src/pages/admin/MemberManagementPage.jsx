@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import BaseTable from '/src/components/common/table/BaseTable';
-import Button from '/src/components/common/Button';
-import TableToolbar from '/src/components/common/table/TableToolbar';
-import { adminSearchUsers, adminSanctionUser } from '/src/service/adminUserService';
+import BaseTable from '../../components/common/table/BaseTable';
+import Button from '../../components/common/Button';
+import TableToolbar from '../../components/common/table/TableToolbar';
+import { adminSearchUsers, adminSanctionUser } from '../../service/adminUserService';
 
 // 날짜 포맷 유틸
 const fmtDateTime = (iso) => {

@@ -1,6 +1,6 @@
 // /src/config/axiosAI.js
 import axios from 'axios'
-import useAuthStore from '/src/stores/authStore'
+import useAuthStore from '../stores/authStore'
 
 // ────────────────────────────────────────────────────────────────
 // BASE URL
