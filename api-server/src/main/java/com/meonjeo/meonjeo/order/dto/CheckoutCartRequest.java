@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 
 @Schema(name="CheckoutCartRequest", description="장바구니 전체 결제 요청")
 public record CheckoutCartRequest(
@@ -20,5 +21,11 @@ public record CheckoutCartRequest(
         @PositiveOrZero int usePoint,
 
         @Schema(description="결제 요청 후 장바구니 비우기", example="true")
-        boolean clearCartAfter
+        boolean clearCartAfter,
+
+        @Schema(description="선택한 장바구니 아이템 ID 목록", example="[12,34,56]")
+        List<Long> items,
+
+        @Schema(description="선택한 장바구니 아이템 ID 목록(호환 필드)", example="[12,34,56]")
+        List<Long> cartItemIds
 ) {}

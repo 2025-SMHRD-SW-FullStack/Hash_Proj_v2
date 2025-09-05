@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
-import ProductPicker from '/src/components/seller/feedbacks/ProductPicker'
-import AgeDonut from '/src/components/seller/charts/AgeDonut'
-import { RatingsDistribution, QuestionAverages } from '/src/components/seller/charts/RatingsBar'
-import { fetchFeedbackStats, computeAiSummaryNow } from '/src/service/feedbackService'
-import AiSummaryPanel from '/src/components/seller/feedbacks/AiSummaryPanel'
-import ChoiceDonut from '/src/components/seller/charts/ChoiceDonut'
+import ProductPicker from '../../../components/seller/feedbacks/ProductPicker'
+import AgeDonut from '../../../components/seller/charts/AgeDonut'
+import { RatingsDistribution, QuestionAverages } from '../../../components/seller/charts/RatingsBar'
+import { fetchFeedbackStats, computeAiSummaryNow } from '../../../service/feedbackService'
+import AiSummaryPanel from '../../../components/seller/feedbacks/AiSummaryPanel'
+import ChoiceDonut from '../../../components/seller/charts/ChoiceDonut'
+import { useNavigate } from 'react-router-dom'
+import Button from '../../../components/common/Button'
 
 const box = 'rounded-xl border bg-white p-5 shadow-sm text-gray-900'
 const scrollXDown = 'md:overflow-visible max-md:overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
@@ -13,6 +15,7 @@ export default function FeedbacksStatsPage() {
   const [picked, setPicked] = useState({ category: null, productId: null })
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState(null)
+  const navigate = useNavigate();
 
   // AI 요약 (캐시 + 레이스 방지)
   const [aiLive, setAiLive] = useState(null)
@@ -67,8 +70,12 @@ export default function FeedbacksStatsPage() {
   }, [summary, stars])
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-8 py-6 max-lg:px-6 max-sm:px-3">
-      <h1 className="mb-4 text-xl font-semibold">피드백 통계</h1>
+    <div className="mx-auto w-full max-w-7xl md:px-6 lg:px-8">
+      <div className='flex items-center space-x-2 justify-between'>
+        <h1 className="mb-4 text-xl font-semibold">피드백 통계</h1>
+        <Button variant='unselected' className='text-sub' onClick={() => navigate('/seller/feedbacks/manage')} >피드백 관리 보기</Button>
+      </div>
+
 
       {/* 선택 영역 */}
       <section className={box} aria-busy={loading}>

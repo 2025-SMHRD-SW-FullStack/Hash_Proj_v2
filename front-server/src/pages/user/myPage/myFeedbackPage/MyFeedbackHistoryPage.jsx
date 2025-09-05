@@ -28,7 +28,7 @@ const MyFeedbackHistoryPage = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">작성한 피드백</h2>
+      <h1 className="hidden md:block text-lg md:text-xl font-bold mb-4 text-gray-800">작성한 피드백</h1>
       {feedbacks.length === 0 ? (
         <div className="border rounded-lg p-4 h-60 flex items-center justify-center text-gray-400">
           작성한 피드백이 없습니다.

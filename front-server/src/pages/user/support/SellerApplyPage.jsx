@@ -8,7 +8,7 @@ import { CATEGORIES } from '../../../constants/products';
 
 // 승인 대기 상태를 표시하는 컴포넌트
 const SellerPending = () => (
-  <div className="max-w-xl mx-auto p-8 bg-white rounded-xl shadow-md text-center">
+  <div className="max-w-xl mx-auto px-8 bg-white rounded-xl shadow-md text-center">
     <h2 className="text-2xl font-bold mb-4">신청 완료</h2>
     <p className="text-gray-600">셀러 등록 신청이 정상적으로 접수되었습니다.</p>
     <p className="text-gray-600 mt-2">관리자 승인을 기다려주세요.</p>
@@ -18,7 +18,7 @@ const SellerPending = () => (
 
 // 승인된 셀러 정보를 표시하는 컴포넌트
 const SellerProfileView = ({ profile, onEdit }) => (
-    <div className="max-w-xl mx-auto p-8 bg-white rounded-xl shadow-md">
+    <div className="max-w-xl mx-auto px-8 bg-white rounded-xl shadow-md">
         <h2 className="text-2xl font-bold mb-6 text-center">셀러 프로필</h2>
         <div className="space-y-4">
             <TextField id="shopName" name="shopName" label="상호명" value={profile.shopName} readOnly />
@@ -78,8 +78,8 @@ const SellerApplyForm = ({ onApplySuccess }) => {
   };
 
   return (
-    <div className="max-w-xl mx-auto p-8 bg-white rounded-xl shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">셀러 등록 신청</h2>
+    <div className="mx-auto p-8 bg-white rounded-xl shadow-md">
+      <h2 className="text-sm sm:text-xl font-bold ">셀러 등록 신청</h2>
       <p className="text-center text-gray-600 mb-8">
         먼저써봄과 함께 피드백으로 빛나는 상품을 만들어보세요.
       </p>

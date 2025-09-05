@@ -7,12 +7,12 @@ import DiscountRow from '../../../components/seller/product/form/DiscountRow'
 import DetailComposer from '../../../components/seller/product/DetailComposer'
 import { CATEGORIES } from '../../../constants/products'
 import OptionSection from '../../../components/seller/product/options/OptionSection'
-import { createMyProduct } from '/src/service/productService'
-import { uploadImages } from '/src/service/uploadService'
+import { createMyProduct } from '../../../service/productService'
+import { uploadImages } from '../../../service/uploadService'
 
 const sheet = 'w-full rounded-2xl border bg-white shadow-sm divide-y'
 const pad = 'px-6 py-6'
-const wrap = 'mx-auto w-full max-w-[1120px] px-6'
+const wrap = 'mx-auto w-full'
 
 // 폭 통일 (Edit 페이지와 동일)
 const longW = 'w-full max-w-[750px]'  // 카테고리

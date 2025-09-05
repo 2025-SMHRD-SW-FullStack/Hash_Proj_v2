@@ -1,8 +1,7 @@
 // src/components/seller/feedbacks/FeedbackFilterChips.jsx
 
 import React from 'react';
-import StatusChips from '/src/components/seller/StatusChips';
-import { FEEDBACK_FILTERS } from '/src/constants/sellerfeedbacks';
+import StatusChips from '../SalesChartCard';
 
 export default function FeedbackFilterChips({ counts, value, onChange }) {
   // ✅ FEEDBACK_FILTERS 배열을 map으로 순회하여 items를 동적으로 생성합니다.

@@ -5,9 +5,7 @@ import MyPageLayout from '../components/layouts/MyPageLayout'
 import MyOrderDetailPage from '../pages/user/myPage/MyOrderDetailPage'
 import MyOrders from '../pages/user/myPage/MyOrders'
 import FeedbackEditor from '../pages/user/feedbackPage/FeedbackEditor'
-import MyInfoPage from '../pages/user/myPage/MyInfoPage'
 import SurveyPage from '../pages/user/SurveyPage'
-import MyCartpage from '../pages/user/myPage/MyCartPage'
 import PointExchangePage from '../pages/user/myPage/PointExchangePage'
 import QnAPage from '../pages/user/support/QnAPage'
 import SellerApplyPage from '../pages/user/support/SellerApplyPage'
@@ -16,6 +14,8 @@ import ChatRoomPage from '../pages/user/ChatRoomPage'
 import OrderCompletePage from '../pages/user/orderPage/OrderCompletePage'
 import MyFeedbackHistoryPage from '../pages/user/myPage/myFeedbackPage/MyFeedbackHistoryPage'
 import MyFeedbackDetailPage from '../pages/user/myPage/myFeedbackPage/MyFeedbackDetailPage'
+import MyCartPage from '../pages/user/myPage/MyCartPage'
+import MyInfoPage from '../pages/user/myPage/MyInfoPage'
 
 const UserRouter = () => {
   return (
@@ -44,7 +44,7 @@ const UserRouter = () => {
         <Route path="feedback-history" element={<MyFeedbackHistoryPage />} />
         <Route path="feedback/:feedbackId" element={<MyFeedbackDetailPage />} />
         <Route path="edit" element={<MyInfoPage />} />
-        <Route path='cart' element={<MyCartpage/>}/>
+        <Route path='cart' element={<MyCartPage/>}/>
         <Route path='point-exchange' element={<PointExchangePage/>}/>
         <Route path="support/qna" element={<QnAPage />} />
         <Route path="seller-apply" element={<SellerApplyPage />} />

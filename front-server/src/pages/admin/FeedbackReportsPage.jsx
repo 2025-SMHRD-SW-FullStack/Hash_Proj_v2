@@ -1,8 +1,8 @@
 // /src/pages/admin/FeedbackReportsPage.jsx
 import React, { useEffect, useState } from 'react'
-import api from '/src/config/axiosInstance'
-import Button from '/src/components/common/Button'
-import BaseTable from '/src/components/common/table/BaseTable'
+import api from '../../config/axiosInstance'
+import Button from '../../components/common/Button'
+import BaseTable from '../../components/common/table/BaseTable'
 
 export default function FeedbackReportsPage() {
   const [reports, setReports] = useState([])

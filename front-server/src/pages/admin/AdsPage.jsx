@@ -1,9 +1,10 @@
 // src/pages/admin/AdsPage.jsx
 import React, { useEffect, useMemo, useState } from 'react'
-import BaseTable from '/src/components/common/table/BaseTable'
-import { TableToolbar } from '/src/components/common/table/TableToolbar'
-import Button from '/src/components/common/Button'
-import { adminActivateAd, adminCancelAd, adminFetchAdBookings } from '/src/service/adminAdsService'
+import { adminActivateAd, adminCancelAd, adminFetchAdBookings } from '../../service/adminAdsService'
+import { AD_STATUS, AD_STATUS_LABEL } from '../../constants/ads'
+import BaseTable from '../../components/common/table/BaseTable'
+import TableToolbar from '../../components/common/table/TableToolbar'
+import Button from '../../components/common/Button'
 
 // 날짜 포맷: YYYY.MM.DD
 const fmtDate = (d) => {
@@ -43,16 +44,30 @@ const toUiStatus = (s) => {
   return 'PENDING'
 }
 
+const STATUS_CHIPS = [
+  { value: 'ALL', label: '전체' },
+  { value: AD_STATUS.RESERVED_PAID, label: AD_STATUS_LABEL[AD_STATUS.RESERVED_PAID] },
+  { value: AD_STATUS.RESERVED_UNPAID, label: AD_STATUS_LABEL[AD_STATUS.RESERVED_UNPAID] },
+  { value: AD_STATUS.ACTIVE, label: AD_STATUS_LABEL[AD_STATUS.ACTIVE] },
+  { value: AD_STATUS.COMPLETED, label: AD_STATUS_LABEL[AD_STATUS.COMPLETED] },
+  { value: AD_STATUS.CANCELLED, label: AD_STATUS_LABEL[AD_STATUS.CANCELLED] },
+];
+
 export default function AdsPage() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('ALL')
 
   // 서버에서 목록 로드
   const load = async () => {
     setLoading(true)
     try {
-      const page = await adminFetchAdBookings({ page: 0, size: 500 })
+      const page = await adminFetchAdBookings({ 
+        page: 0, 
+        size: 500,
+        status: statusFilter === 'ALL' ? null : statusFilter 
+      })
       // API 응답을 테이블 행으로 매핑
       const mapped = (page?.content ?? []).map((r) => ({
         id: r.id,
@@ -77,7 +92,7 @@ export default function AdsPage() {
 
   useEffect(() => {
     load()
-  }, [])
+  }, [statusFilter])
 
   // 검색(상호명)
   const filtered = useMemo(() => {
@@ -90,7 +105,7 @@ export default function AdsPage() {
   const StatusChip = ({ status }) => {
     if (status === 'ACTIVE')
       return (
-        <span className="rounded-full bg-[#ADD973]/20 px-2 py-1 text-xs font-medium text-[#6a9231]">
+        <span className="rounded-full bg-sub/20 px-2 py-1 text-xs font-medium text-[#683192]">
           노출중
         </span>
       )
@@ -217,9 +232,16 @@ export default function AdsPage() {
         searchValue={search}
         onChangeSearch={setSearch}
         onSubmitSearch={() => setSearch((v) => v.trim())}
-        onReset={() => setSearch('')}
+        onReset={() => {
+          setSearch('');
+          setStatusFilter('ALL'); // 필터도 초기화
+        }}
         className="mb-4"
+        statusChips={STATUS_CHIPS}
+        selectedStatus={statusFilter}
+        onSelectStatus={setStatusFilter}
       />
+
 
       <BaseTable
         columns={columns}

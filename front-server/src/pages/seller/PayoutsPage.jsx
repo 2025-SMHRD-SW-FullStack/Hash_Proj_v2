@@ -1,13 +1,13 @@
 // /src/pages/seller/PayoutsPage.jsx
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import Button from '/src/components/common/Button'
-import { fetchDailySettlementSummary, fetchDailySettlementList } from '/src/service/settlementService'
-import { fmtYmd as _fmtYmd } from '/src/util/orderUtils'
+import Button from '../../components/common/Button'
+import { fetchDailySettlementSummary, fetchDailySettlementList } from '../../service/settlementService'
+import { fmtYmd as _fmtYmd } from '../../util/orderUtils'
 
 // ---- UI 토큰(기존 톤 유지)
 const box  = 'rounded-xl border bg-white p-4 shadow-sm'
-const wrap = 'mx-auto w-full max-w-[1120px] px-6'
+const wrap = 'mx-auto w-full'
 
 // colgroup 안전 렌더(공백 텍스트 노드 방지)
 const ColGroup = React.memo(({ widths = [] }) => (
@@ -91,12 +91,11 @@ export default function PayoutsPage() {
   const widths = ['160px','200px','160px','160px','160px','160px','120px']
 
   return (
-    <div className="py-6">
       <div className={wrap}>
         {/* 헤더 */}
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <h1 className="text-xl font-semibold">정산 관리</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-2">
             {/* 이전 날짜 */}
             <Button
               variant="admin"
@@ -247,6 +246,5 @@ export default function PayoutsPage() {
 
         </div>
       </div>
-    </div>
   )
 }

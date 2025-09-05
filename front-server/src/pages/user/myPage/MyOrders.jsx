@@ -20,8 +20,8 @@ const MyOrders = () => {
   useEffect(() => { refresh(); }, []);
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-      <h1 className="text-lg md:text-xl font-semibold">내 주문/배송 내역</h1>
+    <div className="space-y-4">
+      <h1 className="hidden md:block text-xl font-semibold text-gray-800">내 주문/배송 내역</h1>
       {loading && <div>불러오는 중…</div>}
       {!loading && rows.length === 0 && <div className="text-gray-500">주문 내역이 없습니다.</div>}
 

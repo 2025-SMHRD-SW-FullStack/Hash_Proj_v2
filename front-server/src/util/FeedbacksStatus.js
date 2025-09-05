@@ -27,36 +27,60 @@ const parseDday = (feedbackDue) => {
  * - reportStatus: 'PENDING' | 'APPROVED' | 'REJECTED' (없을 수 있음)
  */
 export const computeFeedbackState = (row = {}) => {
-  // 신고 계열 우선 표시
+  // 1) 신고 계열 우선
   const rs = row.reportStatus
-  if (rs === 'PENDING') return { key: 'REPORT_PENDING', label: '신고대기' }
-  if (rs === 'APPROVED') return { key: 'REPORTED', label: '신고완료' }
+  if (rs === 'PENDING')  return { key: 'REPORT_PENDING',  label: '신고대기' }
+  if (rs === 'APPROVED') return { key: 'REPORTED',        label: '신고완료' }
   if (rs === 'REJECTED') return { key: 'REPORT_REJECTED', label: '신고거절' }
 
-  // 교환 처리중 (문자열에 '교환' 포함 시)
+  // 2) 교환 처리중
   if (String(row.statusText || '').includes('교환')) {
     return { key: 'EXCHANGE', label: '교환처리중' }
   }
 
-  // 신규 작성: 최근 24시간 이내 작성
-  if (row.feedbackAt) {
-    const dt = new Date(row.feedbackAt)
-    if (!Number.isNaN(dt.getTime())) {
-      const diff = Date.now() - dt.getTime()
-      if (diff >= 0 && diff < 24 * 3600 * 1000) {
-        return { key: 'NEW', label: '신규작성' }
+  // 3) 작성 여부 우선 판단
+  //    - 작성시각 후보: feedbackAt(기존 로직 유지) → feedbackCreatedAt → createdAt
+  //    - 내용만 있어도 작성으로 인정
+  const writtenAt = row.feedbackAt || row.feedbackCreatedAt || row.createdAt || null
+  const hasContent = !!(row?.feedbackContent ?? row?.content)
+
+  if (writtenAt || hasContent) {
+    if (writtenAt) {
+      const dt = new Date(writtenAt)
+      if (!Number.isNaN(dt.getTime())) {
+        // 3-1) 최근 24시간 이내면 '신규작성' (셀러 메인에서 쓰는 규칙 유지)
+        const diff = Date.now() - dt.getTime()
+        if (diff >= 0 && diff < 24 * 3600 * 1000) {
+          return { key: 'NEW', label: '신규작성' }
+        }
+        // 3-2) 작성 후 7일(자정 기준)까지는 '작성완료', 그 이후는 '기간만료'
+        const expiry = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate())
+        expiry.setDate(expiry.getDate() + 7)
+        if (Date.now() < expiry.getTime()) {
+          return { key: 'NEW', label: '작성완료' }  // 스타일은 NEW(초록), 라벨만 변경
+        }
+        return { key: 'EXPIRED', label: '기간만료' }
       }
     }
-    // 작성은 됐지만 24시간은 지남 → 표시는 '작성완료'로만 처리할 수도 있음
-    return { key: 'NEW', label: '신규작성' }
+    // 작성시각이 없지만 내용이 있으면 작성완료로 간주
+    return { key: 'NEW', label: '작성완료' }
   }
 
-  const d = parseDday(row.feedbackDue)
+  // 4) 미작성: D-day(feedbackDue='D-5')로 판단
+  const d = (() => {
+    const v = row.feedbackDue
+    if (!v) return null
+    const m = /^D-(\d+)$/.exec(String(v).trim())
+    return m ? parseInt(m[1], 10) : null
+  })()
+
   if (typeof d === 'number') {
     if (d >= 0) return { key: 'WAIT', label: `작성대기 (D-${d})` }
+    return { key: 'EXPIRED', label: '기간만료' }
   }
-  // d 없음 또는 마감 지남
-  return { key: 'EXPIRED', label: '기간만료' }
+
+  // 5) D-day 없으면 보수적으로 '작성대기' (이전엔 무조건 만료 처리하던 문제 방지)
+  return { key: 'WAIT', label: '작성대기' }
 }
 
 // 표에서 쓰는 뱃지 클래스와 라벨

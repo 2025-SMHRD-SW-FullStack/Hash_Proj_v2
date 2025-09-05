@@ -1,8 +1,8 @@
 // /src/service/statsService.js
-import api from '/src/config/axiosInstance'
-import { fetchSellerOrders, ORDER_STATUS_MAP } from '/src/service/orderService'
-import { fetchSellerFeedbackGrid } from '/src/service/feedbackService'
-import { getAmount as _getAmount } from '/src/util/orderUtils' // ✅ 금액 파싱 강화
+import api from '../config/axiosInstance'
+import { fetchSellerOrders, ORDER_STATUS_MAP } from '../service/orderService'
+import { fetchSellerFeedbackGrid } from '../service/feedbackService'
+import { getAmount as _getAmount } from '../util/orderUtils' // ✅ 금액 파싱 강화
 
 /* ----------------------- 공통 유틸 ----------------------- */
 

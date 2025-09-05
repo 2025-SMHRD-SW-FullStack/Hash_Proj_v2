@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import BaseTable from '../../components/common/table/BaseTable';
-import { TableToolbar } from '../../components/common/table/TableToolbar';
+import TableToolbar from '../../components/common/table/TableToolbar';
 import { qnaService } from '../../service/qnaService';
 import Button from '../../components/common/Button';
 
@@ -19,6 +19,12 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const STATUS_CHIPS = [
+    { value: '전체', label: '전체' },
+    { value: '답변 대기', label: '답변 대기' },
+    { value: '답변 완료', label: '답변 완료' },
+];
+
 const QnAManagementPage = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +36,7 @@ const QnAManagementPage = () => {
 
   useEffect(() => {
     fetchQnaList();
-  }, []);
+  }, [statusFilter]);
 
   const fetchQnaList = async () => {
     setLoading(true);
@@ -165,28 +171,18 @@ const QnAManagementPage = () => {
         searchValue={searchTerm}
         onChangeSearch={(value) => {
           setSearchTerm(value);
-          // 검색어 변경 시 API 호출
           setTimeout(() => fetchQnaList(), 300); // 디바운싱
         }}
         onReset={() => {
           setSearchTerm('');
           setStatusFilter('전체');
-          fetchQnaList();
+          // fetchQnaList는 statusFilter 변경 시 자동으로 호출되므로 여기서 또 호출할 필요 없음
         }}
-      >
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            fetchQnaList();
-          }}
-          className="h-10 rounded-lg border px-3 text-sm"
-        >
-          <option value="전체">전체</option>
-          <option value="답변 대기">답변 대기</option>
-          <option value="답변 완료">답변 완료</option>
-        </select>
-      </TableToolbar>
+        // --- 필터(토글) 기능에 필요한 props 전달 ---
+        statusChips={STATUS_CHIPS}
+        selectedStatus={statusFilter}
+        onSelectStatus={setStatusFilter} // StatusChips에서 선택된 값을 statusFilter state에 반영
+      />
 
       <BaseTable
         columns={columns}

@@ -1,24 +1,73 @@
 // /src/components/seller/feedbacks/FeedbackRow.jsx
 import React from 'react'
-import Button from '/src/components/common/Button'
-import { statusBadge } from '/src/util/feedbacksStatus'
-import { toOrderNo, truncate10 } from '/src/util/orderUtils'
+import Button from '../../common/Button'
+import { statusBadge } from '../../../util/FeedbacksStatus'
+import { toOrderNo, truncate10 } from '../../../util/orderUtils'
+
+// ---- 안전 필드 해석기 (키 변동 대비)
+const firstF = (r) => (Array.isArray(r?.feedbacks) && r.feedbacks.length > 0 ? r.feedbacks[0] : null)
+const resolveFeedbackId = (r) =>
+  r?.feedbackId
+  ?? r?.id                      // ← 백엔드/서비스에서 row.id=feedbackId 로 내려오는 케이스 지원
+  ?? r?.feedback?.id
+  ?? firstF(r)?.id
+  ?? r?.feedback_id             // ← 혹시 스네이크 케이스 대응
+  ?? null
+
+const resolveFeedbackDate = (r) =>
+  r?.writtenAt
+  ?? r?.feedbackAt ?? r?.feedback_at
+  ?? r?.feedback?.createdAt ?? r?.feedback?.created_at
+  ?? firstF(r)?.createdAt ?? firstF(r)?.created_at
+  ?? r?.createdAt ?? r?.created_at
+  ?? null
+
+const resolveFeedbackContent = (r) =>
+  r?.feedbackContent
+  ?? r?.feedback?.content
+  ?? firstF(r)?.content
+  ?? r?.content
+  ?? r?.feedbackText
+  ?? ''
+
+const resolveReportStatus = (r) =>
+  String(r?.reportStatus ?? r?.feedbackReportStatus ?? firstF(r)?.reportStatus ?? '').toUpperCase()
+
+const toYmd = (v) => {
+  if (!v) return '-'
+  const s = String(v)
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10) // 이미 YYYY-MM-DD
+  const d = new Date(v)
+  if (Number.isNaN(d.getTime())) return '-'
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${dd}`
+}
 
 export default function FeedbackRow({ row, onOpenOrder, onRequestReport }) {
   const badge = statusBadge(row)
 
   // 내용 존재 여부(키 가드)
-  const hasContent = !!(row?.feedbackContent ?? row?.content)
+  const hasContent =
+    String(resolveFeedbackContent(row) ?? '').trim().length > 0
+    || (Array.isArray(row?.images) && row.images.length > 0)
+    || !!(row?.feedbackAt || row?.feedbackCreatedAt || row?.createdAt)
 
   // 신고 상태(이미 신고했으면 비활성화: PENDING/APPROVED)
-  const reported = String(row?.reportStatus ?? '').toUpperCase()
-  const canReport = hasContent && reported !== 'PENDING' && reported !== 'APPROVED'
+  const fid = resolveFeedbackId(row)
+  const reported = resolveReportStatus(row)
+  const canReport = !!fid && hasContent && !['PENDING', 'APPROVED'].includes(reported)
+
+  // 👇 로그: 이 값 중 하나라도 false면 버튼이 비활성
+  console.debug('[ROW_REPORT_DEBUG]', {
+    fid, reported, hasContent,
+    contentLen: String(resolveFeedbackContent(row) ?? '').length,
+    orderUid: row?.orderUid
+  })
 
   // 작성일 표시
-  const writtenAt = row?.writtenAt ?? row?.feedbackAt ?? row?.createdAt
-  const writtenDate = writtenAt
-    ? new Date(writtenAt).toISOString().slice(0, 10)
-    : '-'
+  const writtenDate = toYmd(resolveFeedbackDate(row))
 
   return (
     <tr className="border-t">
@@ -49,14 +98,14 @@ export default function FeedbackRow({ row, onOpenOrder, onRequestReport }) {
 
       {/* 상태 */}
       <td className="px-3 py-2 whitespace-nowrap">
-        <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[12px] font-medium ${badge.className}`}>
+        <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[12px] font-medium ${badge?.cls ?? badge?.className ?? ''}`}>
           {badge.label}
         </span>
       </td>
 
       {/* 피드백 내용 */}
-      <td className="px-3 py-2 text-left" title={row?.feedbackContent || row?.content || ''}>
-        {truncate10(row?.feedbackContent ?? row?.content ?? '') || '-'}
+      <td className="px-3 py-2 text-left" title={resolveFeedbackContent(row)}>
+        {truncate10(resolveFeedbackContent(row)) || '-'}
       </td>
 
       {/* 신고 */}
@@ -65,10 +114,8 @@ export default function FeedbackRow({ row, onOpenOrder, onRequestReport }) {
           size="sm"
           variant="admin"
           disabled={!canReport}
-          onClick={() => {
-            console.log('[REPORT_CLICK]', row)
-            onRequestReport?.(row)
-          }}
+          title={!canReport ? `disabled: fid=${fid}, reported=${reported}, hasContent=${hasContent}` : '신고'}
+          onClick={() => onRequestReport?.(row)}
         >
           신고
         </Button>

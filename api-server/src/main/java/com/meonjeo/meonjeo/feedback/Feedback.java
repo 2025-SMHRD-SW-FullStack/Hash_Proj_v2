@@ -50,6 +50,11 @@ public class Feedback {
     @Column(name = "images_json", columnDefinition = "LONGTEXT")
     private String imagesJson;
 
+    @Builder.Default
+    @Column(name = "reported", nullable = false, columnDefinition = "bit(1)")
+    private boolean reported = false;
+
+    /** 생성/수정/마감 시각 */
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deadlineAt;

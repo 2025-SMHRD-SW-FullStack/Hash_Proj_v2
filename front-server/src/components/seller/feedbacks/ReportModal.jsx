@@ -1,8 +1,8 @@
 // /src/components/seller/feedbacks/ReportModal.jsx
 import { useEffect, useState } from 'react'
-import Modal from '/src/components/common/Modal'
-import Button from '/src/components/common/Button'
-import { reportFeedback } from '/src/service/feedbackService'
+import Modal from '../../common/Modal'
+import Button from '../../common/Button'
+import { reportFeedback } from '../../../service/feedbackService'
 
 export default function ReportModal({
   open,
@@ -62,7 +62,7 @@ export default function ReportModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={done ? '신고 완료' : '피드백 신고'}>
+    <Modal isOpen={open} onClose={onClose} title={done ? '신고 완료' : '피드백 신고'}>
       {!done ? (
         <div className="space-y-4">
           <div>

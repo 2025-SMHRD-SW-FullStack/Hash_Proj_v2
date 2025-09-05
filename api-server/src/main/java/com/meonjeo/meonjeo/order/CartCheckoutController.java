@@ -22,9 +22,13 @@ public class CartCheckoutController {
     @Operation(summary="장바구니 전체 결제(0원 결제 포함)")
     @PostMapping("/cart")
     public CheckoutResponse checkoutCart(@RequestBody @Valid CheckoutCartRequest req){
-        // 장바구니 → CheckoutItem 리스트로 변환
-        var items = cartService.buildCheckoutItems();
 
+        var sel = (req.items() != null && !req.items().isEmpty()) ? req.items() : req.cartItemIds();
+
+        // 장바구니 → CheckoutItem 리스트로 변환
+        var items = (sel != null && !sel.isEmpty())
+                ? cartService.buildCheckoutItems(sel)
+                : cartService.buildCheckoutItems();
         // 기존 checkout 로직 재사용
         CheckoutRequest core = new CheckoutRequest(
                 req.addressId(),
@@ -37,7 +41,8 @@ public class CartCheckoutController {
 
         // 결제요청 후 장바구니 비우기(옵션)
         if (req.clearCartAfter()) {
-            cartService.clear();
+            if (sel != null && !sel.isEmpty()) cartService.clearSelected(sel);
+            else cartService.clear();
         }
         return resp;
     }

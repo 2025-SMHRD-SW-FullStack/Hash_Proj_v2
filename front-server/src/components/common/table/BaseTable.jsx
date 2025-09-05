@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 
 export default function BaseTable({
   columns = [],
@@ -8,16 +8,16 @@ export default function BaseTable({
   emptyText = '데이터가 없습니다.',
   withCheckbox = false,
   selectedRowKeys = [],
-  onToggleRow,   // (key:boolean) => void
-  onToggleAll,   // (boolean) => void
-  onRowClick,    // (row) => void
+  onToggleRow,   // (key:boolean) => void
+  onToggleAll,   // (boolean) => void
+  onRowClick,    // (row) => void
   scrollY = 600, // ✅ 추가: 세로 스크롤 높이(px, '50vh' 등). falsy면 제한 없음
 }) {
   const getKey = (row, idx) =>
-    (typeof rowKey === 'function' ? rowKey(row, idx) : row[rowKey]) ?? idx
+    (typeof rowKey === 'function' ? rowKey(row, idx) : row[rowKey]) ?? idx;
 
   const allSelected =
-    withCheckbox && data.length > 0 && selectedRowKeys.length === data.length
+    withCheckbox && data.length > 0 && selectedRowKeys.length === data.length;
 
   // ✅ scrollY 적용 스타일
   const yStyle =
@@ -27,14 +27,14 @@ export default function BaseTable({
             typeof scrollY === 'number' ? `${scrollY}px` : String(scrollY),
           overflowY: 'auto',
         }
-      : {}
+      : {};
 
   return (
     <div
-      className={`overflow-x-auto rounded-xl border bg-white ${className}`}
+      className={`relative w-full overflow-x-auto rounded-xl border bg-white ${className}`} // 부모 div에 overflow-x-auto 유지
       style={yStyle}
     >
-      <table className="w-full min-w-[760px] text-center text-sm">
+      <table className="w-max text-center text-sm min-w-full">
         <thead className="sticky top-0 bg-gray-50 text-xs text-gray-600">
           <tr className="border-b">
             {withCheckbox && (
@@ -50,7 +50,7 @@ export default function BaseTable({
               <th
                 key={i}
                 className={`px-3 py-3 ${col.headerClassName || ''}`}
-                style={{ width: col.width }}
+                style={{ width: col.width }} // ⬅️ 컬럼별 고정 너비 유지
               >
                 {col.renderHeader ? col.renderHeader(col) : col.header}
               </th>
@@ -71,7 +71,7 @@ export default function BaseTable({
           )}
 
           {data.map((row, idx) => {
-            const key = getKey(row, idx)
+            const key = getKey(row, idx);
             return (
               <tr
                 key={key}
@@ -93,16 +93,16 @@ export default function BaseTable({
                   <td
                     key={i}
                     className={`px-3 py-3 align-middle ${col.className || ''}`}
-                    style={{ width: col.width, textAlign: col.align }}
+                    style={{ width: col.width, textAlign: col.align }} // ⬅️ 컬럼별 고정 너비 유지
                   >
                     {col.render ? col.render(row, idx) : row[col.key]}
                   </td>
                 ))}
               </tr>
-            )
+            );
           })}
         </tbody>
       </table>
     </div>
-  )
+  );
 }

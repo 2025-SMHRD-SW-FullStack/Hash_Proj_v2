@@ -1,16 +1,16 @@
 // /src/pages/seller/SellerMain.jsx
 import React, { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Button from '/src/components/common/Button'
-import StoreSalesStats from '/src/components/seller/charts/StoreSalesStats'
+import Button from '../../components/common/Button'
+import StoreSalesStats from '../../components/seller/charts/StoreSalesStats'
 
-import { listRooms, markRead } from '/src/service/chatService'
-import { fetchSellerOrders, mapStatusForDisplay, ORDER_STATUS_MAP } from '/src/service/orderService'
-import { fetchSellerDashboardStats } from '/src/service/statsService'
-import { getAmount as _getAmount } from '/src/util/orderUtils'
-import api from '/src/config/axiosInstance'
-import { fetchDailySettlementSummary } from '/src/service/settlementService'
-import { useOrderStore } from '/src/stores/orderStore'
+import { listRooms, markRead } from '../../service/chatService'
+import { fetchSellerOrders, mapStatusForDisplay, ORDER_STATUS_MAP } from '../../service/orderService'
+import { fetchSellerDashboardStats } from '../../service/statsService'
+import { getAmount as _getAmount } from '../../util/orderUtils'
+import api from '../../config/axiosInstance'
+import { fetchDailySettlementSummary } from '../../service/settlementService'
+import { useOrderStore } from '../../stores/orderStore'
 
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 const kpi = 'flex items-center justify-between py-2 text-sm'
@@ -136,46 +136,52 @@ export default function SellerMain() {
   }, [globalOrders])
 
 
-  // 상품문의(채팅방) 로드 – chatService 사용
-  useEffect(() => {
-    const maskName = (name) => {
-      if (!name) return '고객'
-      const s = String(name)
-      return s.length > 1 ? `${s[0]}**` : `${s}**`
+// 상품문의(채팅방) 로드 – chatService 사용
+useEffect(() => {
+  (async () => {
+    setInqLoading(true); setInqErr(null)
+    try {
+      const rooms = await listRooms('seller')
+      const arr = Array.isArray(rooms) ? rooms : (rooms?.content ?? rooms?.rows ?? [])
+
+     // 🔹 각 방의 최신 메시지 1건을 조회해서 "보낸 사람 닉네임"과 "마지막 메시지"를 채움
+     const withLast = await Promise.all(
+       arr.map(async (r) => {
+         const id = r.roomId ?? r.id
+         const other = r.other || {}
+         let last = null
+         try {
+           const msgs = await listMessages(id, { size: 1 })
+           // 정렬이 ASC/DSC 상관없이 마지막 요소로 안전 처리
+           last = Array.isArray(msgs) ? msgs[msgs.length - 1] : null
+         } catch (_) {}
+
+         const senderId = last?.senderId
+         const sender =
+           senderId && other?.id
+             ? (senderId === other.id ? (other.nickname || '고객') : '셀러')
+             : (other.nickname || '고객')
+
+         return {
+           id,
+           sender,                                               // ← 보낸 사람 닉네임
+           product: r.productName ?? r.product?.name ?? '',
+           lastMessage: last?.content ?? r.lastMessagePreview ?? '',
+           unread: Number(r.unreadCount ?? r.unread ?? 0),
+           updatedAt: r.lastMessageTime ?? r.updatedAt,
+         }
+       })
+     )
+     setInq(withLast)
+    } catch (e) {
+      console.warn('상품문의 로드 실패:', e)
+      setInq([]) // 에러 시 빈 배열로 설정
+      setInqErr(e)
+    } finally {
+      setInqLoading(false)
     }
-    (async () => {
-      setInqLoading(true); setInqErr(null)
-      try {
-        // 🔹 핵심: 판매자 시점으로 조회
-        const rooms = await listRooms('seller')
-        // 페이지/배열 응답 모두 대응
-        const arr = Array.isArray(rooms) ? rooms : (rooms?.content ?? rooms?.rows ?? [])
-        const norm = arr.map((r) => {
-          const id = r.id ?? r.roomId
-          const buyerName = r.buyerName ?? r.userName ?? r.customerName ?? r.peerName
-          const productName = r.productName ?? r.product?.name
-          const lastMessage = r.lastMessage ?? r.lastMsg ?? r.lastContent
-          const unread = r.unread ?? r.unreadCount ?? 0
-          const updatedAt = r.updatedAt ?? r.lastMessageAt
-          return {
-            id,
-            buyer: maskName(buyerName),
-            product: productName || '',
-            lastMessage: lastMessage || '',
-            unread: Number(unread || 0),
-            updatedAt,
-          }
-        })
-        setInq(norm)
-      } catch (e) {
-        console.warn('상품문의 로드 실패:', e)
-        setInq([]) // 에러 시 빈 배열로 설정
-        setInqErr(e)
-      } finally {
-        setInqLoading(false)
-      }
-    })()
-  }, [])
+  })()
+}, [])
 
   // 오늘자 정산 요약 로드 (백엔드 공식 값)
   useEffect(() => {
@@ -316,7 +322,7 @@ export default function SellerMain() {
   }, [settleSummary, fallbackSettlement])
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-7xl lg:px-8">
       {/* 상단 제목 */}
       <div className="mb-4">
         <h1 className="text-xl font-bold">셀러 대시보드</h1>
@@ -329,7 +335,7 @@ export default function SellerMain() {
 
       {/* 상단 요약 */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                 {/* 주문 */}
+        {/* 주문 */}
          <section className={box}>
            <h2 className="mb-2 text-base font-semibold">주문</h2>
            <Button
@@ -468,7 +474,7 @@ export default function SellerMain() {
             </div>
           ) : (
             <div className="h-[220px] overflow-auto rounded-md border">
-              <ul className="divide-y">
+              <ul className="divide-y list-none m-0 p-0">
                 {inq.map((t) => (
                   <li key={t.id} className="p-2">
                     <Button
@@ -482,11 +488,11 @@ export default function SellerMain() {
                       <div className="flex w-full items-start gap-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 text-sm">
-                            <strong className="text-gray-900">{t.buyer}</strong>
+                            <strong className="text-gray-900">{t.sender}</strong>
                             {t.product && <span className="text-gray-500">· {t.product}</span>}
                           </div>
                           <div className="mt-0.5 line-clamp-1 text-[13px] text-gray-600">
-                            {t.lastMessage || '메시지 없음'}
+                            {t.lastMessage}
                           </div>
                         </div>
                         <div className="ml-2 shrink-0">
@@ -513,8 +519,6 @@ export default function SellerMain() {
           </Button>
         </section>
       </div>
-
-      <div className="h-8" />
     </div>
   )
 }

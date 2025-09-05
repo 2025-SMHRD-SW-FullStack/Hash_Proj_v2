@@ -4,37 +4,57 @@ services:
       context: ./front-server
       dockerfile: Dockerfile
     environment:
-      - VITE_HOST=0.0.0.0
+      - VITE_API_BASE_URL
+      - VITE_TOSS_CLIENT_KEY
     ports:
       - "5173:5173"
     networks:
       - app-network
 
-#  api-server:
-#    build:
-#      context: ./api-server
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8080:8080"
-#    environment:
-#      - TZ=Asia/Seoul
-#      - AWS_ACCESS_KEY_ID
-#      - AWS_SECRET_ACCESS_KEY
-#    networks:
-#      - app-network
+  api-server:
+    build:
+      context: ./api-server
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - TZ=Asia/Seoul
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - JWT_SECRET
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+    networks:
+      - app-network
 
-#  ai-server:
-#    build:
-#      context: ./ai-server
-#      dockerfile: Dockerfile
-#    ports:
-#      - "7777:7777"
-#    environment:
-#      - TZ=Asia/Seoul
-#      - AWS_ACCESS_KEY_ID
-#      - AWS_SECRET_ACCESS_KEY
-#    networks:
-#      - app-network
+  ai-server:
+    build:
+      context: ./ai-server
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - TZ=Asia/Seoul
+      - DATABASE_URL
+      - REDIS_HOST
+      - REDIS_PORT
+      - REDIS_DB
+      - JWT_SECRET
+      - FEEDBACK_CREATE_PATH
+      - FEEDBACK_ELIGIBILITY_PATH
+      - API_SERVER_URL
+      - OPENAI_API_KEY
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
 
   nginx:
     image: nginx:latest

@@ -1,6 +1,6 @@
 // /src/components/seller/SalesChartCard.jsx
 import React from 'react'
-import Button from '/src/components/common/Button'
+import Button from '../common/Button'
 
 /**
  * items: [{ key, label, count? }]

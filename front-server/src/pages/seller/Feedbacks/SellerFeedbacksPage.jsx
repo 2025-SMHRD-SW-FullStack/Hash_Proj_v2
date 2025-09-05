@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useState, memo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import StatusChips from '/src/components/seller/StatusChips'
-import Button from '/src/components/common/Button'
-import Modal from '/src/components/common/Modal'
-import OrderDetailContent from '/src/components/seller/OrderDetailContent'
+import StatusChips from '../../../components/seller/StatusChips'
+import Button from '../../../components/common/Button' 
+import Modal from '../../../components/common/Modal'
+import OrderDetailContent from '../../../components/seller/OrderDetailContent'
 
-import { FEEDBACK_FILTERS } from '/src/constants/sellerfeedbacks'
-import FeedbackRow from '/src/components/seller/feedbacks/FeedbackRow'
-import ReportModal from '/src/components/seller/feedbacks/ReportModal'
-import { fetchSellerFeedbackGrid } from '/src/service/feedbackService'
-import { computeFeedbackState } from '/src/util/feedbacksStatus'
+import { FEEDBACK_FILTERS } from '../../../constants/sellerfeedbacks'
+import FeedbackRow from '../../../components/seller/feedbacks/FeedbackRow'
+import ReportModal from '../../../components/seller/feedbacks/ReportModal'
+import { fetchSellerFeedbacks } from '../../../service/feedbackService'
+import { computeFeedbackState } from '../../../util/FeedbacksStatus'
 
 // ---- UI 토큰
 const box   = 'rounded-xl border bg-white p-4 shadow-sm'
@@ -78,13 +78,21 @@ export default function SellerFeedbacksPage() {
   const load = async () => {
     setLoading(true); setError(null)
     try {
-      const data = await fetchSellerFeedbackGrid({ q, page: 0, size: 200 })
-      const list = data?.content || data?.items || []
+      const data = await fetchSellerFeedbacks({ page: 0, size: 200 })
+      const list = (data?.content ?? data ?? []).map(d => ({
+        id: d.id,
+        orderId: d.orderUid,                 // 표: 주문번호
+        product: d.productName,              // 표: 상품명
+        buyer: d.buyer,                      // 표: 구매자
+        feedbackContent: d.feedbackContent,  // 표: 피드백 내용
+        feedbackCreatedAt: d.feedbackCreatedAt, // 표: 피드백 작성일
+        deliveredAt: d.deliveredAt,          // 상태 계산용
+        deadlineAt: d.deadlineAt,            // 상태 계산용
+        reportStatus: d.reportStatus ?? null // 상태 계산/신고 버튼 제어
+      }))
       setRows(list)
-    } catch (e) {
-      setError(e?.response?.data?.message || e.message || '로딩 실패')
-    } finally {
-      setLoading(false)
+    }catch(e) {
+      setError(e?.message || String(e))
     }
   }
 
@@ -125,7 +133,7 @@ export default function SellerFeedbacksPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">피드백 관리</h1>
       </div>
 

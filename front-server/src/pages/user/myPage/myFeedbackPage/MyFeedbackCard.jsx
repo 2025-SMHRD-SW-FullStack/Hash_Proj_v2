@@ -26,7 +26,7 @@ const MyFeedbackCard = ({ feedback }) => {
 
   return (
     <div
-      className="cursor-pointer border rounded-lg overflow-hidden group flex flex-col"
+      className="cursor-pointer rounded-lg overflow-hidden group flex flex-col bg-white"
       onClick={handleClick}
     >
       <div className="aspect-w-1 aspect-h-1 bg-gray-100">

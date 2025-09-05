@@ -6,11 +6,43 @@ import PlusIcon from '../../../assets/icons/ic_plus.svg';
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
 import { getCart, updateCartItemQty, removeCartItem, clearCart } from '../../../service/cartService';
 
-const SHIPPING_FEE = 3000;
+const SHIPPING_FEE_PER_SELLER  = 3000;
+
+// 빈 옵션이면 공백, 있으면 "(색상: 핑크 · 사이즈: M)" 형태로
+const formatOptionsText = (optionsJson) => {
+  if (!optionsJson) return ''
+  try {
+    const data = typeof optionsJson === 'string' ? JSON.parse(optionsJson) : optionsJson
+    if (!data) return ''
+
+    if (Array.isArray(data)) {
+      const parts = data.map(it => {
+        if (!it) return ''
+        if (typeof it === 'string') return it
+        const name = it.name ?? it.optionName ?? it.key ?? ''
+        const value = it.value ?? it.optionValue ?? ''
+        const text = [name, value].filter(Boolean).join(': ')
+        return text
+      }).filter(Boolean)
+      return parts.length ? `(${parts.join(' · ')})` : ''
+    }
+
+    if (typeof data === 'object') {
+      const keys = Object.keys(data)
+      if (!keys.length) return ''
+      const parts = keys.map(k => (data[k] ? `${k}: ${data[k]}` : '')).filter(Boolean)
+      return parts.length ? `(${parts.join(' · ')})` : ''
+    }
+
+    return ''
+  } catch {
+    return ''
+  }
+}
 
 const MyCartPage = () => {
   const navi = useNavigate();
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cartData, setCartData] = useState({ items: [], totalPrice: 0, shippingFee: 0 });
@@ -62,14 +94,24 @@ const MyCartPage = () => {
     [selectedItems]
   );
 
+  // 셀러 카운트 계산
+  const distinctSellerCount = useMemo(() => {
+    const ids = selectedItems.map(it => it.sellerId).filter(Boolean);
+    return new Set(ids).size || 1; // sellerId 없으면 최소 1
+  }, [selectedItems]);
+
   const computedShippingFee = useMemo(() => {
     console.log("Recalculating shipping fee...");
     console.log("Selected items:", selectedItems);
     if (selectedItems.length === 0) return 0;
 
     // 무형자산 포함 → 배송비 0원 (이제 it.category에 접근 가능)
-    const hasIntangible = selectedItems.some(it => it.category === "무형자산");
-    if (hasIntangible) return 0;
+    // const hasIntangible = selectedItems.some(it => it.category === "무형자산");
+    // if (hasIntangible) return 0;
+
+    // 위 코드를 gpt가 이걸로 바꾸라해서 바꿈 확인 바람
+    const allIntangible = selectedItems.every(it => it.category === "무형자산");
+    if (allIntangible) return 0;
 
     // 기본 로직 (셀러 수 × 3000)
     return SHIPPING_FEE_PER_SELLER * Math.max(1, distinctSellerCount);
@@ -128,8 +170,13 @@ const MyCartPage = () => {
 
   const onCheckout = () => {
     if (!canCheckout) return;
-    navi('/user/order?mode=cart');
-  };
+    // 숫자 정규화 (문자 섞여도 안전)
+    const ids = Array.from(selectedIds)
+      .map(v => Number(v))
+      .filter(n => Number.isFinite(n));
+    const qs = ids.length ? `&items=${ids.join(',')}` : '';
+    navi(`/user/order?mode=cart${qs}`);
+  }
 
   if (loading) return <div className="p-4">장바구니를 불러오는 중...</div>;
   if (error) return <div className="p-4 text-red-500">{error}</div>;
@@ -195,16 +242,9 @@ const MyCartPage = () => {
                       />
                       <div className="ml-4 flex flex-col">
                         <div className="font-medium text-sm">{row.productName}</div>
-                        {
-                          (() => {
-                            const optionsDisplay = getOptionsString(row.optionsJson);
-                            if (optionsDisplay) {
-                              // 옵션이 있을 때만 표시
-                              return <div className="text-xs text-gray-500 break-words mt-1">{optionsDisplay}</div>;
-                            }
-                            return null;
-                          })()
-                        }
+                        <div className="text-xs text-gray-500 break-words">
+                          {formatOptionsText(row.optionsJson)}
+                        </div>
                         {!row.inStock && (
                           <div className="text-xs text-red-600 mt-1">
                             품절 또는 재고 부족

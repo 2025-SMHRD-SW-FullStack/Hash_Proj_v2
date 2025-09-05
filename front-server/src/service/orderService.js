@@ -1,5 +1,5 @@
 // axios default export든 named export든 모두 대응
-import apiDefault, { axiosInstance as apiNamed } from '/src/config/axiosInstance'
+import apiDefault, { axiosInstance as apiNamed } from '../config/axiosInstance'
 const api = apiDefault ?? apiNamed
 
 /** ✅ 주문 체크아웃

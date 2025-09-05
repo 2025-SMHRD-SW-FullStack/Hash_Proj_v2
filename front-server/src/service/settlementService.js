@@ -1,4 +1,4 @@
-import api from '/src/config/axiosInstance'
+import api from '../config/axiosInstance'
 
 /** 일별 정산 요약 */
 export const fetchDailySettlementSummary = async (dateYmd) => {

@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState, memo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import Button from '/src/components/common/Button';
-import Modal from '/src/components/common/Modal';
-import OrderDetailContent from '/src/components/seller/OrderDetailContent';
-import FeedbackRow from '/src/components/seller/feedbacks/FeedbackRow';
-import ReportModal from '/src/components/seller/feedbacks/ReportModal';
-import { fetchSellerFeedbackGrid } from '/src/service/feedbackService';
-import useFeedbackFilters from '/src/components/seller/feedbacks/useFeedbackFilters';
-import FeedbackFilterChips from '/src/components/seller/feedbacks/FeedbackFilterChips';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import Button from '../../../components/common/Button'
+import Modal from '../../../components/common/Modal'
+import FeedbackDetailContent from '../../../components/seller/feedbacks/FeedbackDetailContent';
+import ReportModal from '../../../components/seller/feedbacks/ReportModal'
+import FeedbackRow from '../../../components/seller/feedbacks/FeedbackRow';
+import { fetchSellerFeedbackGrid } from '../../../service/feedbackService';
+import useFeedbackFilters from '../../../components/seller/feedbacks/useFeedbackFilters';
+import TableToolbar from '../../../components/common/table/TableToolbar';
+import { FEEDBACK_FILTERS } from '/src/constants/sellerfeedbacks';
 
 // --- UI 상수 ---
 const box = 'rounded-xl border bg-white p-4 shadow-sm';
@@ -31,8 +32,9 @@ const COL_WIDTHS = ['140px', '220px', '120px', '130px', '140px', 'auto', '120px'
 
 export default function FeedbacksManagePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const statusKey = searchParams.get('status') || 'ALL';
+  const [statusKey, setStatusKey] = useState(searchParams.get('status') || 'ALL');
   const q = searchParams.get('q') || '';
+  const navigate = useNavigate();
 
   const [qInput, setQInput] = useState(q);
   const [isComp, setIsComp] = useState(false);
@@ -41,11 +43,16 @@ export default function FeedbacksManagePage() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
+  const resolveFeedbackId = (r) =>
+  r?.feedbackId ?? r?.id ?? r?.feedback?.id ??
+  (Array.isArray(r?.feedbacks) && r.feedbacks[0]?.id) ??
+  r?.feedback_id ?? null;
   const [reportOpen, setReportOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
+  
 
   const setParam = useCallback((patch) => {
     const next = new URLSearchParams(searchParams);
@@ -87,7 +94,8 @@ export default function FeedbacksManagePage() {
   };
 
   const onRequestReport = (row) => {
-    const feedbackId = row.feedbackId ?? row.id;
+    const feedbackId = row?.feedbackId ?? row?.feedback?.id ?? row?.id;
+    console.log('[OPEN_REPORT_MODAL]', { feedbackId, row });
     setReportTarget({ ...row, feedbackId });
     setReportOpen(true);
   };
@@ -95,55 +103,65 @@ export default function FeedbacksManagePage() {
   const handleReported = () => {
     setReportOpen(false);
     setReportTarget(null);
-    load(); // 신고 후 목록 새로고침
+    load();
   };
 
-  return (
-    <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-      <h1 className="text-xl font-bold mb-4">피드백 관리</h1>
+  // FEEDBACK_FILTERS + counts → TableToolbar용 items
+  const statusItems = useMemo(() => {
+    return FEEDBACK_FILTERS.map(filter => {
+      const count = counts[filter.key] || 0;
+      const showCount = count > 0 && filter.key !== 'ALL';
+      return {
+        key: filter.key,
+        label: showCount ? `${filter.baseLabel}` : filter.baseLabel,
+        count,
+      };
+    });
+  }, [counts]);
 
+  return (
+    <div className="mx-auto w-full max-w-7xl md:px-6 lg:px-8 ">
+      <div className='flex items-center space-x-2 justify-between'>
+        <h1 className="text-xl font-bold mb-4">피드백 관리</h1>
+        <Button variant='signUp' className='text-sub' onClick={() => navigate('/seller/feedbacks/stats')}>피드백 통계 보기</Button>
+      </div>
+
+      {/* TableToolbar로 교체 */}
       <section className={`${box} mb-4`}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-          <div className="flex-grow mb-2 sm:mb-0">
-            <FeedbackFilterChips
-              counts={counts}
-              value={statusKey}
-              onChange={(key) => setParam({ status: key })}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              value={qInput}
-              onChange={(e) => setQInput(e.target.value)}
-              onCompositionStart={() => setIsComp(true)}
-              onCompositionEnd={() => setIsComp(false)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                  setParam({ q: qInput });
-                }
-              }}
-              placeholder="주문번호/수취인/연락처 검색"
-              className="w-full sm:w-64 rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-300"
-            />
+        <TableToolbar
+          statusChips={FEEDBACK_FILTERS.map(filter => ({
+            value: filter.key,
+            label: filter.baseLabel,
+            count: counts[filter.key],
+          }))}
+          selectedStatus={statusKey}
+          onSelectStatus={(value) => {
+            setParam({ status: value }); // URL param도 업데이트
+            setStatusKey(value);         // 상태 업데이트
+          }}
+          searchValue={qInput}
+          onChangeSearch={setQInput}
+          onSubmitSearch={() => setParam({ q: qInput })}
+          right={(
             <Button size="md" variant="admin" onClick={() => setParam({ q: qInput })}>
               조회
             </Button>
-          </div>
-        </div>
+          )}
+        />
       </section>
 
       <section className={box}>
         <div className="overflow-x-auto" style={{ maxHeight: tableMaxH }}>
-          <table className="w-full min-w-[1200px] table-fixed text-sm text-center">
+          <table className="w-full table-fixed text-sm text-center">
             <ColGroup widths={COL_WIDTHS} />
             <thead className="sticky top-0 z-10 border-b bg-gray-50 text-[13px] text-gray-600">
               <tr className="h-11">
                 <th className="px-3 font-medium">주문번호</th>
-                <th className="px-3 font-medium text-left">상품명</th>
+                <th className="px-3 font-medium text-center">상품명</th>
                 <th className="px-3 font-medium">구매자</th>
                 <th className="px-3 font-medium">피드백 작성일</th>
                 <th className="px-3 font-medium">상태</th>
-                <th className="px-3 font-medium text-left">피드백 내용</th>
+                <th className="px-3 font-medium text-center">피드백 내용</th>
                 <th className="px-3 font-medium text-center">신고</th>
               </tr>
             </thead>
@@ -169,9 +187,9 @@ export default function FeedbacksManagePage() {
         </div>
       </section>
 
-      <Modal isOpen={detailOpen} onClose={() => setDetailOpen(false)} title="주문 상세">
+      <Modal isOpen={detailOpen} onClose={() => setDetailOpen(false)} title="피드백 상세">
         <div className="p-4">
-          <OrderDetailContent row={selectedRow} />
+          <FeedbackDetailContent feedbackId={resolveFeedbackId(selectedRow)} />
         </div>
       </Modal>
 

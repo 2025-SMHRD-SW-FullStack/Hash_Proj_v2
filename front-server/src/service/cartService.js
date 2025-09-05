@@ -33,8 +33,20 @@ export const clearCart = async () => {
 };
 
 /** 장바구니 결제(주문 생성) */
-export const checkoutCart = async ({ addressId, requestMemo, useAllPoint, usePoint, clearCartAfter = true }) => {
+export const checkoutCart = async ({
+  addressId,
+  requestMemo,
+  useAllPoint,
+  usePoint,
+  clearCartAfter = true,
+  cartItemIds,           // ⬅️ 추가: 선택 결제용 cartItemId 배열
+}) => {
   const body = { addressId, requestMemo, useAllPoint, usePoint, clearCartAfter };
+  // 선택 결제일 때만 주입 (서버 구현에 따라 'items' 또는 'cartItemIds'를 읽음)
+  if (Array.isArray(cartItemIds) && cartItemIds.length) {
+    body.items = cartItemIds;       // 서버가 items를 기대하는 경우
+    body.cartItemIds = cartItemIds; // 서버가 cartItemIds를 기대하는 경우(잔여 호환)
+  }
   const { data } = await api.post("/api/me/checkout/cart", body);
   // data: { orderDbId, orderId, totalPrice, shippingFee, usedPoint, payAmount }
   return data;

@@ -1,7 +1,7 @@
 // /src/components/seller/ExchangeShipDialog
 
 import React, { useState } from 'react'
-import Button from '/src/components/common/Button'
+import Button from '../common/Button'
 
 export default function ExchangeShipDialog({ open, onClose, onSubmit, defaultCourier = '', defaultTrack = '' }) {
   const [courierCode, setCourierCode] = useState(defaultCourier)

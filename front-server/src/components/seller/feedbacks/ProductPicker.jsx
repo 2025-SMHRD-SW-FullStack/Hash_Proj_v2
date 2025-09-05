@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { FEEDBACK_CATEGORIES } from '/src/constants/feedbacksSurvey'
-import { fetchProductsByCategory } from '/src/service/feedbackService'
+import { FEEDBACK_CATEGORIES } from '../../../constants/feedbacksSurvey'
+import { fetchProductsByCategory } from '../../../service/feedbackService'
 
 
 export default function ProductPicker({ value, onChange }) {
