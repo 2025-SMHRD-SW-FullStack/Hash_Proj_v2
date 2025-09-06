@@ -35,7 +35,7 @@ export default function SellerChatPage() {
       }`}>
         {selectedRoomId && (
           <Suspense fallback={<div className="p-4">채팅방 불러오는 중…</div>}>
-            <ChatRoom roomId={selectedRoomId} onClose={close} />
+            <ChatRoom role="seller" roomId={selectedRoomId} onClose={close} />
           </Suspense>
         )}
       </div>

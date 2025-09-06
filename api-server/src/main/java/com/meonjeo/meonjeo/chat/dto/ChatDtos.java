@@ -5,12 +5,22 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 public class ChatDtos {
+
+    @Getter @Setter @AllArgsConstructor @NoArgsConstructor @Builder
+    public static class ProductView {
+        private Long id;
+        private String name;
+        private String imageUrl;
+    }
+
     @Getter @Setter @AllArgsConstructor @NoArgsConstructor @Builder
     public static class RoomResponse {
         private Long roomId; private String roomUid; private ChatRoomType type;
         private ParticipantView other;
         private String lastMessagePreview; private LocalDateTime lastMessageTime;
         private long unreadCount;
+        private Long otherLastReadMessageId;
+        private ProductView product; // ✅ 추가: 항상(가능한 경우) 상품을 내려줌
     }
 
     @Getter @Setter @AllArgsConstructor @NoArgsConstructor @Builder

@@ -42,7 +42,7 @@ const ChatList = ({ onOpenRoom, selectedRoomId }) => {
         unsubEventRef.current = chatSocket.subscribeUserRoomEvents(me.id, (evt) => {
           if (evt?.type === 'ROOM_UPDATED') {
             listRooms(asParam).then(updatedRooms => {
-              if(mounted) setRooms(sortRooms(updatedRooms));
+              if (mounted) setRooms(sortRooms(updatedRooms));
             });
           }
         });
@@ -62,16 +62,12 @@ const ChatList = ({ onOpenRoom, selectedRoomId }) => {
   const open = (rid) => {
     onOpenRoom?.(rid);
   };
-  
+
   const formatTimestamp = (date) => {
     const now = dayjs();
     const messageTime = dayjs(date);
-    if (now.isSame(messageTime, 'day')) {
-      return messageTime.format('HH:mm');
-    }
-    if (now.subtract(1, 'day').isSame(messageTime, 'day')) {
-      return '어제';
-    }
+    if (now.isSame(messageTime, 'day')) return messageTime.format('HH:mm');
+    if (now.subtract(1, 'day').isSame(messageTime, 'day')) return '어제';
     return messageTime.format('YYYY.MM.DD');
   };
 
@@ -79,42 +75,54 @@ const ChatList = ({ onOpenRoom, selectedRoomId }) => {
     <div className="space-y-2">
       {rooms.map(r => {
         const isActive = selectedRoomId === r.roomId;
+        const productName = r?.product?.name?.trim() || '';
+        const thumb =
+          r?.product?.imageUrl ||
+          r?.other?.profileImageUrl ||
+          TestImg;
+
         return (
           <button
             key={r.roomId}
             type="button"
             onClick={() => open(r.roomId)}
-            className={`w-full flex items-center p-3 rounded-xl transition-colors duration-200
-              ${isActive ? 'bg-blue-100' : 'bg-white hover:bg-gray-50'}`
-            }
+            className={`w-full flex items-center p-3 rounded-xl transition-colors duration-200 ${
+              isActive ? 'bg-blue-100' : 'bg-white hover:bg-gray-50'
+            }`}
           >
             <img
-              src={r.product?.imageUrl || TestImg}
-              alt={r.product?.name || '상품 이미지'}
+              src={thumb}
+              alt={productName || r?.other?.nickname || '이미지'}
               className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
             />
             <div className="ml-3 flex-1 min-w-0 text-left">
               <div className="flex items-center justify-between">
                 <div className="truncate text-sm">
-                  <span className="font-semibold text-gray-800">{r.other?.nickname || '상대방'}</span>
-                  <span className="text-gray-400 mx-1.5">·</span>
-                  <span className="text-gray-600 truncate">{r.product?.name || '상품명 없음'}</span>
+                  <span className="font-semibold text-gray-800">
+                    {r.other?.nickname || '상대방'}
+                  </span>
+                  {productName && <span className="text-gray-400 mx-1.5">·</span>}
+                  {productName && (
+                    <span className="text-gray-600 truncate">{productName}</span>
+                  )}
                 </div>
-                <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                <span className="ml-2 flex-shrink-0 text-xs text-gray-400">
                   {r.lastMessageTime ? formatTimestamp(r.lastMessageTime) : ''}
                 </span>
               </div>
-              <div className="flex items-start justify-between mt-1">
-                <p className="text-sm text-gray-500 truncate pr-2">{r.lastMessagePreview || '대화를 시작해보세요'}</p>
+              <div className="mt-1 flex items-start justify-between">
+                <p className="pr-2 text-sm text-gray-500 truncate">
+                  {r.lastMessagePreview || '대화를 시작해보세요'}
+                </p>
                 {r.unreadCount > 0 && (
-                  <span className="ml-2 text-xs bg-red-500 text-white font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
+                  <span className="ml-2 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
                     {r.unreadCount}
                   </span>
                 )}
               </div>
             </div>
           </button>
-        )
+        );
       })}
     </div>
   );

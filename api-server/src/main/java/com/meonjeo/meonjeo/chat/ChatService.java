@@ -2,8 +2,12 @@ package com.meonjeo.meonjeo.chat;
 
 import com.meonjeo.meonjeo.chat.dto.ChatDtos.*;
 import com.meonjeo.meonjeo.product.ProductSellerJdbcRepository;
+import com.meonjeo.meonjeo.product.ProductSummaryJdbcRepository;
+import com.meonjeo.meonjeo.product.ProductSummaryJdbcRepository.ProductSummary;
 import com.meonjeo.meonjeo.user.User;
 import com.meonjeo.meonjeo.user.UserRepository;
+import com.meonjeo.meonjeo.seller.SellerProfileRepository;
+import com.meonjeo.meonjeo.seller.SellerProfile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -24,6 +28,8 @@ public class ChatService {
     private final UserRepository userRepo;
     private final SimpMessagingTemplate broker;
     private final ProductSellerJdbcRepository productSellerRepo;
+    private final SellerProfileRepository sellerProfileRepo;
+    private final ProductSummaryJdbcRepository productSummaryRepo;
 
     private static String roomKeyForUserSeller(Long userId, Long sellerId) {
         return "U" + userId + "-S" + sellerId;
@@ -33,8 +39,8 @@ public class ChatService {
         try {
             if (key == null) return new Long[]{null, null};
             String[] parts = key.split("-");
-            Long buyerId = Long.valueOf(parts[0].substring(1)); // after 'U'
-            Long sellerId = Long.valueOf(parts[1].substring(1)); // after 'S'
+            Long buyerId = Long.valueOf(parts[0].substring(1));
+            Long sellerId = Long.valueOf(parts[1].substring(1));
             return new Long[]{buyerId, sellerId};
         } catch (Exception e) {
             return new Long[]{null, null};
@@ -66,13 +72,11 @@ public class ChatService {
         });
     }
 
-    // 기존 listRooms를 역할 파라미터 포함으로 확장
     @Transactional(readOnly = true)
     public List<RoomResponse> listRooms(Long userId, String as) {
         List<ChatRoom> rooms = roomRepo.findRoomsForUser(userId);
         boolean sellerMode = "seller".equalsIgnoreCase(as);
 
-        // 역할 기준 필터링
         rooms = rooms.stream()
                 .filter(r -> sellerMode ? isSellerSide(r, userId) : isBuyerSide(r, userId))
                 .toList();
@@ -89,18 +93,53 @@ public class ChatService {
         Long otherId = members.stream().map(ChatMember::getUserId).filter(id -> !id.equals(userId)).findFirst().orElse(null);
         User other = otherId == null ? null : userRepo.findById(otherId).orElse(null);
 
+        Long[] ids = parseIdsFromKey(r.getRoomKey());
+        Long sellerId = ids[1];
+
         List<ChatMessage> latest = messageRepo.findPage(r.getId(), null, PageRequest.of(0, 1));
-        String preview = latest.isEmpty() ? null : latest.get(0).getContent();
-        LocalDateTime lastTime = latest.isEmpty() ? null : latest.get(0).getCreatedAt();
+        String preview = null;
+        LocalDateTime lastTime = null;
+        if (!latest.isEmpty()) {
+            ChatMessage lm = latest.get(0);
+            preview = (lm.getType() == ChatMessageType.IMAGE) ? "[사진]" : lm.getContent();
+            lastTime = lm.getCreatedAt();
+        }
 
         Long lastRead = memberRepo.findByRoomIdAndUserId(r.getId(), userId).map(ChatMember::getLastReadMessageId).orElse(null);
         long unread = messageRepo.countUnread(r.getId(), lastRead, userId);
 
+        Long otherLastRead =
+                otherId == null ? null :
+                        memberRepo.findByRoomIdAndUserId(r.getId(), otherId)
+                                .map(ChatMember::getLastReadMessageId)
+                                .orElse(null);
+
+        String displayName = other == null ? null : other.getNickname();
+        if (otherId != null && sellerId != null && Objects.equals(otherId, sellerId)) {
+            String shopName = sellerProfileRepo.findByUserId(otherId)
+                    .map(SellerProfile::getShopName).orElse(null);
+            if (shopName != null && !shopName.isBlank()) displayName = shopName;
+        }
+
+        ProductView pv = null;
+        if (r.getLastProductId() != null) {
+            ProductSummary ps = productSummaryRepo.findSummaryById(r.getLastProductId()).orElse(null);
+            if (ps != null) {
+                pv = ProductView.builder()
+                        .id(ps.getId())
+                        .name(ps.getName())
+                        .imageUrl(ps.getThumbnailUrl())
+                        .build();
+            }
+        }
+
         return RoomResponse.builder()
                 .roomId(r.getId()).roomUid(r.getRoomUid()).type(r.getType())
-                .other(other == null ? null : new ParticipantView(other.getId(), other.getNickname(), other.getProfileImageUrl()))
+                .other(other == null ? null : new ParticipantView(other.getId(), displayName, other.getProfileImageUrl()))
                 .lastMessagePreview(preview).lastMessageTime(lastTime)
                 .unreadCount(unread)
+                .otherLastReadMessageId(otherLastRead)
+                .product(pv)
                 .build();
     }
 
@@ -152,16 +191,26 @@ public class ChatService {
 
     @Transactional
     public void markRead(Long roomId, Long userId, Long lastReadMessageId) {
-        ChatMember m = memberRepo.findByRoomIdAndUserId(roomId, userId).orElseThrow();
-        if (m.getLastReadMessageId() == null || (lastReadMessageId != null && lastReadMessageId > m.getLastReadMessageId())) {
+        ChatMember m = memberRepo.findByRoomIdAndUserId(roomId, userId).orElse(null);
+        if (m == null) return;
+
+        boolean advanced = false;
+        if (m.getLastReadMessageId() == null) {
             m.setLastReadMessageId(lastReadMessageId);
-            memberRepo.save(m);
+            advanced = lastReadMessageId != null;
+        } else if (lastReadMessageId != null && lastReadMessageId > m.getLastReadMessageId()) {
+            m.setLastReadMessageId(lastReadMessageId);
+            advanced = true;
         }
+        if (!advanced) return;
+
+        memberRepo.save(m);
+
         Map<String, Object> payload = Map.of(
                 "type", "READ",
                 "roomId", roomId,
                 "userId", userId,
-                "lastReadMessageId", lastReadMessageId
+                "lastReadMessageId", m.getLastReadMessageId()
         );
         broker.convertAndSend("/sub/chat/rooms/" + roomId, payload);
     }
@@ -170,10 +219,17 @@ public class ChatService {
     public ChatRoom createOrGetRoomByProduct(Long userId, Long productId) {
         Long sellerId = productSellerRepo.findSellerIdByProductId(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품에 연결된 셀러를 찾을 수 없습니다."));
-        return createOrGetUserSellerRoom(userId, sellerId);
+        ChatRoom room = createOrGetUserSellerRoom(userId, sellerId);
+
+        if (!Objects.equals(room.getLastProductId(), productId)) {
+            room.setLastProductId(productId);
+            room.setUpdatedAt(LocalDateTime.now());
+            roomRepo.save(room);
+            notifyRoomEvent(room.getId(), "ROOM_UPDATED");
+        }
+        return room;
     }
 
-    // ─ helpers ─
     private void notifyRoomEvent(Long roomId, String type) {
         List<ChatMember> members = memberRepo.findByRoomId(roomId);
         Map<String, Object> payload = Map.of("type", type, "roomId", roomId);
