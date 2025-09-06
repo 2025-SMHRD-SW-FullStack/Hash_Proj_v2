@@ -159,3 +159,17 @@ export const statusBadge = (row = {}) => {
   else if (key === 'EXCHANGE') cls = `${base} bg-sky-50 text-sky-700 ring-sky-200`
   return { key, label, cls }
 }
+
+/** 주문 아이템에서 '내' 피드백 안전 추출 */
+export const getMyFeedbackFromItem = (item, me) => {
+  if (!item) return null;
+  if (item.myFeedback) return item.myFeedback;   // 서버가 myFeedback 제공하는 경우
+  if (item.feedback)   return item.feedback;     // 단건 필드로 내려오는 경우
+  if (Array.isArray(item.feedbacks)) {           // 목록에서 사용자 매칭
+    const myId = me?.id ?? me?.userId;
+    if (myId != null) {
+      return item.feedbacks.find(f => (f?.user?.id ?? f?.userId) === myId) || null;
+    }
+  }
+  return null;
+};

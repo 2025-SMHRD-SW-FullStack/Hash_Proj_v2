@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { getSurveyTemplate, submitSurvey } from "../../service/feedbackService"; // ← DB 저장 추가
+import { getSurveyTemplate, submitSurvey } from "../../service/feedbackService";
+import { getMyOrderDetail } from "../../service/orderService";
 import FeedbackChoiceModal from "../../components/feedback/FeedbackChoiceModal";
 import Button from "../../components/common/Button";
 
-// 별점 아이콘 SVG (이전과 동일)
 const StarIcon = ({ filled, onClick, onMouseEnter, onMouseLeave }) => (
   <svg
     onClick={onClick}
@@ -23,38 +23,67 @@ const StarIcon = ({ filled, onClick, onMouseEnter, onMouseLeave }) => (
 export default function SurveyPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const orderItemId = searchParams.get("orderItemId");
-  const productId = searchParams.get("productId");
 
-  // ✅ sessionStorage 초기값 복원 유지
+  // 쿼리 파라미터
+  const orderItemIdQ = searchParams.get("orderItemId");
+  const productIdQ = searchParams.get("productId");
+  const orderIdQ = searchParams.get("orderId");
+
+  // 다건 주문 대응: 선택 상태
+  const [orderItems, setOrderItems] = useState([]);
+  const [orderItemId, setOrderItemId] = useState(orderItemIdQ || "");
+  const [productId, setProductId] = useState(productIdQ || "");
+
+  // sessionStorage 키(선택/단일 모두 안전하게)
+  const storageKeyBase = orderItemId || orderItemIdQ || (orderIdQ ? `order-${orderIdQ}` : "unknown");
+
   const [template, setTemplate] = useState(null);
   const [answers, setAnswers] = useState(() => {
-    const saved = sessionStorage.getItem(`survey-answers-${orderItemId}`);
+    const saved = sessionStorage.getItem(`survey-answers-${storageKeyBase}`);
     return saved ? JSON.parse(saved) : {};
   });
   const [overallScore, setOverallScore] = useState(() => {
-    const saved = sessionStorage.getItem(`survey-score-${orderItemId}`);
+    const saved = sessionStorage.getItem(`survey-score-${storageKeyBase}`);
     return saved ? Number(saved) : 0;
   });
 
   const [hoverScore, setHoverScore] = useState(0);
   const [openChoice, setOpenChoice] = useState(false);
 
-  // 변경될 때마다 sessionStorage 저장(유지)
+  // 다건 주문이면 주문 상세 로딩 후 선택옵션 구성
   useEffect(() => {
-    sessionStorage.setItem(
-      `survey-answers-${orderItemId}`,
-      JSON.stringify(answers)
-    );
-  }, [answers, orderItemId]);
+    if (!orderIdQ) return;
+    (async () => {
+      try {
+        const detail = await getMyOrderDetail(orderIdQ);
+        const items = (detail?.items ?? []).map(it => {
+          let optText = "기본";
+          try {
+            const opt = JSON.parse(it.optionSnapshotJson || "{}");
+            const vals = Object.values(opt).filter(Boolean);
+            if (vals.length) optText = vals.join(" / ");
+          } catch {}
+          return {
+            value: String(it.id),
+            label: `${it.productName} (${optText})`,
+            productId: String(it.productId),
+          };
+        });
+        setOrderItems(items);
+        // 초기 선택(없으면 첫 번째)
+        if (!orderItemId && items[0]) {
+          setOrderItemId(items[0].value);
+          setProductId(items[0].productId);
+        }
+      } catch (e) {
+        console.error(e);
+        alert("주문 정보를 불러오지 못했습니다.");
+        navigate(-1);
+      }
+    })();
+  }, [orderIdQ, orderItemId, navigate]);
 
-  useEffect(() => {
-    sessionStorage.setItem(
-      `survey-score-${orderItemId}`,
-      String(overallScore)
-    );
-  }, [overallScore, orderItemId]);
-
+  // 템플릿 로딩
   useEffect(() => {
     if (!productId) return;
     (async () => {
@@ -69,40 +98,46 @@ export default function SurveyPage() {
     })();
   }, [productId, navigate]);
 
-  // 페이지 재진입 시 복원(유지)
+  // 답안/점수 저장
   useEffect(() => {
-    const savedAnswers = sessionStorage.getItem(
-      `survey-answers-${orderItemId}`
-    );
-    const savedScore = sessionStorage.getItem(`survey-score-${orderItemId}`);
+    sessionStorage.setItem(`survey-answers-${storageKeyBase}`, JSON.stringify(answers));
+  }, [answers, storageKeyBase]);
+  useEffect(() => {
+    sessionStorage.setItem(`survey-score-${storageKeyBase}`, String(overallScore));
+  }, [overallScore, storageKeyBase]);
 
+  // 복원
+  useEffect(() => {
+    const savedAnswers = sessionStorage.getItem(`survey-answers-${storageKeyBase}`);
+    const savedScore = sessionStorage.getItem(`survey-score-${storageKeyBase}`);
     if (savedAnswers) setAnswers(JSON.parse(savedAnswers));
     if (savedScore) setOverallScore(Number(savedScore));
-  }, [orderItemId]);
+  }, [storageKeyBase]);
 
   const handleAnswerChange = (questionCode, value) => {
     setAnswers((prev) => ({ ...prev, [questionCode]: value }));
   };
 
-  // ✅ DB 저장만 추가 (기존 흐름 변경 X)
   const handleSubmit = async () => {
+    const effOrderItemId = Number(orderItemId || orderItemIdQ);
+    const effProductId = Number(productId || productIdQ);
+
+    if (!effOrderItemId || !effProductId) {
+      alert("평가할 상품을 선택해주세요.");
+      return;
+    }
     if (overallScore === 0) {
       alert("상품의 총점을 매겨주세요.");
       return;
     }
     try {
-      // DB로 저장 (백엔드: POST /api/surveys/answers)
-      await submitSurvey(Number(orderItemId), {
-        productId: Number(productId),
+      await submitSurvey(effOrderItemId, {
+        productId: effProductId,
         overallScore,
-        answers, // 서버에서 JSON으로 저장
+        answers,
       });
-      // 필요하면 임시저장 삭제 가능(현 상태 유지 요청이라 주석)
-      // sessionStorage.removeItem(`survey-answers-${orderItemId}`);
-      // sessionStorage.removeItem(`survey-score-${orderItemId}`);
     } catch (e) {
       console.error("설문 저장 실패:", e);
-      // 저장 실패해도 기존 UX 유지: 에디터로는 진행
       alert("설문 저장에 실패했어요. 잠시 후 다시 시도해 주세요.");
     } finally {
       setOpenChoice(true);
@@ -116,7 +151,25 @@ export default function SurveyPage() {
       <h1 className="text-3xl font-bold text-center mb-8">상품 피드백 설문</h1>
 
       <div className="bg-white p-6 rounded-xl shadow-md">
-        <h2 className="text-xl font-semibold mb-4">상품의 총점을 매겨주세요.</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">상품의 총점을 매겨주세요.</h2>
+          {!!orderIdQ && (
+            <select
+              className="border rounded-lg px-3 py-2 text-sm"
+              value={orderItemId || ""}
+              onChange={(e) => {
+                const v = e.target.value;
+                setOrderItemId(v);
+                const found = orderItems.find(i => i.value === v);
+                setProductId(found?.productId || "");
+              }}
+            >
+              <option value="" disabled>상품 선택</option>
+              {orderItems.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          )}
+        </div>
+
         <div
           className="flex justify-center"
           onMouseLeave={() => setHoverScore(0)}
@@ -143,9 +196,7 @@ export default function SurveyPage() {
                   [1, 2, 3, 4, 5].map((value) => (
                     <Button
                       key={value}
-                      variant={
-                        answers[q.code] === value ? "primary" : "unselected"
-                      }
+                      variant={answers[q.code] === value ? "primary" : "unselected"}
                       onClick={() => handleAnswerChange(q.code, value)}
                       className="flex-grow sm:flex-grow-0"
                     >
@@ -156,11 +207,7 @@ export default function SurveyPage() {
                   (q.options ?? []).map((opt) => (
                     <Button
                       key={opt.value}
-                      variant={
-                        answers[q.code] === opt.value
-                          ? "primary"
-                          : "unselected"
-                      }
+                      variant={answers[q.code] === opt.value ? "primary" : "unselected"}
                       onClick={() => handleAnswerChange(q.code, opt.value)}
                       className="flex-grow sm:flex-grow-0"
                     >
@@ -169,9 +216,7 @@ export default function SurveyPage() {
                   ))}
                 {q.allowNa && (
                   <Button
-                    variant={
-                      answers[q.code] === "NA" ? "primary" : "unselected"
-                    }
+                    variant={answers[q.code] === "NA" ? "primary" : "unselected"}
                     onClick={() => handleAnswerChange(q.code, "NA")}
                     className="flex-grow sm:flex-grow-0"
                   >
@@ -199,14 +244,14 @@ export default function SurveyPage() {
         onClose={() => setOpenChoice(false)}
         onPickManual={() =>
           navigate(
-            `/user/feedback/editor?orderItemId=${orderItemId}&productId=${productId}&type=MANUAL&overallScore=${overallScore}&scoresJson=${encodeURIComponent(
+            `/user/feedback/editor?orderItemId=${orderItemId || orderItemIdQ}&productId=${productId || productIdQ}&type=MANUAL&overallScore=${overallScore}&scoresJson=${encodeURIComponent(
               JSON.stringify(answers)
             )}`
           )
         }
         onPickAI={() =>
           navigate(
-            `/user/feedback/editor?orderItemId=${orderItemId}&productId=${productId}&type=AI&overallScore=${overallScore}&scoresJson=${encodeURIComponent(
+            `/user/feedback/editor?orderItemId=${orderItemId || orderItemIdQ}&productId=${productId || productIdQ}&type=AI&overallScore=${overallScore}&scoresJson=${encodeURIComponent(
               JSON.stringify(answers)
             )}`
           )

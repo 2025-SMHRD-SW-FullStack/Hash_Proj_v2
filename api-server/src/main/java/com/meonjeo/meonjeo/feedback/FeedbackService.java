@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -41,6 +40,15 @@ public class FeedbackService {
     private final UserRepository userRepo;
     private final ProductRepository productRepo;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // --- 비로그인일 때 예외를 null로 치환하는 안전 헬퍼(조회 전용에서만 사용) ---
+    private Long safeCurrentUserId() {
+        try {
+            return auth.currentUserId();
+        } catch (Exception e) {
+            return null; // anonymous 등
+        }
+    }
 
     @Transactional
     public FeedbackResponse create(FeedbackCreateRequest req) {
@@ -214,8 +222,7 @@ public class FeedbackService {
         Product product = productRepo.findById(fb.getProductId()).orElse(null);
         String productImageUrl = (product != null) ? product.getThumbnailUrl() : null;
 
-        Long me = auth.currentUserId(); // ✅ 현재 로그인 사용자 ID
-
+        Long me = safeCurrentUserId(); // ← 비로그인 null 허용
 
         return new FeedbackResponse(
                 fb.getId(),
@@ -235,7 +242,7 @@ public class FeedbackService {
                 authorNickname,
                 authorProfileImageUrl,
                 productImageUrl,
-                Objects.equals(me, fb.getUserId())
+                (me != null && Objects.equals(me, fb.getUserId()))
         );
     }
 
@@ -264,8 +271,7 @@ public class FeedbackService {
         Map<Long, Product> productMap = productRepo.findAllById(productIds).stream()
                 .collect(Collectors.toMap(Product::getId, Function.identity()));
 
-        // ✅ 현재 로그인 사용자 id (목록 변환에서도 한 번만 구해서 재사용)
-            Long me = auth.currentUserId();
+        Long me = safeCurrentUserId(); // ← 비로그인 null 허용
 
         return feedbacks.stream().map(fb -> {
             OrderItem mainOrderItem = orderItemMap.get(fb.getOrderItemId());
@@ -321,7 +327,7 @@ public class FeedbackService {
                     nickname,
                     profileImg,
                     productImageUrl,
-                    Objects.equals(me, fb.getUserId())   // ✅ mine
+                    (me != null && Objects.equals(me, fb.getUserId()))
             );
         }).filter(Objects::nonNull).collect(Collectors.toList());
     }
