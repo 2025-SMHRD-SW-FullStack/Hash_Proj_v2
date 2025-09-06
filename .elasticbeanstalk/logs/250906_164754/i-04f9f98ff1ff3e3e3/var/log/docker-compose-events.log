@@ -1,0 +1,1443 @@
+2025-09-05 13:52:11.095168 container create f7d70cdf1801ea249baa07f7995ca742092975f0e0b7e0da4113e40879a4cbf8 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 13:52:11.102805 container create 08d6f42c0d89a78f2af8b44af5bb080b8c0e91c8d8bfaafb8fdbdfeb46d5ba9b (image=redis:7, name=redis)
+
+2025-09-05 13:52:11.132522 container create 8097da3e648ef8a87602eee5c80822874509ee92d8154930ddee3bfaa93c982d (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-05 13:52:11.139509 container create 86a4b73056e1b56ef4ef2ba8b8a50e25549b241a7792992452cf81b049d29a01 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-05 13:52:11.907760 container start 08d6f42c0d89a78f2af8b44af5bb080b8c0e91c8d8bfaafb8fdbdfeb46d5ba9b (name=redis, image=redis:7)
+
+2025-09-05 13:52:12.002209 container start f7d70cdf1801ea249baa07f7995ca742092975f0e0b7e0da4113e40879a4cbf8 (name=current-frontend-1, image=current-frontend)
+
+2025-09-05 13:52:12.711195 container start 86a4b73056e1b56ef4ef2ba8b8a50e25549b241a7792992452cf81b049d29a01 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-05 13:52:12.899155 container start 8097da3e648ef8a87602eee5c80822874509ee92d8154930ddee3bfaa93c982d (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-05 13:52:16.929068 container die 86a4b73056e1b56ef4ef2ba8b8a50e25549b241a7792992452cf81b049d29a01 (execDuration=3, exitCode=1, name=current-ai-server-1, image=current-ai-server)
+
+2025-09-05 13:53:00.590559 container destroy 86a4b73056e1b56ef4ef2ba8b8a50e25549b241a7792992452cf81b049d29a01 (image=current-ai-server, name=current-ai-server-1)
+
+
+2025-09-05 13:53:35.953477 container create ea72c10395ddc40ab3121fae5a60fc97cdb177a0f8b3b9c91886c562936a4e0a (name=redis, image=redis:7)
+
+2025-09-05 13:53:35.959538 container create b0df4a9aa9d951fe4e355fa4b976d1e99ed50c3eb7101727bae8ffc34e82e6e6 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 13:53:35.988924 container create 7cd58c10142d20629351fa179c4693aeb6be2e71b6e6c02291dff8e1911db272 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 13:53:35.995265 container create b5bcc61daca0b597b5b3176a4b3aacd333cabb002923c38ec2f98e458c997adf (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-05 13:53:36.660403 container start b0df4a9aa9d951fe4e355fa4b976d1e99ed50c3eb7101727bae8ffc34e82e6e6 (name=current-frontend-1, image=current-frontend)
+
+2025-09-05 13:53:36.845064 container start ea72c10395ddc40ab3121fae5a60fc97cdb177a0f8b3b9c91886c562936a4e0a (image=redis:7, name=redis)
+
+2025-09-05 13:53:37.510613 container start b5bcc61daca0b597b5b3176a4b3aacd333cabb002923c38ec2f98e458c997adf (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-05 13:53:37.633925 container start 7cd58c10142d20629351fa179c4693aeb6be2e71b6e6c02291dff8e1911db272 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 13:53:41.835741 container die 7cd58c10142d20629351fa179c4693aeb6be2e71b6e6c02291dff8e1911db272 (execDuration=3, name=current-ai-server-1, exitCode=1, image=current-ai-server)
+
+2025-09-05 13:54:23.758076 container destroy 7cd58c10142d20629351fa179c4693aeb6be2e71b6e6c02291dff8e1911db272 (image=current-ai-server, name=current-ai-server-1)
+
+
+2025-09-05 13:54:58.224579 container create 66dbdb0b1ada6656b01db63b9284c466d6be5554e2fe06fdf881075dcca31f40 (image=redis:7, name=redis)
+
+2025-09-05 13:54:58.229300 container create 4aa305e327de6a797aad509710b15110979943dff9fe8128e16aa25d299833c5 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 13:54:58.251256 container create eb20a20016984d874676c429068fe377eda449ddaed33497861ce99be2807423 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-05 13:54:58.254328 container create 7ba0077f0c29b512ddfa0b6ab3bd2f2becafd067300b0ff2eca784860b5ae596 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 13:54:59.050218 container start 4aa305e327de6a797aad509710b15110979943dff9fe8128e16aa25d299833c5 (name=current-frontend-1, image=current-frontend)
+
+2025-09-05 13:54:59.092712 container start 66dbdb0b1ada6656b01db63b9284c466d6be5554e2fe06fdf881075dcca31f40 (image=redis:7, name=redis)
+
+2025-09-05 13:54:59.859932 container start eb20a20016984d874676c429068fe377eda449ddaed33497861ce99be2807423 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-05 13:54:59.971425 container start 7ba0077f0c29b512ddfa0b6ab3bd2f2becafd067300b0ff2eca784860b5ae596 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 13:55:04.102541 container die 7ba0077f0c29b512ddfa0b6ab3bd2f2becafd067300b0ff2eca784860b5ae596 (image=current-ai-server, name=current-ai-server-1, execDuration=3, exitCode=1)
+
+2025-09-05 14:14:32.832864 container destroy 7ba0077f0c29b512ddfa0b6ab3bd2f2becafd067300b0ff2eca784860b5ae596 (image=current-ai-server, name=current-ai-server-1)
+
+
+2025-09-05 14:15:08.087925 container create d603dc7c22be848f5614b198549d965dd2ccd591220509f6e8e41b54701db0a8 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:15:08.093932 container create 79def5bdbe1dcc4bd6d567ff1b90e88f2a8aa610a0e5d2aaafe4c8f44632e975 (image=redis:7, name=redis)
+
+2025-09-05 14:15:08.123740 container create 8eeee997aba57f58217dc80d9438498228929edeb519f7757fa16a874f10bc53 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-05 14:15:08.134555 container create 5d51b584c0cd4b893a800a5abf7ecfce33be267282a8ad2ea56ae6089a09d742 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 14:15:08.759835 container start 79def5bdbe1dcc4bd6d567ff1b90e88f2a8aa610a0e5d2aaafe4c8f44632e975 (image=redis:7, name=redis)
+
+2025-09-05 14:15:08.875163 container start d603dc7c22be848f5614b198549d965dd2ccd591220509f6e8e41b54701db0a8 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:15:09.630643 container start 5d51b584c0cd4b893a800a5abf7ecfce33be267282a8ad2ea56ae6089a09d742 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-05 14:15:09.747399 container start 8eeee997aba57f58217dc80d9438498228929edeb519f7757fa16a874f10bc53 (image=nginx:latest, name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+
+2025-09-05 14:16:52.283095 container create a655bba172f06fb6c7f16b2f08032cc3327d7807554cb76008d0b265dab0376c (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:16:52.294696 container create 3e0f98af84d67d05c02c14610ffe220dbc1618812e561d6fe18265bb56b516f4 (image=redis:7, name=redis)
+
+2025-09-05 14:16:52.324748 container create 5de0ab43b001f08f502d3a94dc8e2e29336a01ffea67d86a53913a99b98eaeec (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-05 14:16:52.336232 container create 231bc2683abb8f95ad73f6559fdc6ac63b480bff51aebde3bf109ed91af7520e (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-05 14:16:52.960505 container start 3e0f98af84d67d05c02c14610ffe220dbc1618812e561d6fe18265bb56b516f4 (image=redis:7, name=redis)
+
+2025-09-05 14:16:53.086096 container start a655bba172f06fb6c7f16b2f08032cc3327d7807554cb76008d0b265dab0376c (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:16:53.780394 container start 231bc2683abb8f95ad73f6559fdc6ac63b480bff51aebde3bf109ed91af7520e (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 14:16:53.994166 container start 5de0ab43b001f08f502d3a94dc8e2e29336a01ffea67d86a53913a99b98eaeec (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+
+2025-09-05 14:38:54.062346 container create 07f0b33a1cf9d4842285b2a0e8bffe435bbd6877ff3e4ab2696972fd6b857124 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-05 14:38:54.065049 container create eb3160ed1efca57f9a5fe35e72a87d65eec5ef4ca147e3ed6e552977b94100ca (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:38:54.070029 container create 6b3b9ae2dc708d39c05f4a0e21c8fa74e80c322c175ced0d3e059a009d7d049e (name=redis, image=redis:7)
+
+2025-09-05 14:38:54.102609 container create 38df0043fc050338a4ab56c6625cf5743b8d07450f45acfedd02ca352bd8ccea (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-05 14:38:54.115402 container create 9c025e4685ec3e9bcdeb234f9767702bf7001c8eb121c2221eddd2c69a6b9f5f (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 14:38:55.194323 container start 6b3b9ae2dc708d39c05f4a0e21c8fa74e80c322c175ced0d3e059a009d7d049e (image=redis:7, name=redis)
+
+2025-09-05 14:38:55.343953 container start 07f0b33a1cf9d4842285b2a0e8bffe435bbd6877ff3e4ab2696972fd6b857124 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-05 14:38:55.352029 container start eb3160ed1efca57f9a5fe35e72a87d65eec5ef4ca147e3ed6e552977b94100ca (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:38:55.972712 container start 9c025e4685ec3e9bcdeb234f9767702bf7001c8eb121c2221eddd2c69a6b9f5f (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 14:38:56.168807 container start 38df0043fc050338a4ab56c6625cf5743b8d07450f45acfedd02ca352bd8ccea (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-05 14:39:21.101827 container die 07f0b33a1cf9d4842285b2a0e8bffe435bbd6877ff3e4ab2696972fd6b857124 (exitCode=1, name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, execDuration=25, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-05 14:43:35.188798 container destroy 07f0b33a1cf9d4842285b2a0e8bffe435bbd6877ff3e4ab2696972fd6b857124 (name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+
+2025-09-05 14:44:02.785706 container create c211eb9c03e69840eb857348d8994c3a503d7c9021f4153a8e5fd4f7192a00cd (image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+2025-09-05 14:44:02.786732 container create f3cd109de1d605542649b98c693cead84b2b3efaad931e19f9134db6843f688e (name=current-frontend-1, image=current-frontend)
+
+2025-09-05 14:44:02.794509 container create 446a29aee3498cc6ed1a4f9824e67037adeb93b335bf07178ac28b9a9a9e6c2c (image=redis:7, name=redis)
+
+2025-09-05 14:44:02.819475 container create d19fe165673fcb0b7a96c3bd5a54c413f44a6e7c9ce143ff4b530dd1d5864470 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-05 14:44:02.824982 container create e294a3e8311c54c4698bdaf3e246f7590c7c2d8eab8761a5e41d55133093fd5a (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 14:44:03.683112 container start c211eb9c03e69840eb857348d8994c3a503d7c9021f4153a8e5fd4f7192a00cd (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-05 14:44:03.778856 container start 446a29aee3498cc6ed1a4f9824e67037adeb93b335bf07178ac28b9a9a9e6c2c (name=redis, image=redis:7)
+
+2025-09-05 14:44:03.928128 container start f3cd109de1d605542649b98c693cead84b2b3efaad931e19f9134db6843f688e (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:44:04.809666 container start e294a3e8311c54c4698bdaf3e246f7590c7c2d8eab8761a5e41d55133093fd5a (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 14:44:05.067511 container start d19fe165673fcb0b7a96c3bd5a54c413f44a6e7c9ce143ff4b530dd1d5864470 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-05 14:44:31.384264 container die c211eb9c03e69840eb857348d8994c3a503d7c9021f4153a8e5fd4f7192a00cd (org.opencontainers.image.version=22.04, execDuration=27, exitCode=1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1)
+
+2025-09-05 14:47:41.969352 container destroy c211eb9c03e69840eb857348d8994c3a503d7c9021f4153a8e5fd4f7192a00cd (name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+
+2025-09-05 14:48:07.540038 container create 0829a4517bbb87ffdc07de087c08340c0b08c42ec73a6449cd24c42411c3cc4c (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-05 14:48:07.541094 container create 266a83eaaf9b6600e839c2018e1e6de9dad5735e2741dbf0bd0c80be93d35b85 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:48:07.548121 container create 4a2aa21a1999937bd89a0cbf009e42e985006f5b528bdda7b67e356cb0a37d3a (image=redis:7, name=redis)
+
+2025-09-05 14:48:07.573821 container create 3a91e98c964718f12fb938a60d41827baef87b0554f9d21163ac22f42917e10b (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-05 14:48:07.579531 container create c757482ff2b922f02082e32706d99ef555a1c19ccd2643103f345c244660b7b1 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 14:48:08.319220 container start 0829a4517bbb87ffdc07de087c08340c0b08c42ec73a6449cd24c42411c3cc4c (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-05 14:48:08.509995 container start 4a2aa21a1999937bd89a0cbf009e42e985006f5b528bdda7b67e356cb0a37d3a (image=redis:7, name=redis)
+
+2025-09-05 14:48:08.533113 container start 266a83eaaf9b6600e839c2018e1e6de9dad5735e2741dbf0bd0c80be93d35b85 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:48:09.750666 container start c757482ff2b922f02082e32706d99ef555a1c19ccd2643103f345c244660b7b1 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-05 14:48:09.772092 container start 3a91e98c964718f12fb938a60d41827baef87b0554f9d21163ac22f42917e10b (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-05 14:48:35.705690 container die 0829a4517bbb87ffdc07de087c08340c0b08c42ec73a6449cd24c42411c3cc4c (org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, execDuration=26, exitCode=1, image=current-api-server, name=current-api-server-1)
+
+2025-09-05 14:49:50.318948 container destroy 0829a4517bbb87ffdc07de087c08340c0b08c42ec73a6449cd24c42411c3cc4c (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+
+2025-09-05 14:50:17.740391 container create 118f1d54e9aa1d634b4c3834f2fd378ff7f9466f18e3cfde5da4a2308350fb89 (image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-05 14:50:17.741262 container create 9209ffa0da6466fae3113eae01f2df391ee74a2ce69759a0d12a2039a39d3013 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:50:17.749874 container create b83c71a886d1e7d99ec5b6bd5a2ab2a0337917f4cc8ddcadf0bfb9dbcbd162e1 (image=redis:7, name=redis)
+
+2025-09-05 14:50:17.779809 container create 79f1f3de30b2a1f1760e30e9eb3be680940fb1117caf1f7156cb41dd25855633 (image=nginx:latest, name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-05 14:50:17.785323 container create fba5e1b4f620a28a16244580f12880f0cbe1403e2346502d3a05cb300b0c56e3 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 14:50:18.632496 container start 9209ffa0da6466fae3113eae01f2df391ee74a2ce69759a0d12a2039a39d3013 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:50:18.908516 container start 118f1d54e9aa1d634b4c3834f2fd378ff7f9466f18e3cfde5da4a2308350fb89 (image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-05 14:50:18.947759 container start b83c71a886d1e7d99ec5b6bd5a2ab2a0337917f4cc8ddcadf0bfb9dbcbd162e1 (image=redis:7, name=redis)
+
+2025-09-05 14:50:19.611435 container start 79f1f3de30b2a1f1760e30e9eb3be680940fb1117caf1f7156cb41dd25855633 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-05 14:50:19.725917 container start fba5e1b4f620a28a16244580f12880f0cbe1403e2346502d3a05cb300b0c56e3 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 14:50:46.687307 container die 118f1d54e9aa1d634b4c3834f2fd378ff7f9466f18e3cfde5da4a2308350fb89 (image=current-api-server, execDuration=27, org.opencontainers.image.ref.name=ubuntu, exitCode=1, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-05 14:55:28.904134 container destroy 118f1d54e9aa1d634b4c3834f2fd378ff7f9466f18e3cfde5da4a2308350fb89 (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-05 14:58:58.986547 container create 63f13ecf434f83c219233625e0d63b8585dc4b6fc09bd07f174ddf03b5e2a751 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-05 14:58:58.987258 container create 514e1eccd9dbaf9b0680cf20c1160c3592c24a3849fb69d63f1da8ddc5b4fdb6 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:58:58.994737 container create 7413d8b12938869d4c00ccf5e1a69b0fc1c2b5ca5cf19877099860b8fcf669b3 (image=redis:7, name=redis)
+
+2025-09-05 14:58:59.024912 container create 2d6fd546108647f9b801d57a277110bfcc93c8cba7b8e4a698afabafebd6ca52 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-05 14:58:59.034023 container create 5553e8adad1be45544ea8635256e18c07a8bcfd76617c71601cecd109739601f (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-05 14:59:00.083410 container start 7413d8b12938869d4c00ccf5e1a69b0fc1c2b5ca5cf19877099860b8fcf669b3 (image=redis:7, name=redis)
+
+2025-09-05 14:59:00.205461 container start 514e1eccd9dbaf9b0680cf20c1160c3592c24a3849fb69d63f1da8ddc5b4fdb6 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 14:59:00.230799 container start 63f13ecf434f83c219233625e0d63b8585dc4b6fc09bd07f174ddf03b5e2a751 (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-05 14:59:00.935057 container start 5553e8adad1be45544ea8635256e18c07a8bcfd76617c71601cecd109739601f (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 14:59:01.106848 container start 2d6fd546108647f9b801d57a277110bfcc93c8cba7b8e4a698afabafebd6ca52 (image=nginx:latest, name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-05 14:59:29.275442 container die 63f13ecf434f83c219233625e0d63b8585dc4b6fc09bd07f174ddf03b5e2a751 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04, execDuration=28, name=current-api-server-1, exitCode=1)
+
+2025-09-05 15:02:58.082880 container destroy 63f13ecf434f83c219233625e0d63b8585dc4b6fc09bd07f174ddf03b5e2a751 (org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-05 15:03:25.834259 container create a239098f8bbc22a9aa240e4f7b4ef89cec5a776f66f726c98c0b1a549e2f5669 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-05 15:03:25.835958 container create dfc994756fd333fb5cf6afc4ad59a011a9346406fe43747c74fe646d84ce572f (name=current-frontend-1, image=current-frontend)
+
+2025-09-05 15:03:25.837378 container create 42b1d76622ea4597792ac265f7474251cf7a9ffb81669b94c6e4665504cc6705 (image=redis:7, name=redis)
+
+2025-09-05 15:03:25.869938 container create 4dd5539777b0a5f0e62c41a1d251c5bc14bb8e1be9aa6f430a6a7b744442c8d7 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-05 15:03:25.871069 container create 5231789bf8f0f264c7aa93b4986605d971b081c3666f9c37f48f13d20256b175 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 15:03:26.697502 container start a239098f8bbc22a9aa240e4f7b4ef89cec5a776f66f726c98c0b1a549e2f5669 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04)
+
+2025-09-05 15:03:26.897101 container start dfc994756fd333fb5cf6afc4ad59a011a9346406fe43747c74fe646d84ce572f (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 15:03:26.923293 container start 42b1d76622ea4597792ac265f7474251cf7a9ffb81669b94c6e4665504cc6705 (image=redis:7, name=redis)
+
+2025-09-05 15:03:27.958841 container start 4dd5539777b0a5f0e62c41a1d251c5bc14bb8e1be9aa6f430a6a7b744442c8d7 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-05 15:03:28.125005 container start 5231789bf8f0f264c7aa93b4986605d971b081c3666f9c37f48f13d20256b175 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-05 15:04:03.666582 container die a239098f8bbc22a9aa240e4f7b4ef89cec5a776f66f726c98c0b1a549e2f5669 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04, execDuration=36, exitCode=1, name=current-api-server-1)
+
+2025-09-05 15:25:06.916051 container destroy a239098f8bbc22a9aa240e4f7b4ef89cec5a776f66f726c98c0b1a549e2f5669 (org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, image=current-api-server)
+
+
+2025-09-05 15:25:45.215582 container create afa03148c9ff19221577ddff2e558b439bd2238979069097054bd62af817bb30 (name=current-frontend-1, image=current-frontend)
+
+2025-09-05 15:25:45.215621 container create 182502297c4f74197da540e2716bc6b93002e157cd144627c80f0e3aa54cb676 (org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1)
+
+2025-09-05 15:25:45.220623 container create 49d03014cce0a48017dee778a8923d1a50e45825dd96eacc1a25c3dac8f77358 (name=redis, image=redis:7)
+
+2025-09-05 15:25:45.268658 container create 2c3b833f9e7e99484913aee700439373e52c096dcf9d106b6251c2af18aa548b (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-05 15:25:45.299753 container create ab02236f79e7076f1ae245e7aa0885bda1c0ef17a1b486f1228833a0ce7b620c (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 15:25:46.139726 container start 182502297c4f74197da540e2716bc6b93002e157cd144627c80f0e3aa54cb676 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server)
+
+2025-09-05 15:25:46.318906 container start 49d03014cce0a48017dee778a8923d1a50e45825dd96eacc1a25c3dac8f77358 (image=redis:7, name=redis)
+
+2025-09-05 15:25:46.485190 container start afa03148c9ff19221577ddff2e558b439bd2238979069097054bd62af817bb30 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 15:25:47.359663 container start ab02236f79e7076f1ae245e7aa0885bda1c0ef17a1b486f1228833a0ce7b620c (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 15:25:47.558468 container start 2c3b833f9e7e99484913aee700439373e52c096dcf9d106b6251c2af18aa548b (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-05 15:26:25.482798 container die 182502297c4f74197da540e2716bc6b93002e157cd144627c80f0e3aa54cb676 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, exitCode=1, org.opencontainers.image.version=22.04, execDuration=39)
+
+2025-09-05 15:35:15.518253 container destroy 182502297c4f74197da540e2716bc6b93002e157cd144627c80f0e3aa54cb676 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-05 15:39:01.336254 container create 1edba056a15871101cc27d02f9bf6ec25b9489e5210d71cc72e6c4f2e6739cb1 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-05 15:39:01.338289 container create 31850f16fe94ffaee28daecbc78fcea13aaca84cad33852f4a9a30b39bb57d73 (name=redis, image=redis:7)
+
+2025-09-05 15:39:01.341996 container create 5f68e823f97492482fc0095dd4cc8491561d2ed17583d40bb0c76e4e9b923b55 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 15:39:01.376082 container create d3c48da2b54f7dc269c64ac45e023537372fffdb535b60d88a442f70e900853d (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-05 15:39:01.377134 container create 570e90261213706b934944c05f26b87be6a20435ac7ef195ee63b263ce1af909 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-05 15:39:02.315860 container start 31850f16fe94ffaee28daecbc78fcea13aaca84cad33852f4a9a30b39bb57d73 (name=redis, image=redis:7)
+
+2025-09-05 15:39:02.545840 container start 5f68e823f97492482fc0095dd4cc8491561d2ed17583d40bb0c76e4e9b923b55 (name=current-frontend-1, image=current-frontend)
+
+2025-09-05 15:39:02.587027 container start 1edba056a15871101cc27d02f9bf6ec25b9489e5210d71cc72e6c4f2e6739cb1 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-05 15:39:03.202579 container start 570e90261213706b934944c05f26b87be6a20435ac7ef195ee63b263ce1af909 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 15:39:03.351277 container start d3c48da2b54f7dc269c64ac45e023537372fffdb535b60d88a442f70e900853d (image=nginx:latest, name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-05 15:39:16.183262 container die 1edba056a15871101cc27d02f9bf6ec25b9489e5210d71cc72e6c4f2e6739cb1 (execDuration=13, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, exitCode=1)
+
+2025-09-05 15:42:35.683767 container destroy 1edba056a15871101cc27d02f9bf6ec25b9489e5210d71cc72e6c4f2e6739cb1 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04)
+
+
+2025-09-05 15:43:13.097558 container create f120d27678258083a55adcbaea8181a5f684bb729c4ceab77f501396121a07e3 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 15:43:13.098674 container create 40d00ffc9c21199654b2de4cf1f7ecfbf22891fc0d9b3c14c6d6169477ea65e1 (org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-05 15:43:13.106194 container create 8f68222159f12b68b3dedcde017ac435df51a15d050d9d270acbba848c11a6a4 (image=redis:7, name=redis)
+
+2025-09-05 15:43:13.132055 container create 9406be194d722b406ea71062c256c950b52a9df4338e67471cecf723c322bc9f (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-05 15:43:13.136209 container create 0a83c11314c46f7ff018f068f7b93e5d9f02b93f8b8bc27101c31796d5a2d4e9 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-05 15:43:13.888629 container start 8f68222159f12b68b3dedcde017ac435df51a15d050d9d270acbba848c11a6a4 (image=redis:7, name=redis)
+
+2025-09-05 15:43:14.020648 container start f120d27678258083a55adcbaea8181a5f684bb729c4ceab77f501396121a07e3 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 15:43:14.252507 container start 40d00ffc9c21199654b2de4cf1f7ecfbf22891fc0d9b3c14c6d6169477ea65e1 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-05 15:43:14.964666 container start 0a83c11314c46f7ff018f068f7b93e5d9f02b93f8b8bc27101c31796d5a2d4e9 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 15:43:15.210939 container start 9406be194d722b406ea71062c256c950b52a9df4338e67471cecf723c322bc9f (name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest)
+
+2025-09-05 15:43:25.824718 container die 40d00ffc9c21199654b2de4cf1f7ecfbf22891fc0d9b3c14c6d6169477ea65e1 (image=current-api-server, name=current-api-server-1, exitCode=1, org.opencontainers.image.version=22.04, execDuration=11, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-05 15:44:10.918257 container destroy 40d00ffc9c21199654b2de4cf1f7ecfbf22891fc0d9b3c14c6d6169477ea65e1 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1)
+
+
+2025-09-05 15:44:36.437119 container create 3e49e4b43ee0abb4bd5d978024cdcbd30a16ba18ac71deca280ac3494ce974dc (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 15:44:36.439910 container create e9fc0b0883576e84a712598bf8a72efb34a0037ba9c9484b754d0fc81a3182aa (name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+2025-09-05 15:44:36.440217 container create eb508a39f8f8e84ddd620ce687455affecb1592f4c3e332f0fe0c8920fb34bb9 (image=redis:7, name=redis)
+
+2025-09-05 15:44:36.499154 container create 595afc118adcc054fc5ed9e49f2c415f0fd49ca29595d4b4971818144050764d (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 15:44:36.538623 container create 1500abbb6d93da86d8e45237fad9476e3c645ef04ac97341fb6e9bdd520750b4 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-05 15:44:37.307419 container start e9fc0b0883576e84a712598bf8a72efb34a0037ba9c9484b754d0fc81a3182aa (org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+2025-09-05 15:44:37.445971 container start 3e49e4b43ee0abb4bd5d978024cdcbd30a16ba18ac71deca280ac3494ce974dc (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 15:44:37.580519 container start eb508a39f8f8e84ddd620ce687455affecb1592f4c3e332f0fe0c8920fb34bb9 (image=redis:7, name=redis)
+
+2025-09-05 15:44:38.509987 container start 1500abbb6d93da86d8e45237fad9476e3c645ef04ac97341fb6e9bdd520750b4 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-05 15:44:38.701597 container start 595afc118adcc054fc5ed9e49f2c415f0fd49ca29595d4b4971818144050764d (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 15:44:49.445823 container die e9fc0b0883576e84a712598bf8a72efb34a0037ba9c9484b754d0fc81a3182aa (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server, execDuration=11, exitCode=1, name=current-api-server-1)
+
+2025-09-05 15:52:35.228473 container destroy e9fc0b0883576e84a712598bf8a72efb34a0037ba9c9484b754d0fc81a3182aa (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+
+2025-09-05 15:56:12.231691 container create 681bfb9c996da7b2eb619c03bba9412f7260f1bd7f5e2637ba6238b1de0660ff (org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-05 15:56:12.233036 container create 70a13021e16089544b7cc3d2ef717e51647974a601394963b225cec28b3be415 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 15:56:12.234049 container create 21b7fe5e3d2b41c4a46ed122f7e415035c48ca050b55c9ade919589ef705769d (image=redis:7, name=redis)
+
+2025-09-05 15:56:12.301052 container create 454032ad71340fa231f6b744b7728aec3535d8683a1d37e51bdf2b8da218a6a3 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-05 15:56:12.302781 container create 97c47d9a73a9f8f96ebf1b7c2a3432f1eeefc65c5d55b662fed7bd451d700b97 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 15:56:13.439344 container start 70a13021e16089544b7cc3d2ef717e51647974a601394963b225cec28b3be415 (image=current-frontend, name=current-frontend-1)
+
+2025-09-05 15:56:13.483286 container start 681bfb9c996da7b2eb619c03bba9412f7260f1bd7f5e2637ba6238b1de0660ff (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-05 15:56:13.518288 container start 21b7fe5e3d2b41c4a46ed122f7e415035c48ca050b55c9ade919589ef705769d (image=redis:7, name=redis)
+
+2025-09-05 15:56:14.251837 container start 454032ad71340fa231f6b744b7728aec3535d8683a1d37e51bdf2b8da218a6a3 (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-05 15:56:14.400703 container start 97c47d9a73a9f8f96ebf1b7c2a3432f1eeefc65c5d55b662fed7bd451d700b97 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-05 15:56:52.679123 container die 681bfb9c996da7b2eb619c03bba9412f7260f1bd7f5e2637ba6238b1de0660ff (execDuration=38, image=current-api-server, exitCode=1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+2025-09-06 00:30:56.120539 container destroy 681bfb9c996da7b2eb619c03bba9412f7260f1bd7f5e2637ba6238b1de0660ff (name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+
+2025-09-06 00:31:33.876794 container create 32b1e16a4f50c5554ba32952c8cdc00bab9a798d79855732537911d83cff2052 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 00:31:33.878424 container create 4d14bd16c801a3a5269b35ec363e982c443a44800a2e754511de73bfcecdf712 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 00:31:33.879059 container create 1ea226290c7867b665dad460559c5bad9013572310fdca9f03ab431d13789bae (name=redis, image=redis:7)
+
+2025-09-06 00:31:33.916306 container create 0a517f6d40e675e0ef3d8df5319313c02b0f6f482dad2548f4ba685da3200cb1 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 00:31:33.917300 container create f1a4ac1b3c990613eab30cc991c493c04132f4fa54e580bfc0834c68e4ff35b0 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 00:31:34.930892 container start 1ea226290c7867b665dad460559c5bad9013572310fdca9f03ab431d13789bae (name=redis, image=redis:7)
+
+2025-09-06 00:31:35.087239 container start 4d14bd16c801a3a5269b35ec363e982c443a44800a2e754511de73bfcecdf712 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 00:31:35.088091 container start 32b1e16a4f50c5554ba32952c8cdc00bab9a798d79855732537911d83cff2052 (org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 00:31:35.780714 container start f1a4ac1b3c990613eab30cc991c493c04132f4fa54e580bfc0834c68e4ff35b0 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 00:31:35.993657 container start 0a517f6d40e675e0ef3d8df5319313c02b0f6f482dad2548f4ba685da3200cb1 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-06 00:32:11.894747 container die 32b1e16a4f50c5554ba32952c8cdc00bab9a798d79855732537911d83cff2052 (image=current-api-server, org.opencontainers.image.version=22.04, execDuration=36, exitCode=1, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+2025-09-06 06:51:51.217001 container destroy 32b1e16a4f50c5554ba32952c8cdc00bab9a798d79855732537911d83cff2052 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+
+2025-09-06 06:57:09.120125 container create f266e32137e837fa86b33c6bb39aaffd2066f4c668938b3d2142a300c4fd5242 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 06:57:09.121283 container create 4af3443db40537886142b7a9f29d57bca20b50d15e7533798484923ba0726116 (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 06:57:09.127036 container create 6d35688c74db82e094b2815159dc54d20f18026df645832d69a335bb6a5c8149 (name=redis, image=redis:7)
+
+2025-09-06 06:57:09.155032 container create ad06076b15b772fe6c097349de869972574bf07eee4eac8ef4804460880405c5 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-06 06:57:09.165690 container create 7f952163bdfc2d83f8be1719349953dd5678fc5306b208d5847fb046bd825acb (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 06:57:10.246379 container start 4af3443db40537886142b7a9f29d57bca20b50d15e7533798484923ba0726116 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 06:57:10.262529 container start 6d35688c74db82e094b2815159dc54d20f18026df645832d69a335bb6a5c8149 (name=redis, image=redis:7)
+
+2025-09-06 06:57:10.272197 container start f266e32137e837fa86b33c6bb39aaffd2066f4c668938b3d2142a300c4fd5242 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 06:57:11.226221 container start ad06076b15b772fe6c097349de869972574bf07eee4eac8ef4804460880405c5 (image=nginx:latest, name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 06:57:11.334420 container start 7f952163bdfc2d83f8be1719349953dd5678fc5306b208d5847fb046bd825acb (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 06:57:19.951145 container die 4af3443db40537886142b7a9f29d57bca20b50d15e7533798484923ba0726116 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, exitCode=1, execDuration=9, image=current-api-server)
+
+2025-09-06 06:58:56.418991 container destroy 4af3443db40537886142b7a9f29d57bca20b50d15e7533798484923ba0726116 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+
+2025-09-06 06:59:33.352669 container create d40cc7e927e8be051f3da7c8c025a6a682ed4015b41b91ca71a8caa96c9e7994 (org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1)
+
+2025-09-06 06:59:33.356930 container create 0e5e675cfb8cc0b6513acf12fe17d0224f50c333c75717461fedbd31c8cf3d14 (image=redis:7, name=redis)
+
+2025-09-06 06:59:33.359296 container create 3a7af76e60e7bccb1d6c32979769395d8cb2eb82d8a522ce5668e7f91a6fed17 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 06:59:33.383128 container create 03fb6349156e18be394fa8b3f9a66494df51a9b88c352b8886e9c60195fa4c5f (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 06:59:33.384001 container create ac629d90952cf88330d3f1113219f1a7e0c8f491db51fde665928b0f5350760c (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 06:59:34.257245 container start 3a7af76e60e7bccb1d6c32979769395d8cb2eb82d8a522ce5668e7f91a6fed17 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 06:59:34.536896 container start 0e5e675cfb8cc0b6513acf12fe17d0224f50c333c75717461fedbd31c8cf3d14 (image=redis:7, name=redis)
+
+2025-09-06 06:59:34.652425 container start d40cc7e927e8be051f3da7c8c025a6a682ed4015b41b91ca71a8caa96c9e7994 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 06:59:35.362132 container start 03fb6349156e18be394fa8b3f9a66494df51a9b88c352b8886e9c60195fa4c5f (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-06 06:59:35.781939 container start ac629d90952cf88330d3f1113219f1a7e0c8f491db51fde665928b0f5350760c (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 06:59:42.827458 container die d40cc7e927e8be051f3da7c8c025a6a682ed4015b41b91ca71a8caa96c9e7994 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, exitCode=1, image=current-api-server, execDuration=7, name=current-api-server-1)
+
+2025-09-06 07:04:15.756058 container destroy d40cc7e927e8be051f3da7c8c025a6a682ed4015b41b91ca71a8caa96c9e7994 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1)
+
+
+2025-09-06 07:04:51.985109 container create 4a7af4da8b4cc3d82e4ff3ee5eb9b42d52ecccd8412939bef3c3c0c0f28607ee (image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 07:04:51.986663 container create 041e5a056f5ca4de5cadd96c651cd824f8ea430c75eb9d78b2d8ad7c78f958b9 (name=redis, image=redis:7)
+
+2025-09-06 07:04:51.986527 container create 2723b87071fa921921a82d8c37109f2159e012009c252f00bf12e8a36baae494 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 07:04:52.022646 container create eedc55f2517575c3a6d782830f3892200552da9592ebe0cb0b5b0221ee66fc1f (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 07:04:52.023775 container create f0d28173230c0a0a7cb1d5f993bb32b58b16e3d176952e1bd1eb0c17f8150fb7 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 07:04:52.795645 container start 041e5a056f5ca4de5cadd96c651cd824f8ea430c75eb9d78b2d8ad7c78f958b9 (image=redis:7, name=redis)
+
+2025-09-06 07:04:52.942447 container start 2723b87071fa921921a82d8c37109f2159e012009c252f00bf12e8a36baae494 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 07:04:52.974155 container start 4a7af4da8b4cc3d82e4ff3ee5eb9b42d52ecccd8412939bef3c3c0c0f28607ee (name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+2025-09-06 07:04:54.044058 container start eedc55f2517575c3a6d782830f3892200552da9592ebe0cb0b5b0221ee66fc1f (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 07:04:54.120966 container start f0d28173230c0a0a7cb1d5f993bb32b58b16e3d176952e1bd1eb0c17f8150fb7 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 07:05:01.274446 container die 4a7af4da8b4cc3d82e4ff3ee5eb9b42d52ecccd8412939bef3c3c0c0f28607ee (org.opencontainers.image.version=22.04, execDuration=7, exitCode=1, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+2025-09-06 07:07:27.936024 container destroy 4a7af4da8b4cc3d82e4ff3ee5eb9b42d52ecccd8412939bef3c3c0c0f28607ee (org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+
+2025-09-06 07:08:03.244588 container create e8b2190356fb0c990d06781d8520ef098de8f8df96e6f4c7b32945cb838e1b3e (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 07:08:03.247362 container create 0ee5e82aaa7ea2babc9f5414ea59b40c2124d61990474fd50df6fe9c5d3d221a (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 07:08:03.247244 container create 92f71755afc3aff51ae690b3dfda4731e3cb074fd188ed23e5fdb9ea0f8af2ea (name=redis, image=redis:7)
+
+2025-09-06 07:08:03.282481 container create 896adc0ef11e3b0e39706223b3f3d37a8b8175b03677cc64c31f1fdc93da26b1 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-06 07:08:03.283708 container create cd10ad462071e971d71f990a48c6dc517d5f3c2feb9a87948704fe3837b06394 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 07:08:03.984916 container start e8b2190356fb0c990d06781d8520ef098de8f8df96e6f4c7b32945cb838e1b3e (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 07:08:04.074705 container start 92f71755afc3aff51ae690b3dfda4731e3cb074fd188ed23e5fdb9ea0f8af2ea (name=redis, image=redis:7)
+
+2025-09-06 07:08:04.214219 container start 0ee5e82aaa7ea2babc9f5414ea59b40c2124d61990474fd50df6fe9c5d3d221a (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 07:08:05.236755 container start cd10ad462071e971d71f990a48c6dc517d5f3c2feb9a87948704fe3837b06394 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 07:08:05.386192 container start 896adc0ef11e3b0e39706223b3f3d37a8b8175b03677cc64c31f1fdc93da26b1 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-06 07:08:12.382986 container die e8b2190356fb0c990d06781d8520ef098de8f8df96e6f4c7b32945cb838e1b3e (name=current-api-server-1, execDuration=8, exitCode=1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 07:17:41.549011 container destroy e8b2190356fb0c990d06781d8520ef098de8f8df96e6f4c7b32945cb838e1b3e (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-06 07:18:18.527384 container create aac6ff6ccea4c1435f2b8f4662fb55a9175c4ba6b39a7337cae80c992d42eb94 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 07:18:18.529736 container create 1508fd0943a832f50857ce5a13804adf4da74303b859eef79e635bdd2b950aa7 (image=redis:7, name=redis)
+
+2025-09-06 07:18:18.532874 container create 6cbac9b9e096320f00dff807fdecc3687eaf67c5598984383e6e60fed603768d (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server)
+
+2025-09-06 07:18:18.567502 container create da42e961a2717ef5cdd5d5a3706970e78c3cf63a0b0f61cd9eda8528568e02cd (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 07:18:18.568531 container create 645fee1a8379e741953c4f1f78a056c28ea96512e591f7ad4e3c48709f05ce29 (name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest)
+
+2025-09-06 07:18:19.256314 container start aac6ff6ccea4c1435f2b8f4662fb55a9175c4ba6b39a7337cae80c992d42eb94 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 07:18:19.427390 container start 1508fd0943a832f50857ce5a13804adf4da74303b859eef79e635bdd2b950aa7 (image=redis:7, name=redis)
+
+2025-09-06 07:18:19.657081 container start 6cbac9b9e096320f00dff807fdecc3687eaf67c5598984383e6e60fed603768d (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 07:18:20.190345 container start 645fee1a8379e741953c4f1f78a056c28ea96512e591f7ad4e3c48709f05ce29 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-06 07:18:20.392623 container start da42e961a2717ef5cdd5d5a3706970e78c3cf63a0b0f61cd9eda8528568e02cd (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 07:18:28.095121 container die 6cbac9b9e096320f00dff807fdecc3687eaf67c5598984383e6e60fed603768d (exitCode=1, image=current-api-server, org.opencontainers.image.version=22.04, execDuration=8, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 07:48:31.859660 container destroy 6cbac9b9e096320f00dff807fdecc3687eaf67c5598984383e6e60fed603768d (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-06 07:49:09.144466 container create 94145a263fec07b9309442e1d5962f7054d15a8a1bf198bbfcab01595fcfb1df (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 07:49:09.146566 container create f3aff8a953cccb8d1dff286058dcf5636d0b1c00f5b1e8edfb96c73d11d74015 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1)
+
+2025-09-06 07:49:09.148517 container create 4d88ed8307df35cef2007e0a121837aabdb9b2929765f131b2ac3eb4b0f573ef (image=redis:7, name=redis)
+
+2025-09-06 07:49:09.208277 container create bb65a6c6931474cf2fbab7b8f4607f3bbdbcedeb12e4f9b99a00825be5e9e7be (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 07:49:09.248237 container create baac0b12dd833728a2a97c5a46a76e1ef8fc4151ba2d396fb58b87c0a136ee4d (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 07:49:10.039778 container start 4d88ed8307df35cef2007e0a121837aabdb9b2929765f131b2ac3eb4b0f573ef (image=redis:7, name=redis)
+
+2025-09-06 07:49:10.121036 container start f3aff8a953cccb8d1dff286058dcf5636d0b1c00f5b1e8edfb96c73d11d74015 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 07:49:10.183589 container start 94145a263fec07b9309442e1d5962f7054d15a8a1bf198bbfcab01595fcfb1df (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 07:49:11.003457 container start baac0b12dd833728a2a97c5a46a76e1ef8fc4151ba2d396fb58b87c0a136ee4d (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 07:49:11.165085 container start bb65a6c6931474cf2fbab7b8f4607f3bbdbcedeb12e4f9b99a00825be5e9e7be (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-06 07:49:18.480879 container die f3aff8a953cccb8d1dff286058dcf5636d0b1c00f5b1e8edfb96c73d11d74015 (execDuration=8, exitCode=1, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 07:57:42.496621 container destroy f3aff8a953cccb8d1dff286058dcf5636d0b1c00f5b1e8edfb96c73d11d74015 (image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-06 07:58:19.230005 container create d46f4eb8acf030affa067fdb4a9ae88037c6ecff8029ffc222c8fe96a3928988 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 07:58:19.231942 container create 3d3f387c9e9d9aab576c962075c9bcd1ce07eede02011d0b57764eca5c48e010 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 07:58:19.233158 container create 9138a6067ced13a9061469de45a22eee14689a9d54c7c88ffe4bbd6da802de28 (image=redis:7, name=redis)
+
+2025-09-06 07:58:19.300147 container create bb91af3d6c2ab39817222ec354e086a4bd2b9ffc3cc44c342077a5779120689c (image=nginx:latest, name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 07:58:19.348807 container create 2146a3e2ed2b592d86a7067293a6a604235d564b1942f96885edcf0497340ad2 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 07:58:20.069127 container start d46f4eb8acf030affa067fdb4a9ae88037c6ecff8029ffc222c8fe96a3928988 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 07:58:20.277001 container start 3d3f387c9e9d9aab576c962075c9bcd1ce07eede02011d0b57764eca5c48e010 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04)
+
+2025-09-06 07:58:20.370213 container start 9138a6067ced13a9061469de45a22eee14689a9d54c7c88ffe4bbd6da802de28 (name=redis, image=redis:7)
+
+2025-09-06 07:58:21.279197 container start bb91af3d6c2ab39817222ec354e086a4bd2b9ffc3cc44c342077a5779120689c (image=nginx:latest, name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 07:58:21.611619 container start 2146a3e2ed2b592d86a7067293a6a604235d564b1942f96885edcf0497340ad2 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 07:58:28.825340 container die 3d3f387c9e9d9aab576c962075c9bcd1ce07eede02011d0b57764eca5c48e010 (name=current-api-server-1, org.opencontainers.image.version=22.04, execDuration=8, org.opencontainers.image.ref.name=ubuntu, exitCode=1, image=current-api-server)
+
+2025-09-06 08:52:55.975688 container destroy 3d3f387c9e9d9aab576c962075c9bcd1ce07eede02011d0b57764eca5c48e010 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-06 08:53:22.567884 container create fa34206865a3c7bdcf1e1c34700379e71491f019a31a607b6a1a59ff6907a574 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 08:53:22.575431 container create 2f5e0b93f534224ad415915fbac060a1f4c0cb02b5583135856e42f6955fec19 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 08:53:22.576269 container create 25edddefc78ee880d154c7d030ce2abbb4b26d370d4e255e69227e4b895abe38 (name=redis, image=redis:7)
+
+2025-09-06 08:53:22.599311 container create e1393c190122bd10a4da3b11ed34f6c8eb1d5db7402b3a2fb6a7507b38d65cd4 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-06 08:53:22.604328 container create 2f153d321da16e5a8e7e5a99f07b9d53f2c8a6bf731c449cd6ea6cadd0beb209 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 08:53:23.507051 container start fa34206865a3c7bdcf1e1c34700379e71491f019a31a607b6a1a59ff6907a574 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 08:53:23.556462 container start 2f5e0b93f534224ad415915fbac060a1f4c0cb02b5583135856e42f6955fec19 (org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 08:53:23.676644 container start 25edddefc78ee880d154c7d030ce2abbb4b26d370d4e255e69227e4b895abe38 (image=redis:7, name=redis)
+
+2025-09-06 08:53:24.492639 container start e1393c190122bd10a4da3b11ed34f6c8eb1d5db7402b3a2fb6a7507b38d65cd4 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-06 08:53:24.652273 container start 2f153d321da16e5a8e7e5a99f07b9d53f2c8a6bf731c449cd6ea6cadd0beb209 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 08:53:31.850153 container die 2f5e0b93f534224ad415915fbac060a1f4c0cb02b5583135856e42f6955fec19 (image=current-api-server, exitCode=1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, execDuration=7, name=current-api-server-1)
+
+2025-09-06 10:16:24.547693 container destroy 2f5e0b93f534224ad415915fbac060a1f4c0cb02b5583135856e42f6955fec19 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+
+2025-09-06 10:20:06.381314 container create 48da4af761450799b5a064992119d6147aba7b3378ac58b9531fd36c2271090c (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 10:20:06.387477 container create 69a70410e2daef41d5076c94338b033fd27856e8e2946d9af5f7b2c3d45954e4 (name=redis, image=redis:7)
+
+2025-09-06 10:20:06.420595 container create 508cab9c3ccac1de86d5e75a95059a1ecc915b98a9243d3d015f94883f1a498b (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 10:20:06.425741 container create 43b5938da3fcc876236be278277e2b18703002bb551f755f4a37d69094012f48 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 10:20:06.498463 container create c2ac0ae5f3a7f4e81a479922eadd4398f1db8d760dbf71af9ad6b458140cc3a9 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-06 10:20:07.273190 container start 48da4af761450799b5a064992119d6147aba7b3378ac58b9531fd36c2271090c (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 10:20:07.358026 container start 69a70410e2daef41d5076c94338b033fd27856e8e2946d9af5f7b2c3d45954e4 (image=redis:7, name=redis)
+
+2025-09-06 10:20:07.961246 container start 43b5938da3fcc876236be278277e2b18703002bb551f755f4a37d69094012f48 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 10:20:08.126864 container start 508cab9c3ccac1de86d5e75a95059a1ecc915b98a9243d3d015f94883f1a498b (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server)
+
+2025-09-06 10:20:09.018463 container start c2ac0ae5f3a7f4e81a479922eadd4398f1db8d760dbf71af9ad6b458140cc3a9 (image=nginx:latest, name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 10:20:17.585581 container die 508cab9c3ccac1de86d5e75a95059a1ecc915b98a9243d3d015f94883f1a498b (image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, exitCode=1, name=current-api-server-1, execDuration=8)
+
+2025-09-06 10:23:26.934140 container destroy 508cab9c3ccac1de86d5e75a95059a1ecc915b98a9243d3d015f94883f1a498b (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-06 10:24:03.793654 container create 32b42b0276c621a237a950b7025445a039bb2109202cadb9602c8d731909c74c (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 10:24:03.795292 container create 8c70bed34f9d2123c34e79f32117155367273f008809b7442635d578f3e26e43 (image=redis:7, name=redis)
+
+2025-09-06 10:24:03.829001 container create 0721266d998100bbfb97f324afafae295ca24f46d2a176625edf6b60c7472190 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 10:24:03.830012 container create 224ddeae347042bb480ce5a50da436b6dc4a718d7138fc28c1a060f8edb98cde (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 10:24:03.858153 container create 0473d4b88b2b60a13bf8f2cb5fdd60eb19c7c2c0f6e52949d72e52d616a25f3c (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 10:24:04.355405 container start 32b42b0276c621a237a950b7025445a039bb2109202cadb9602c8d731909c74c (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 10:24:04.472014 container start 8c70bed34f9d2123c34e79f32117155367273f008809b7442635d578f3e26e43 (name=redis, image=redis:7)
+
+2025-09-06 10:24:05.365449 container start 224ddeae347042bb480ce5a50da436b6dc4a718d7138fc28c1a060f8edb98cde (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 10:24:05.400689 container start 0721266d998100bbfb97f324afafae295ca24f46d2a176625edf6b60c7472190 (image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 10:24:06.416329 container start 0473d4b88b2b60a13bf8f2cb5fdd60eb19c7c2c0f6e52949d72e52d616a25f3c (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 10:24:14.021970 container die 0721266d998100bbfb97f324afafae295ca24f46d2a176625edf6b60c7472190 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, exitCode=1, org.opencontainers.image.ref.name=ubuntu, execDuration=8)
+
+2025-09-06 10:33:38.681258 container destroy 0721266d998100bbfb97f324afafae295ca24f46d2a176625edf6b60c7472190 (org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-06 10:34:14.774401 container create d1c8d7278f0f50b51be68c3b4ee7e36eccded6a55b4bc94390602a1e4e7eba01 (image=redis:7, name=redis)
+
+2025-09-06 10:34:14.778409 container create 5596bd14e51263ff2839bfd931c6adfe87c7c3ac9a0aa06906236a3bd27560a0 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 10:34:14.812965 container create 5b3a1297aa6cbd274641935f3eae4cc061c45e8bd91696ab1212d57eecbbf262 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 10:34:14.814123 container create e6d7f25ebf59f59c48d5e173ddfef96bca679ac840391493d893317148b7c0d0 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 10:34:14.842392 container create 1af2d65d30f40c8b4b8d3dc0fae56453f40bd303b23564fdd32c5f48426e3c72 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-06 10:34:15.458857 container start 5596bd14e51263ff2839bfd931c6adfe87c7c3ac9a0aa06906236a3bd27560a0 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 10:34:15.591999 container start d1c8d7278f0f50b51be68c3b4ee7e36eccded6a55b4bc94390602a1e4e7eba01 (image=redis:7, name=redis)
+
+2025-09-06 10:34:16.349720 container start 5b3a1297aa6cbd274641935f3eae4cc061c45e8bd91696ab1212d57eecbbf262 (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 10:34:16.441550 container start e6d7f25ebf59f59c48d5e173ddfef96bca679ac840391493d893317148b7c0d0 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 10:34:17.402020 container start 1af2d65d30f40c8b4b8d3dc0fae56453f40bd303b23564fdd32c5f48426e3c72 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 10:34:24.500846 container die 5b3a1297aa6cbd274641935f3eae4cc061c45e8bd91696ab1212d57eecbbf262 (exitCode=1, execDuration=7, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 10:52:18.429559 container destroy 5b3a1297aa6cbd274641935f3eae4cc061c45e8bd91696ab1212d57eecbbf262 (image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+
+2025-09-06 10:52:54.900220 container create 216b6853bf8adcf201e9cf2038a74bb903588104ea830ec327d65f52e93f8d9b (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 10:52:54.944516 container create 4f8a454eb507bf5e7149d105ddbeeeb7df5da6f143ba5bc1c2337b4248b6c137 (image=redis:7, name=redis)
+
+2025-09-06 10:52:54.979554 container create 2c3204bc2bf002f59972b21fc38751795e750e26af5d164b3ef1c5550f760dd5 (org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 10:52:54.980839 container create e0a2be84387291d74d04b580adbd854a3ec7bc50c30bc9905892dcb365fe4645 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 10:52:55.010452 container create 28296655b005c676ce25bbdb32052555a4e10da1ae7013480d408b7c80b61d74 (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 10:52:55.594015 container start 4f8a454eb507bf5e7149d105ddbeeeb7df5da6f143ba5bc1c2337b4248b6c137 (name=redis, image=redis:7)
+
+2025-09-06 10:52:55.791688 container start 216b6853bf8adcf201e9cf2038a74bb903588104ea830ec327d65f52e93f8d9b (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 10:52:56.293417 container start e0a2be84387291d74d04b580adbd854a3ec7bc50c30bc9905892dcb365fe4645 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 10:52:56.438778 container start 2c3204bc2bf002f59972b21fc38751795e750e26af5d164b3ef1c5550f760dd5 (image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 10:52:57.269928 container start 28296655b005c676ce25bbdb32052555a4e10da1ae7013480d408b7c80b61d74 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-06 10:53:04.454804 container die 2c3204bc2bf002f59972b21fc38751795e750e26af5d164b3ef1c5550f760dd5 (org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, exitCode=1, execDuration=7)
+
+2025-09-06 10:58:35.033242 container destroy 2c3204bc2bf002f59972b21fc38751795e750e26af5d164b3ef1c5550f760dd5 (org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+
+2025-09-06 10:59:11.319657 container create 9d06a82447fedb0e149f2ff2b95b9c803057d0b3b634e386c689981202372a17 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 10:59:11.372505 container create ae0646ee791b380963d93f423a07a55ec5cd99720f1b568f4ae4d55d3e6cfcb5 (image=redis:7, name=redis)
+
+2025-09-06 10:59:11.406429 container create f49cbc6e990c35b3fc7230db7bf0814af7517fa55749117dea2d6ed71487fe21 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 10:59:11.407528 container create 290602a8cab3cd23d1a90ed4c312ebe95021373c7d0102f28c70f57b4d370b82 (image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+2025-09-06 10:59:11.436486 container create d1df258e337aa9a36e649c6fc35d0bfcdf9bfc78440f47e465ecec6c8e2bed30 (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 10:59:11.995404 container start 9d06a82447fedb0e149f2ff2b95b9c803057d0b3b634e386c689981202372a17 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 10:59:12.081888 container start ae0646ee791b380963d93f423a07a55ec5cd99720f1b568f4ae4d55d3e6cfcb5 (image=redis:7, name=redis)
+
+2025-09-06 10:59:12.769677 container start f49cbc6e990c35b3fc7230db7bf0814af7517fa55749117dea2d6ed71487fe21 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 10:59:12.932198 container start 290602a8cab3cd23d1a90ed4c312ebe95021373c7d0102f28c70f57b4d370b82 (org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 10:59:13.840054 container start d1df258e337aa9a36e649c6fc35d0bfcdf9bfc78440f47e465ecec6c8e2bed30 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-06 10:59:20.792811 container die 290602a8cab3cd23d1a90ed4c312ebe95021373c7d0102f28c70f57b4d370b82 (exitCode=1, org.opencontainers.image.ref.name=ubuntu, execDuration=7, image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 12:11:27.192267 container destroy 290602a8cab3cd23d1a90ed4c312ebe95021373c7d0102f28c70f57b4d370b82 (org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+
+2025-09-06 12:11:54.010938 container create 90ebf67d41da2cf77e61735f88665cbcb3f1aafb3db727ed0d51a46bbbed8dc2 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 12:11:54.018695 container create f75ffcf9fa4eddec9be6300136813961284d189faeeb35a55f71d5e003c994b9 (image=redis:7, name=redis)
+
+2025-09-06 12:11:54.054207 container create c1e7180c8b1cd20eea1f6c31840bf6830d3d848d40d3e09eb3640fc13adb255c (name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 12:11:54.055631 container create cfd101bf1c2ed88608a9cf216432b64bfdeae9db467b8d535fc6e6da8c3e7d1b (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 12:11:54.084526 container create c8a6c4f52832a37868ad37b1947e90acb800b8c6b6789be99cc946a67bb55227 (name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest)
+
+2025-09-06 12:11:54.744601 container start f75ffcf9fa4eddec9be6300136813961284d189faeeb35a55f71d5e003c994b9 (name=redis, image=redis:7)
+
+2025-09-06 12:11:54.767829 container start 90ebf67d41da2cf77e61735f88665cbcb3f1aafb3db727ed0d51a46bbbed8dc2 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 12:11:55.493807 container start cfd101bf1c2ed88608a9cf216432b64bfdeae9db467b8d535fc6e6da8c3e7d1b (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 12:11:55.658796 container start c1e7180c8b1cd20eea1f6c31840bf6830d3d848d40d3e09eb3640fc13adb255c (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server)
+
+2025-09-06 12:11:56.666136 container start c8a6c4f52832a37868ad37b1947e90acb800b8c6b6789be99cc946a67bb55227 (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 12:12:04.034067 container die c1e7180c8b1cd20eea1f6c31840bf6830d3d848d40d3e09eb3640fc13adb255c (org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, execDuration=7, name=current-api-server-1, exitCode=1)
+
+2025-09-06 12:23:39.398224 container destroy c1e7180c8b1cd20eea1f6c31840bf6830d3d848d40d3e09eb3640fc13adb255c (name=current-api-server-1, image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-06 12:24:05.581680 container create f92623fc752fc1defcca7bc683984cab5741415cde8d09d5933d0b0c59790d4e (image=redis:7, name=redis)
+
+2025-09-06 12:24:05.583639 container create 27308209cdf4a8f663eb654f2fa4adb437e0b79998fe5cbf6d0dd54f91a90db4 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 12:24:05.620091 container create 626f46272cbd2f050584c94515abf67484ae33d96b0c3da03de2af38110f3310 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 12:24:05.621038 container create c0f22fe8c27d33d492d299f722b959aa11c690124cfc3716ff0c20a8475fc65f (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 12:24:05.650020 container create 92618f9f93a656186d0fe68537c70f241dfc8fc585d7c59b0865969888a08810 (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 12:24:06.194823 container start f92623fc752fc1defcca7bc683984cab5741415cde8d09d5933d0b0c59790d4e (name=redis, image=redis:7)
+
+2025-09-06 12:24:06.342699 container start 27308209cdf4a8f663eb654f2fa4adb437e0b79998fe5cbf6d0dd54f91a90db4 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 12:24:07.077462 container start 626f46272cbd2f050584c94515abf67484ae33d96b0c3da03de2af38110f3310 (image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 12:24:07.169477 container start c0f22fe8c27d33d492d299f722b959aa11c690124cfc3716ff0c20a8475fc65f (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 12:24:08.102012 container start 92618f9f93a656186d0fe68537c70f241dfc8fc585d7c59b0865969888a08810 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 12:24:15.203706 container die 626f46272cbd2f050584c94515abf67484ae33d96b0c3da03de2af38110f3310 (name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, execDuration=7, exitCode=1, image=current-api-server)
+
+2025-09-06 12:32:12.056387 container destroy 626f46272cbd2f050584c94515abf67484ae33d96b0c3da03de2af38110f3310 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+
+2025-09-06 12:32:38.648530 container create 3214103687d5eeadeca13c16b0f1cbf7f5c606b6b0deb75a1678f1a99648cf98 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 12:32:38.701710 container create 7e710d1078ead8192f6180442c8f726a1ddd5ad717f3b59b029d05ab74df5970 (name=redis, image=redis:7)
+
+2025-09-06 12:32:38.735768 container create 06030adf19d3e0e4d478227f3b16c2cf553fc38f9ad3702992b00b4d7d5a60fa (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 12:32:38.736823 container create 3c88b2485e2687595c845f0de09be8123c692b51d357daaa11877b5f3dc13291 (org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1)
+
+2025-09-06 12:32:38.766968 container create 74b12a645a670eed173655da803744a7965a9866904faeb8645dacd07dfa9dc0 (image=nginx:latest, name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 12:32:39.388638 container start 7e710d1078ead8192f6180442c8f726a1ddd5ad717f3b59b029d05ab74df5970 (name=redis, image=redis:7)
+
+2025-09-06 12:32:39.536509 container start 3214103687d5eeadeca13c16b0f1cbf7f5c606b6b0deb75a1678f1a99648cf98 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 12:32:40.188920 container start 06030adf19d3e0e4d478227f3b16c2cf553fc38f9ad3702992b00b4d7d5a60fa (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 12:32:40.283708 container start 3c88b2485e2687595c845f0de09be8123c692b51d357daaa11877b5f3dc13291 (org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+2025-09-06 12:32:41.223830 container start 74b12a645a670eed173655da803744a7965a9866904faeb8645dacd07dfa9dc0 (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 12:32:48.244062 container die 3c88b2485e2687595c845f0de09be8123c692b51d357daaa11877b5f3dc13291 (exitCode=1, name=current-api-server-1, org.opencontainers.image.version=22.04, execDuration=7, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 12:43:03.576458 container destroy 3c88b2485e2687595c845f0de09be8123c692b51d357daaa11877b5f3dc13291 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+
+2025-09-06 12:43:39.450081 container create 40452707aff8972ed86b67d181eb0f890562528f1ef391840f8bbdec0868b479 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 12:43:39.456203 container create 91c06e8ce3a0b39d456e306fee4ffb562195ba4e6935e0a3fb2e942060f4a5ae (name=redis, image=redis:7)
+
+2025-09-06 12:43:39.495610 container create 0786117cfbba14af96d920233dd9f429ebded5bedc5c1d26ce36c5866c868017 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server)
+
+2025-09-06 12:43:39.497044 container create 3af697990e12a7310fff19d123806e67095ae9cb396f3454c4aa919e4e035de1 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 12:43:39.526061 container create 3a15b636bcacc2c681bbc2e1efd9a4f1116d960bd4ad0b75afcfadf15f83110a (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 12:43:40.190416 container start 91c06e8ce3a0b39d456e306fee4ffb562195ba4e6935e0a3fb2e942060f4a5ae (name=redis, image=redis:7)
+
+2025-09-06 12:43:40.229383 container start 40452707aff8972ed86b67d181eb0f890562528f1ef391840f8bbdec0868b479 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 12:43:40.904022 container start 0786117cfbba14af96d920233dd9f429ebded5bedc5c1d26ce36c5866c868017 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 12:43:41.012917 container start 3af697990e12a7310fff19d123806e67095ae9cb396f3454c4aa919e4e035de1 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 12:43:41.963889 container start 3a15b636bcacc2c681bbc2e1efd9a4f1116d960bd4ad0b75afcfadf15f83110a (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-06 12:43:49.121582 container die 0786117cfbba14af96d920233dd9f429ebded5bedc5c1d26ce36c5866c868017 (execDuration=7, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server, exitCode=1, name=current-api-server-1)
+
+2025-09-06 13:26:38.367594 container destroy 0786117cfbba14af96d920233dd9f429ebded5bedc5c1d26ce36c5866c868017 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+
+2025-09-06 13:27:04.854172 container create 9a46a57c43bc4937f3d15c9197a99a53a6b300745282df9219184f74ae73a289 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 13:27:04.855927 container create d33e7efae6642aeafb47925e9c6016a3b45ee6c926fc607cdf026ca605bed6b6 (name=redis, image=redis:7)
+
+2025-09-06 13:27:04.886875 container create 74f24acc8bfd30924e2b55acecee2e5fa393061b403b531df3a6357e1faaa451 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 13:27:04.892111 container create b14c20dd5b133bdf6599b3c1b886209dc89e0fc6183c8801fc754eedddfd67a3 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 13:27:04.920959 container create 22d22eab3f151fa91e0c6a51a09b4622afeb0c69b09d9155255660a4450b4423 (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 13:27:05.521236 container start d33e7efae6642aeafb47925e9c6016a3b45ee6c926fc607cdf026ca605bed6b6 (image=redis:7, name=redis)
+
+2025-09-06 13:27:05.687961 container start 9a46a57c43bc4937f3d15c9197a99a53a6b300745282df9219184f74ae73a289 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 13:27:06.493540 container start b14c20dd5b133bdf6599b3c1b886209dc89e0fc6183c8801fc754eedddfd67a3 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 13:27:06.505931 container start 74f24acc8bfd30924e2b55acecee2e5fa393061b403b531df3a6357e1faaa451 (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 13:27:07.606866 container start 22d22eab3f151fa91e0c6a51a09b4622afeb0c69b09d9155255660a4450b4423 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 13:27:14.794240 container die 74f24acc8bfd30924e2b55acecee2e5fa393061b403b531df3a6357e1faaa451 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, execDuration=7, exitCode=1, name=current-api-server-1)
+
+2025-09-06 13:39:58.920740 container destroy 74f24acc8bfd30924e2b55acecee2e5fa393061b403b531df3a6357e1faaa451 (org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, image=current-api-server, org.opencontainers.image.version=22.04)
+
+
+2025-09-06 13:40:35.239403 container create a260dc4dcef22d26a4f777afd8655f6f12650760e073fd8308adca4f504ab471 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 13:40:35.241408 container create e6d2f5383fc1589aebb29c63d6cacadf5d84230280e9bc5432c6e6ac8ac9b62d (name=redis, image=redis:7)
+
+2025-09-06 13:40:35.263705 container create 1c931e3310dd973dae780ef02f34f83d88f3aefea25460148b48bcc44985e19b (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 13:40:35.265109 container create 525c3db1770f64035c08a4d7f4561dfe3163e1a285f11c77ba263c167b327a1b (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04)
+
+2025-09-06 13:40:35.282312 container create b2639884470b5767239544fcbeaca2cddbbcddedcd598a0d806d66ebf6f05d8a (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-06 13:40:35.933695 container start e6d2f5383fc1589aebb29c63d6cacadf5d84230280e9bc5432c6e6ac8ac9b62d (image=redis:7, name=redis)
+
+2025-09-06 13:40:35.970846 container start a260dc4dcef22d26a4f777afd8655f6f12650760e073fd8308adca4f504ab471 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 13:40:36.618782 container start 525c3db1770f64035c08a4d7f4561dfe3163e1a285f11c77ba263c167b327a1b (org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+2025-09-06 13:40:36.793233 container start 1c931e3310dd973dae780ef02f34f83d88f3aefea25460148b48bcc44985e19b (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 13:40:37.776432 container start b2639884470b5767239544fcbeaca2cddbbcddedcd598a0d806d66ebf6f05d8a (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 13:40:44.958665 container die 525c3db1770f64035c08a4d7f4561dfe3163e1a285f11c77ba263c167b327a1b (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04, execDuration=7, exitCode=1)
+
+2025-09-06 13:41:48.405905 container destroy 525c3db1770f64035c08a4d7f4561dfe3163e1a285f11c77ba263c167b327a1b (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1)
+
+
+2025-09-06 13:42:23.566061 container create b3945ec98c9cae63759d07fe42abeb4cababa6a5971999cf51fda5504bc853a4 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 13:42:23.570173 container create a6620a97f7d63d0a6bc68aaf343188cd35405586efe3b6fcb7e1773b6b361854 (image=redis:7, name=redis)
+
+2025-09-06 13:42:23.589704 container create 40428df5e7c342ac27d967ff3b13e73e77b78104aa6458770eae5ff1e2c1d902 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 13:42:23.590317 container create e92206711844187e4c250a4dc6f3a05864867be8de58285ad4930150ccf9133e (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 13:42:23.609377 container create 4a7c16a2b520ccf7c4097251f54983724cf546279c32e45d46d4a7156527d8dc (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-06 13:42:24.258549 container start a6620a97f7d63d0a6bc68aaf343188cd35405586efe3b6fcb7e1773b6b361854 (image=redis:7, name=redis)
+
+2025-09-06 13:42:24.287406 container start b3945ec98c9cae63759d07fe42abeb4cababa6a5971999cf51fda5504bc853a4 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 13:42:24.975360 container start e92206711844187e4c250a4dc6f3a05864867be8de58285ad4930150ccf9133e (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 13:42:25.105136 container start 40428df5e7c342ac27d967ff3b13e73e77b78104aa6458770eae5ff1e2c1d902 (org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 13:42:26.001576 container start 4a7c16a2b520ccf7c4097251f54983724cf546279c32e45d46d4a7156527d8dc (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 13:42:33.143868 container die 40428df5e7c342ac27d967ff3b13e73e77b78104aa6458770eae5ff1e2c1d902 (exitCode=1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1, execDuration=7)
+
+2025-09-06 14:42:34.173421 container destroy 40428df5e7c342ac27d967ff3b13e73e77b78104aa6458770eae5ff1e2c1d902 (org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-06 14:46:18.056431 container create 18c0e080c6c3c4adf4171a0dac966eea7b7b78c0fd091c1ea0763949d9895b96 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 14:46:18.061798 container create 6a0b4c54094eb1bc93c27621c0f96a54820b637c8a23b0436212c2773313b3e1 (name=redis, image=redis:7)
+
+2025-09-06 14:46:18.102435 container create 6ef2110ee77dc13ccf7baf10269a3855fe33c2f7d1d0fe0090b166cd913d46a9 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 14:46:18.103436 container create dbe38545ff9f9c44a7af2da52287939ae2a7cd10536824bec3842944cd5c66ce (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 14:46:18.132288 container create 8af3d1cec0305ed8f4fc0a4d9f7f5c28ff110fbeee578318a15862187eee8082 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 14:46:19.040001 container start 18c0e080c6c3c4adf4171a0dac966eea7b7b78c0fd091c1ea0763949d9895b96 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 14:46:19.051930 container start 6a0b4c54094eb1bc93c27621c0f96a54820b637c8a23b0436212c2773313b3e1 (image=redis:7, name=redis)
+
+2025-09-06 14:46:19.726786 container start 6ef2110ee77dc13ccf7baf10269a3855fe33c2f7d1d0fe0090b166cd913d46a9 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 14:46:19.827566 container start dbe38545ff9f9c44a7af2da52287939ae2a7cd10536824bec3842944cd5c66ce (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 14:46:20.673855 container start 8af3d1cec0305ed8f4fc0a4d9f7f5c28ff110fbeee578318a15862187eee8082 (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 14:46:57.215713 container die 6ef2110ee77dc13ccf7baf10269a3855fe33c2f7d1d0fe0090b166cd913d46a9 (org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, execDuration=37, exitCode=1, name=current-api-server-1, image=current-api-server)
+
+2025-09-06 14:49:22.013414 container destroy 6ef2110ee77dc13ccf7baf10269a3855fe33c2f7d1d0fe0090b166cd913d46a9 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+
+2025-09-06 14:49:59.297772 container create 7a12041391cec5d8ea0bb716ac7c15ab316446df5eddc168f272491d5355660c (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 14:49:59.298514 container create c8d26281684158cee5181ad8c65010cfe54bfa674618be64c1dfe51e4959ff83 (image=redis:7, name=redis)
+
+2025-09-06 14:49:59.349560 container create 726e3abca6bd7c0ef6bda9858ac2cba0261eecdb93d3af5a4a0c147227563825 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 14:49:59.399675 container create 0f77c5f77711ab46b292c999094a1aa39ee9b9f6c701f1cc2bc1123e30880760 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 14:49:59.428504 container create 0253236e9a77caa7ae0e5dee2d180c8e6a2c70dc5ca1e1dbac47feacae728949 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 14:50:00.395816 container start c8d26281684158cee5181ad8c65010cfe54bfa674618be64c1dfe51e4959ff83 (image=redis:7, name=redis)
+
+2025-09-06 14:50:00.423055 container start 7a12041391cec5d8ea0bb716ac7c15ab316446df5eddc168f272491d5355660c (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 14:50:01.106977 container start 0f77c5f77711ab46b292c999094a1aa39ee9b9f6c701f1cc2bc1123e30880760 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 14:50:01.208676 container start 726e3abca6bd7c0ef6bda9858ac2cba0261eecdb93d3af5a4a0c147227563825 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 14:50:02.075078 container start 0253236e9a77caa7ae0e5dee2d180c8e6a2c70dc5ca1e1dbac47feacae728949 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest, name=current-nginx-1)
+
+2025-09-06 14:50:37.085123 container die 0f77c5f77711ab46b292c999094a1aa39ee9b9f6c701f1cc2bc1123e30880760 (org.opencontainers.image.ref.name=ubuntu, exitCode=1, name=current-api-server-1, org.opencontainers.image.version=22.04, execDuration=35, image=current-api-server)
+
+2025-09-06 14:51:11.021936 container destroy 0f77c5f77711ab46b292c999094a1aa39ee9b9f6c701f1cc2bc1123e30880760 (org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-06 14:51:47.173128 container create 330e8fc931393067a4019fcff8c53d19b159869ea79692767a918f427f0dbe93 (image=redis:7, name=redis)
+
+2025-09-06 14:51:47.211039 container create 83ddd67a17ce42adf91b638d6425168446b1c5d22a5347d8be396307a6791aa2 (org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, image=current-api-server, org.opencontainers.image.version=22.04)
+
+2025-09-06 14:51:47.212126 container create 227c7fd9390c89222ca424c1faa378855f46835332b42a9125268309f237f601 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 14:51:47.229162 container create 068ebb5ed42ee487d9978dd21da7b913dce80618b4ae54c466cf8fe1858c78c2 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 14:51:47.257043 container create 874f83efa986860df6b257f7eb4c15ff437ab7d693ce1857564563bd17a7aa14 (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 14:51:47.906185 container start 068ebb5ed42ee487d9978dd21da7b913dce80618b4ae54c466cf8fe1858c78c2 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 14:51:47.907139 container start 330e8fc931393067a4019fcff8c53d19b159869ea79692767a918f427f0dbe93 (name=redis, image=redis:7)
+
+2025-09-06 14:51:48.627023 container start 83ddd67a17ce42adf91b638d6425168446b1c5d22a5347d8be396307a6791aa2 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 14:51:48.719531 container start 227c7fd9390c89222ca424c1faa378855f46835332b42a9125268309f237f601 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 14:51:49.753967 container start 874f83efa986860df6b257f7eb4c15ff437ab7d693ce1857564563bd17a7aa14 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 14:52:25.725877 container die 83ddd67a17ce42adf91b638d6425168446b1c5d22a5347d8be396307a6791aa2 (exitCode=1, name=current-api-server-1, org.opencontainers.image.version=22.04, execDuration=36, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 14:53:59.299493 container destroy 83ddd67a17ce42adf91b638d6425168446b1c5d22a5347d8be396307a6791aa2 (org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+
+2025-09-06 14:54:36.679251 container create 8d89f765614eed6eb5836a7257ea1ffae4b0fc6effd175d814a487b70c4a0091 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 14:54:36.704165 container create 801b70d22d7042da24f4dbbe7b282edd74b6c357bf5e4304efea78698f8769e0 (image=redis:7, name=redis)
+
+2025-09-06 14:54:36.739037 container create 61765e917ddf18c324c1f772a624d42867ae46932edf3cf0b7d8c8a41f86d4f1 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 14:54:36.740079 container create aeb61e3d346d91801a4eb10bbc8fc9bb21e33a45397f55a0dd223db4f776ef76 (image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 14:54:36.768146 container create 2fe613cebfdb10c93536f7192dd882d48ca1405314ed0d353f654a3106d32f92 (name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest)
+
+2025-09-06 14:54:37.468669 container start 8d89f765614eed6eb5836a7257ea1ffae4b0fc6effd175d814a487b70c4a0091 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 14:54:37.475431 container start 801b70d22d7042da24f4dbbe7b282edd74b6c357bf5e4304efea78698f8769e0 (image=redis:7, name=redis)
+
+2025-09-06 14:54:38.118096 container start aeb61e3d346d91801a4eb10bbc8fc9bb21e33a45397f55a0dd223db4f776ef76 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 14:54:38.212428 container start 61765e917ddf18c324c1f772a624d42867ae46932edf3cf0b7d8c8a41f86d4f1 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 14:54:39.015440 container start 2fe613cebfdb10c93536f7192dd882d48ca1405314ed0d353f654a3106d32f92 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 14:55:14.120830 container die aeb61e3d346d91801a4eb10bbc8fc9bb21e33a45397f55a0dd223db4f776ef76 (exitCode=1, org.opencontainers.image.ref.name=ubuntu, execDuration=35, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 15:03:58.705097 container destroy aeb61e3d346d91801a4eb10bbc8fc9bb21e33a45397f55a0dd223db4f776ef76 (org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1)
+
+
+2025-09-06 15:04:38.084986 container create fa60e790fedb27405eebd8a4c6544bc1c52abb61b2660a3d35d62a8b3c76ed4e (image=redis:7, name=redis)
+
+2025-09-06 15:04:38.085381 container create c4e48c714056a9089cfd1995ba68b2fc43ce42f8592cbcea08aa89c2dd222bbb (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 15:04:38.108187 container create 1e2c73b955accbf5301110564cd7e06eb912d63ccadfcd5cd926d27af7539fcf (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 15:04:38.108650 container create 00a4abc32cdb70fcf36ee17a82d6ee47503efb30e6b6ab87a355515a17bc9501 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 15:04:38.126716 container create ecb2cd927a6d0a595af206c22565c43df610ee4a9207ca03489519657fb5b119 (image=nginx:latest, name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 15:04:39.066766 container start fa60e790fedb27405eebd8a4c6544bc1c52abb61b2660a3d35d62a8b3c76ed4e (image=redis:7, name=redis)
+
+2025-09-06 15:04:39.116294 container start c4e48c714056a9089cfd1995ba68b2fc43ce42f8592cbcea08aa89c2dd222bbb (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 15:04:39.760958 container start 00a4abc32cdb70fcf36ee17a82d6ee47503efb30e6b6ab87a355515a17bc9501 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 15:04:39.880106 container start 1e2c73b955accbf5301110564cd7e06eb912d63ccadfcd5cd926d27af7539fcf (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1)
+
+2025-09-06 15:04:40.780082 container start ecb2cd927a6d0a595af206c22565c43df610ee4a9207ca03489519657fb5b119 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 15:05:17.023007 container die 1e2c73b955accbf5301110564cd7e06eb912d63ccadfcd5cd926d27af7539fcf (exitCode=1, image=current-api-server, execDuration=36, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 15:06:37.695964 container destroy 1e2c73b955accbf5301110564cd7e06eb912d63ccadfcd5cd926d27af7539fcf (org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server)
+
+
+2025-09-06 15:07:15.350641 container create b3330be001744aa55c884553bc07d8448a54ecd9040dde0d8bd2139370d6b574 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 15:07:15.359421 container create 186b15320c2e84ce4a41b2a0a64640f73f3071bd52aafb9a3defc55a8b3dc053 (name=redis, image=redis:7)
+
+2025-09-06 15:07:15.399468 container create a53d0d689bd14fa50b38bf20a2c21977234e890f8011cf47261bd5401da0be2c (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 15:07:15.400471 container create 056f9097af8c0ee0a041d2541c97ae0fa271817b426b45098a493a3378ab5ec6 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 15:07:15.432627 container create b982ba26c8121d28657ea4755e95d8d84c763375480c0cc46e1bb8a52cee3ab4 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 15:07:16.287243 container start b3330be001744aa55c884553bc07d8448a54ecd9040dde0d8bd2139370d6b574 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 15:07:16.299678 container start 186b15320c2e84ce4a41b2a0a64640f73f3071bd52aafb9a3defc55a8b3dc053 (image=redis:7, name=redis)
+
+2025-09-06 15:07:16.990757 container start 056f9097af8c0ee0a041d2541c97ae0fa271817b426b45098a493a3378ab5ec6 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 15:07:17.095595 container start a53d0d689bd14fa50b38bf20a2c21977234e890f8011cf47261bd5401da0be2c (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 15:07:18.106410 container start b982ba26c8121d28657ea4755e95d8d84c763375480c0cc46e1bb8a52cee3ab4 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 15:07:54.672795 container die a53d0d689bd14fa50b38bf20a2c21977234e890f8011cf47261bd5401da0be2c (org.opencontainers.image.version=22.04, exitCode=1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, execDuration=37, name=current-api-server-1)
+
+2025-09-06 15:15:08.807927 container destroy a53d0d689bd14fa50b38bf20a2c21977234e890f8011cf47261bd5401da0be2c (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+
+2025-09-06 15:15:36.189960 container create 25cfda03ff2dcd9d9dfab01fb3ae398eabe4de00b64c4bfafe9c3147ee585287 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 15:15:36.195015 container create 45068cc0911729cec36357505004f19c6aaec89b10d71553f96b6b5e34eaf2a5 (name=redis, image=redis:7)
+
+2025-09-06 15:15:36.231261 container create a353aec1c5668f53ddf73678e6c7fb8a4dce2a1b44f101bcfef95d97dd13caf3 (org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 15:15:36.232517 container create 3898ae7451ab26eac111580d148368f21908d21f0d521f003f379cd70ca82557 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 15:15:36.292013 container create 6562d7082edcecb1363ee2b1f02df80ec8cfdd79945c6722296bab67d1fe05e5 (image=nginx:latest, name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 15:15:37.187144 container start 45068cc0911729cec36357505004f19c6aaec89b10d71553f96b6b5e34eaf2a5 (image=redis:7, name=redis)
+
+2025-09-06 15:15:37.233987 container start 25cfda03ff2dcd9d9dfab01fb3ae398eabe4de00b64c4bfafe9c3147ee585287 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 15:15:37.805725 container start 3898ae7451ab26eac111580d148368f21908d21f0d521f003f379cd70ca82557 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 15:15:37.953999 container start a353aec1c5668f53ddf73678e6c7fb8a4dce2a1b44f101bcfef95d97dd13caf3 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 15:15:38.769257 container start 6562d7082edcecb1363ee2b1f02df80ec8cfdd79945c6722296bab67d1fe05e5 (name=current-nginx-1, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, image=nginx:latest)
+
+2025-09-06 15:16:14.044567 container die a353aec1c5668f53ddf73678e6c7fb8a4dce2a1b44f101bcfef95d97dd13caf3 (name=current-api-server-1, exitCode=1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, execDuration=35, org.opencontainers.image.version=22.04)
+
+2025-09-06 15:37:23.301063 container destroy a353aec1c5668f53ddf73678e6c7fb8a4dce2a1b44f101bcfef95d97dd13caf3 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1)
+
+
+2025-09-06 15:38:00.975718 container create 8c7f14220a4d90f4c5d9299caa2bcc2b11c89b581f9e11b87849944741d9dac9 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 15:38:01.009447 container create 0d3af9c2a35ccd299946101d48eecbcf2d70757654827d4c097ff388d00964d6 (name=redis, image=redis:7)
+
+2025-09-06 15:38:01.069595 container create 9cd8f5ccc93df910d71965bfabfec6408e122aa6da8ecc04853b97b6a5889bd3 (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 15:38:01.069700 container create b05f25cff0b921ce1104240adb89984ec776bc3507c121ab584047300432a2d7 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 15:38:01.098848 container create 64493a3e909ebd5dc2c7bf784323cf3cf70b410a4855e20b821f64135463c25f (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 15:38:01.920437 container start 8c7f14220a4d90f4c5d9299caa2bcc2b11c89b581f9e11b87849944741d9dac9 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 15:38:01.933021 container start 0d3af9c2a35ccd299946101d48eecbcf2d70757654827d4c097ff388d00964d6 (name=redis, image=redis:7)
+
+2025-09-06 15:38:02.524486 container start 9cd8f5ccc93df910d71965bfabfec6408e122aa6da8ecc04853b97b6a5889bd3 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 15:38:02.664457 container start b05f25cff0b921ce1104240adb89984ec776bc3507c121ab584047300432a2d7 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 15:38:03.558347 container start 64493a3e909ebd5dc2c7bf784323cf3cf70b410a4855e20b821f64135463c25f (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-06 15:38:57.883205 container die 9cd8f5ccc93df910d71965bfabfec6408e122aa6da8ecc04853b97b6a5889bd3 (execDuration=55, exitCode=1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:01:05.232960 container destroy 9cd8f5ccc93df910d71965bfabfec6408e122aa6da8ecc04853b97b6a5889bd3 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+
+2025-09-06 16:01:43.013161 container create a41f75fc0d3942f72cbce9891c84341148d2f37bc3eca65ce0a52f54cbb470b1 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 16:01:43.017451 container create 779dc230d6ea25b961692a7d5686be1a2a874eb5f2ff2b0007e81b333330870d (image=redis:7, name=redis)
+
+2025-09-06 16:01:43.038989 container create ea68d10e9c84673342d391bd958be4c7d3d9697af7d585fe89e844b4cbbeb8c7 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:01:43.039913 container create 64040b462b3311a1a2410ebacbc7341d5b938be51c763a0eaa0c2550bc6fba0b (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 16:01:43.059097 container create 21056d5d3760bbb0770c7992b2261abdec80a8065a832409593b40deeceb6d02 (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 16:01:43.708032 container start 779dc230d6ea25b961692a7d5686be1a2a874eb5f2ff2b0007e81b333330870d (image=redis:7, name=redis)
+
+2025-09-06 16:01:43.901755 container start a41f75fc0d3942f72cbce9891c84341148d2f37bc3eca65ce0a52f54cbb470b1 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 16:01:44.385150 container start 64040b462b3311a1a2410ebacbc7341d5b938be51c763a0eaa0c2550bc6fba0b (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 16:01:44.525522 container start ea68d10e9c84673342d391bd958be4c7d3d9697af7d585fe89e844b4cbbeb8c7 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:01:45.521784 container start 21056d5d3760bbb0770c7992b2261abdec80a8065a832409593b40deeceb6d02 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-06 16:02:21.840988 container die ea68d10e9c84673342d391bd958be4c7d3d9697af7d585fe89e844b4cbbeb8c7 (execDuration=37, org.opencontainers.image.ref.name=ubuntu, exitCode=1, name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 16:09:32.776538 container destroy ea68d10e9c84673342d391bd958be4c7d3d9697af7d585fe89e844b4cbbeb8c7 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+
+2025-09-06 16:13:17.259075 container create 40569613d088bdd4e18e6aa64d975de214428393ddc5c9785d31bfeb16143f44 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 16:13:17.260530 container create 74a5b2fe4281fa495ea9ce6b29ea8fd7d546b9e099158e855e1ac03ea7f78f6e (image=redis:7, name=redis)
+
+2025-09-06 16:13:17.319954 container create 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:13:17.380328 container create 732216c71c3ffa602b25f9c600c85aded2f03913a161d220bf551f9dfe12262f (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 16:13:17.409792 container create a44308f60846410ecf60632b71db9b2f4c5fe4c5b15d495c65d6eb90ee65b801 (name=current-nginx-1, image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>)
+
+2025-09-06 16:13:18.316054 container start 74a5b2fe4281fa495ea9ce6b29ea8fd7d546b9e099158e855e1ac03ea7f78f6e (image=redis:7, name=redis)
+
+2025-09-06 16:13:18.356886 container start 40569613d088bdd4e18e6aa64d975de214428393ddc5c9785d31bfeb16143f44 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 16:13:18.902306 container start 732216c71c3ffa602b25f9c600c85aded2f03913a161d220bf551f9dfe12262f (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 16:13:19.094693 container start 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+2025-09-06 16:13:19.819171 container start a44308f60846410ecf60632b71db9b2f4c5fe4c5b15d495c65d6eb90ee65b801 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 16:13:58.191799 container die 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (exitCode=1, org.opencontainers.image.ref.name=ubuntu, execDuration=38, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:13:58.887001 container start 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (name=current-api-server-1, image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:14:22.860748 container die 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (name=current-api-server-1, execDuration=23, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, exitCode=1, image=current-api-server)
+
+2025-09-06 16:14:23.327183 container start 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:15:05.400967 container die 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (execDuration=41, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, exitCode=1, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 16:15:05.843293 container start 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:15:58.179878 container die 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (exitCode=1, name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, execDuration=51)
+
+2025-09-06 16:15:58.664623 container start 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 16:16:21.992622 container die 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (image=current-api-server, execDuration=23, exitCode=1, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:16:22.412587 container start 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+2025-09-06 16:17:05.480642 container die 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (exitCode=1, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, execDuration=42)
+
+2025-09-06 16:17:05.908137 container start 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:17:27.730710 container die 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (name=current-api-server-1, org.opencontainers.image.version=22.04, execDuration=21, exitCode=1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:17:28.223997 container start 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 16:17:50.720503 container die 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (exitCode=1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1, execDuration=22)
+
+2025-09-06 16:17:51.198499 container start 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server)
+
+2025-09-06 16:18:14.650278 container die 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, exitCode=1, execDuration=23, image=current-api-server, name=current-api-server-1)
+
+2025-09-06 16:18:15.066817 container start 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 16:18:41.464538 container die 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, execDuration=26, exitCode=1)
+
+2025-09-06 16:18:42.760572 container start 33b4c8dbdf250c4646b6db9d58db600c8168e1e0fe8e65c0a9c50873026672ce (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+
+2025-09-06 16:19:20.964192 container create 94586675e1ebf5c696c73162113d377b0c2d76d0e37ec54ac4bce44293d6c398 (name=current-frontend-1, image=current-frontend)
+
+2025-09-06 16:19:21.004831 container create 5032211ff4706118ca2c463b095f3fe66841cb0e618f55b4ec63b63de3c6a137 (name=redis, image=redis:7)
+
+2025-09-06 16:19:21.040054 container create 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:19:21.046121 container create c56123356dab22b75f7649b0825fe91bca6208122273f40ecc7b522b15541831 (name=current-ai-server-1, image=current-ai-server)
+
+2025-09-06 16:19:21.077411 container create 218e1634e0ff935341b3333eafad6217446a521c5e14a3239748e0eedd3d1743 (image=nginx:latest, maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1)
+
+2025-09-06 16:19:21.608277 container start 5032211ff4706118ca2c463b095f3fe66841cb0e618f55b4ec63b63de3c6a137 (image=redis:7, name=redis)
+
+2025-09-06 16:19:21.808291 container start 94586675e1ebf5c696c73162113d377b0c2d76d0e37ec54ac4bce44293d6c398 (image=current-frontend, name=current-frontend-1)
+
+2025-09-06 16:19:22.321750 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 16:19:22.479719 container start c56123356dab22b75f7649b0825fe91bca6208122273f40ecc7b522b15541831 (image=current-ai-server, name=current-ai-server-1)
+
+2025-09-06 16:19:23.282531 container start 218e1634e0ff935341b3333eafad6217446a521c5e14a3239748e0eedd3d1743 (maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>, name=current-nginx-1, image=nginx:latest)
+
+2025-09-06 16:19:58.727729 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, org.opencontainers.image.ref.name=ubuntu, execDuration=36, image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 16:19:59.387399 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:20:42.672068 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, image=current-api-server, execDuration=42, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, exitCode=1)
+
+2025-09-06 16:20:43.165129 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:21:06.950688 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (execDuration=23, exitCode=1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1)
+
+2025-09-06 16:21:07.396518 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:21:31.239879 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, exitCode=1, image=current-api-server, org.opencontainers.image.version=22.04, execDuration=23, name=current-api-server-1)
+
+2025-09-06 16:21:31.692989 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 16:22:25.680806 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, execDuration=53, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, exitCode=1, image=current-api-server)
+
+2025-09-06 16:22:26.083767 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:22:48.990618 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, execDuration=22, org.opencontainers.image.version=22.04, exitCode=1)
+
+2025-09-06 16:22:49.416720 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:23:13.130252 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, execDuration=23, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+2025-09-06 16:23:13.554082 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, image=current-api-server, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:23:36.722379 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, image=current-api-server, execDuration=22, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, exitCode=1)
+
+2025-09-06 16:23:37.170172 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 16:24:01.034694 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, execDuration=23, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1, exitCode=1)
+
+2025-09-06 16:24:01.474207 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+2025-09-06 16:24:25.259839 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, execDuration=23, exitCode=1, image=current-api-server)
+
+2025-09-06 16:24:25.684956 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server)
+
+2025-09-06 16:24:48.442578 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (execDuration=22, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, exitCode=1, image=current-api-server)
+
+2025-09-06 16:24:48.875138 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:25:41.654167 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.version=22.04, exitCode=1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, execDuration=52)
+
+2025-09-06 16:25:42.076126 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+2025-09-06 16:26:06.000220 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, execDuration=23, org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:26:06.415336 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 16:26:59.349889 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, execDuration=52, exitCode=1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:26:59.743987 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:27:23.959186 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (execDuration=23, name=current-api-server-1, org.opencontainers.image.version=22.04, exitCode=1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:27:24.403783 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+2025-09-06 16:27:47.640910 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, exitCode=1, name=current-api-server-1, execDuration=22, image=current-api-server, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:27:48.054204 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+2025-09-06 16:28:12.241860 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, execDuration=23, exitCode=1, name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 16:28:12.654249 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:28:35.729186 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (execDuration=22, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, exitCode=1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:28:36.217362 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:29:29.730267 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, exitCode=1, name=current-api-server-1, execDuration=53, image=current-api-server)
+
+2025-09-06 16:29:30.182380 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server)
+
+2025-09-06 16:29:52.910175 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, exitCode=1, name=current-api-server-1, execDuration=22)
+
+2025-09-06 16:29:53.313344 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:30:35.400072 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, execDuration=41)
+
+2025-09-06 16:30:35.825765 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1)
+
+2025-09-06 16:30:59.039422 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, execDuration=22, org.opencontainers.image.version=22.04, exitCode=1, image=current-api-server)
+
+2025-09-06 16:30:59.485156 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:31:21.739061 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, execDuration=21, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, exitCode=1)
+
+2025-09-06 16:31:22.154667 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:31:46.030440 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, execDuration=23, exitCode=1, org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1)
+
+2025-09-06 16:31:46.462755 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 16:32:28.840637 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, exitCode=1, execDuration=42, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:32:29.270361 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:32:52.390488 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.version=22.04, exitCode=1, execDuration=22, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:32:52.809653 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 16:33:15.991411 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, execDuration=22, exitCode=1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:33:16.396412 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:33:59.009504 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, execDuration=42)
+
+2025-09-06 16:33:59.414597 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+2025-09-06 16:34:21.889907 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, execDuration=22, name=current-api-server-1)
+
+2025-09-06 16:34:22.273418 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1)
+
+2025-09-06 16:34:45.710866 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, exitCode=1, execDuration=23, image=current-api-server)
+
+2025-09-06 16:34:46.143876 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, image=current-api-server, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:35:09.459297 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, execDuration=22, org.opencontainers.image.ref.name=ubuntu, exitCode=1, image=current-api-server, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:35:09.894308 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:35:32.149821 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (execDuration=21, exitCode=1, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, image=current-api-server, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:35:32.543622 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 16:35:55.131864 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, image=current-api-server, name=current-api-server-1, execDuration=22, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:35:55.603939 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:36:18.673696 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, execDuration=22)
+
+2025-09-06 16:36:19.113815 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:36:42.560547 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, image=current-api-server, execDuration=23, exitCode=1, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:36:43.043056 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:37:06.992222 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (execDuration=23, name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, exitCode=1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:37:07.453048 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+2025-09-06 16:37:29.550733 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, execDuration=21, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, exitCode=1)
+
+2025-09-06 16:37:30.032013 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, name=current-api-server-1)
+
+2025-09-06 16:37:54.021922 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, execDuration=23, exitCode=1)
+
+2025-09-06 16:37:54.486389 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:38:37.499653 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (execDuration=42, exitCode=1, image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:38:37.925136 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+2025-09-06 16:39:00.511809 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, execDuration=22, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu, exitCode=1)
+
+2025-09-06 16:39:00.943941 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:39:43.900454 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, exitCode=1, org.opencontainers.image.version=22.04, image=current-api-server, execDuration=42)
+
+2025-09-06 16:39:44.355901 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:40:07.571596 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, name=current-api-server-1, org.opencontainers.image.version=22.04, execDuration=22, image=current-api-server, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:40:08.013037 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:40:31.279580 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, execDuration=22, image=current-api-server, org.opencontainers.image.version=22.04, exitCode=1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:40:31.685258 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 16:40:55.220966 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04, name=current-api-server-1, execDuration=23)
+
+2025-09-06 16:40:55.653979 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+2025-09-06 16:41:20.110140 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, exitCode=1, name=current-api-server-1, execDuration=24)
+
+2025-09-06 16:41:20.503456 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:41:42.610063 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, execDuration=21, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:41:43.062514 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 16:42:07.054035 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (execDuration=23, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04, exitCode=1)
+
+2025-09-06 16:42:07.543095 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 16:42:29.159836 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, execDuration=21, exitCode=1, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:42:29.563727 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:42:53.909972 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04, execDuration=23, exitCode=1)
+
+2025-09-06 16:42:54.402177 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:43:17.481696 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04, execDuration=22)
+
+2025-09-06 16:43:17.884835 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server)
+
+2025-09-06 16:43:40.862239 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04, execDuration=22, exitCode=1)
+
+2025-09-06 16:43:41.315913 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:44:03.921076 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, exitCode=1, image=current-api-server, name=current-api-server-1, execDuration=22)
+
+2025-09-06 16:44:04.373177 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1)
+
+2025-09-06 16:44:46.172364 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, org.opencontainers.image.ref.name=ubuntu, execDuration=41, image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:44:46.585138 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.version=22.04, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:45:10.160414 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1, execDuration=23, exitCode=1)
+
+2025-09-06 16:45:10.623382 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu)
+
+2025-09-06 16:45:32.570832 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, execDuration=21, org.opencontainers.image.version=22.04, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server)
+
+2025-09-06 16:45:32.992580 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, image=current-api-server, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:45:54.779574 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, exitCode=1, org.opencontainers.image.ref.name=ubuntu, execDuration=21, image=current-api-server, name=current-api-server-1)
+
+2025-09-06 16:45:55.225493 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:46:37.193131 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (exitCode=1, image=current-api-server, execDuration=41, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:46:37.623336 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (name=current-api-server-1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:47:00.882404 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, name=current-api-server-1, execDuration=22, exitCode=1)
+
+2025-09-06 16:47:01.328544 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, name=current-api-server-1, org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:47:24.059170 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, exitCode=1, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, execDuration=22, name=current-api-server-1)
+
+2025-09-06 16:47:24.481964 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.version=22.04, image=current-api-server, org.opencontainers.image.ref.name=ubuntu, name=current-api-server-1)
+
+2025-09-06 16:47:46.949675 container die 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (image=current-api-server, org.opencontainers.image.ref.name=ubuntu, exitCode=1, execDuration=22, name=current-api-server-1, org.opencontainers.image.version=22.04)
+
+2025-09-06 16:47:47.375101 container start 1d34b64da35d9a0df7911c1786705f901246039d3a104cb375df0222363f0b16 (org.opencontainers.image.ref.name=ubuntu, org.opencontainers.image.version=22.04, image=current-api-server, name=current-api-server-1)
+

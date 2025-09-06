@@ -8,6 +8,12 @@ logging:
     org.springframework.messaging: INFO
     org.springframework.web.socket: INFO
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
 spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL}
@@ -79,13 +85,6 @@ ai:
 #     acl-public-read: true          # ← 이거 켜면 객체에만 공개 ACL 붙임
 #     accessKey: ${STORAGE_S3_ACCESS_KEY}
 #     secretKey: ${STORAGE_S3_SECRET_KEY}
-
-phone:
-  short-token:
-    validity-seconds: 600
-  code:
-    ttl-seconds: 180
-    max-attempts: 5
 
 COOLSMS_API_KEY: ${COOLSMS_API_KEY}
 COOLSMS_API_SECRET: ${COOLSMS_API_SECRET}

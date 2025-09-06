@@ -47,7 +47,8 @@ public class SecurityConfig {
     private static final List<String> PROD_ORIGINS = List.of(
             "https://meonjeo.com",
             "https://www.meonjeo.com",
-            "https://dev.meonjeo.com"
+            "https://dev.meonjeo.com",
+            "http://hash-proj-v2.eba-ijnehrgn.ap-northeast-2.elasticbeanstalk.com/"
     );
 
     private List<String> resolveAllowedOrigins() {
