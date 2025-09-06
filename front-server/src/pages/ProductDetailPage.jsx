@@ -83,13 +83,19 @@ const ProductDetailPage = () => {
 
   // 총 금액
   const totalPrice = useMemo(() => {
-    if (!productData) return 0;
-    const itemsTotal = selectedItems.reduce((total, currentItem) => {
-      const variant = productData.variants.find(v => v.id === parseInt(currentItem.variantId));
-      const itemPrice = (productData.product.salePrice + (variant?.addPrice || 0)) * currentItem.quantity;
-      return total + itemPrice;
+    if (!productData || selectedItems.length === 0) return 0;
+    const { product } = productData;
+    const unit =
+      (product?.salePrice ?? 0) > 0 ? (product.salePrice ?? 0) : (product?.basePrice ?? 0);
+
+    const itemsTotal = selectedItems.reduce((sum, it) => {
+      const variant = productData.variants.find(v => v.id === Number(it.variantId));
+      const add = variant?.addPrice ?? 0;
+      const qty = it?.quantity ?? 1;
+      return sum + (unit + add) * qty;
     }, 0);
-    return itemsTotal > 0 ? itemsTotal + deliverFee : 0;
+
+    return itemsTotal + deliverFee; // 항목이 있으면 배송비 포함
   }, [selectedItems, productData, deliverFee]);
 
   // --- 데이터 로딩 ---

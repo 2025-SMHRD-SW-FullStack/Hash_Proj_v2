@@ -192,6 +192,8 @@ public class SellerOrderService {
             case IN_TRANSIT -> "배송중";
             case DELIVERED -> "배송완료";
             case CONFIRMED -> "구매확정";
+            case EXCHANGE -> "교환신청";
+            case EXCHANGE_REJECTED -> "교환거절";
         };
     }
 

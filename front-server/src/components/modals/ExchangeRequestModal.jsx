@@ -133,7 +133,7 @@ const ExchangeRequestModal = ({ open, onClose, orderItems, onComplete, existingE
           <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg ${isRequested ? 'bg-gray-200 opacity-60' : 'bg-gray-50'}`}>
             <label className={`flex items-center gap-4 flex-grow ${isRequested ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
               <input type="checkbox" className="w-5 h-5" checked={selectedIds.has(item.id)} onChange={() => handleToggleItem(item.id)} disabled={isRequested} />
-              <img src={TestImg} alt={item.productName} className="w-16 h-16 rounded-md object-cover" />
+              <img src={item.thumbnailUrl || TestImg} alt={item.productName} className="w-16 h-16 rounded-md object-cover" onError={e => {e.target.onerror = null; e.target.src = TestImg; }} />
               <div>
                 <p className="font-semibold">{item.productName}</p>
                 <p className="text-sm text-gray-600">{formatOptions(item.optionSnapshotJson)}</p>
