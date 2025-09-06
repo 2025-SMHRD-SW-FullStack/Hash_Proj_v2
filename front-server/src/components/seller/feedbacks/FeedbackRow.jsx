@@ -45,7 +45,13 @@ const toYmd = (v) => {
   return `${y}-${m}-${dd}`
 }
 
-export default function FeedbackRow({ row, onOpenOrder, onRequestReport }) {
+export default function FeedbackRow({
+  row,
+  onOpenOrder,
+  onRequestReport,
+  reportDisabled = false,
+  reportState = '',                // ★ 추가
+}) {
   const badge = statusBadge(row)
 
   // 내용 존재 여부(키 가드)
@@ -109,13 +115,18 @@ export default function FeedbackRow({ row, onOpenOrder, onRequestReport }) {
       </td>
 
       {/* 신고 */}
-      <td className="px-3 py-3 text-right">
+      <td className="px-3 py-3 text-center">
+        {/*
+    - NORMAL: admin (보라색)
+    - PENDING/REJECTED: ghost(연한 스타일) + disabled
+    - APPROVED: disabled 유지(색은 admin 유지하고 싶으면 아래 분기 조정)
+  */}
         <Button
+          variant={(reportState === 'PENDING' || reportState === 'REJECTED') ? 'ghost' : 'admin'}
           size="sm"
-          variant="admin"
-          disabled={!canReport}
-          title={!canReport ? `disabled: fid=${fid}, reported=${reported}, hasContent=${hasContent}` : '신고'}
-          onClick={() => onRequestReport?.(row)}
+          className={reportDisabled ? 'cursor-not-allowed' : ''}
+          onClick={() => onRequestReport(row)}
+          disabled={reportDisabled}
         >
           신고
         </Button>

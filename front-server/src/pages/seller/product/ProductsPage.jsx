@@ -52,6 +52,12 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  // ✅ IME/디바운스용 로컬 입력 상태
+  const [qInput, setQInput] = useState(q || '')
+  const [isComp, setIsComp] = useState(false)
+  useEffect(() => setQInput(q || ''), [q])  // URL q가 바뀌면 입력창도 동기화
+
+
   // 선택 체크박스 (OrdersPage 패턴 동일)
   const [selected, setSelected] = useState(new Set())
   const allVisibleIds = useMemo(() => (rows ?? []).map(r => r?.id), [rows])
@@ -71,10 +77,8 @@ export default function ProductsPage() {
     setSelected(next)
   }
 
-  // 삭제 모달
-  const [delTarget, setDelTarget] = useState(null)
-  const [delCheck, setDelCheck] = useState('')
 
+  // ✅ URL 쿼리 업데이트 유틸 (위로 이동)
   const setParam = (patch) => {
     const next = new URLSearchParams(sp)
     Object.entries(patch).forEach(([k, v]) => {
@@ -84,7 +88,21 @@ export default function ProductsPage() {
     setSp(next, { replace: true })
   }
 
+  // ✅ 디바운스 (조합 중엔 대기, 끝나면 0.4s 뒤 URL 반영)
+  useEffect(() => {
+    if (isComp) return
+    const id = setTimeout(() => {
+      if (qInput !== q) setParam({ q: qInput, page: 0 })
+    }, 400)
+    return () => clearTimeout(id)
+  }, [qInput, isComp, q, setParam])
+
+  // 삭제 모달
+  const [delTarget, setDelTarget] = useState(null)
+  const [delCheck, setDelCheck] = useState('')
+
   const handleReset = () => {
+    setQInput('')                                    // ✅ 입력창도 리셋
     setParam({ status: 'ONSALE', q: '' })
     setSelected(new Set())
   }
@@ -171,19 +189,14 @@ export default function ProductsPage() {
         <TableToolbar
           statusChips={STATUS_ITEMS.map(item => ({ value: item.key, label: item.label }))}
           selectedStatus={status}
-          onSelectStatus={(v) => setParam({ status: v })}
-          searchValue={q}
-          onChangeSearch={(val) => setParam({ q: val })}
-          onSubmitSearch={() => setParam({ q })}
+          onChangeSearch={(v) => {        // ★ 즉시 검색 (IME 조합 중엔 보류)
+            setQInput(v);
+            if (!isComp) setParam({ q: v, page: 0 });   // ← 여기서 바로 반영
+          }}
+          onSubmitSearch={() => setParam({ q: qInput })} // 엔터/버튼은 그대로 즉시 반영                           // ✅ 입력은 로컬 상태로 제어
+          onCompChange={setIsComp}
           right={
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="admin"
-                onClick={handleReset}
-              >
-                초기화
-              </Button>
               <Button
                 size="sm"
                 variant="admin"

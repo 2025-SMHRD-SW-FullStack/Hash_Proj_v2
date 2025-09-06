@@ -3,8 +3,16 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { updateFeedback } from '../../service/feedbackService';
 import { uploadImages } from '../../service/uploadService';
+import { canEditFeedback } from '/src/util/feedbacksStatus';
 
-export default function FeedbackEditModal({ open, onClose, feedback, onUpdated }) {
+export default function FeedbackEditModal({ 
+    open, 
+    onClose, 
+    feedback, 
+    orderItem, 
+    onUpdated 
+  }) {
+    
   const initialImages = useMemo(() => {
     try {
       if (!feedback?.imagesJson) return [];
@@ -18,6 +26,16 @@ export default function FeedbackEditModal({ open, onClose, feedback, onUpdated }
   const [content, setContent] = useState(feedback?.content ?? '');
   const [images, setImages] = useState(initialImages);
   const [submitting, setSubmitting] = useState(false);
+
+// 🔒 7일 제한: 모달 열릴 때 편집 가능 여부 재검사(2차 방어)
+  useEffect(() => {
+    if (open && !canEditFeedback(orderItem, feedback)) {
+      // 필요하면 안내를 띄워도 됨
+      // alert('수정 가능 기간(배송완료 후 7일)이 지났습니다.');
+      onClose?.();
+    }
+  }, [open, orderItem, feedback, onClose]);
+
 
   useEffect(() => {
     setContent(feedback?.content ?? '');
@@ -39,7 +57,7 @@ export default function FeedbackEditModal({ open, onClose, feedback, onUpdated }
     setSubmitting(true);
     try {
       const updated = await updateFeedback(feedback.id, { content, images });
-      onUpdated?.(updated);
+      onUpdated?.(feedback.id, updated);   // ← 여기!
       onClose?.();
     } catch (err) {
       alert(err.message || '수정에 실패했습니다.');

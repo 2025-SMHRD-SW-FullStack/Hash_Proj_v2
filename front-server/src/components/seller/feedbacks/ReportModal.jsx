@@ -90,7 +90,7 @@ export default function ReportModal({
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm">신고가 되었습니다. 슈퍼관리자가 검토 후 승인/거절 처리합니다.</p>
+          <p className="text-sm">신고가 되었습니다.</p>
           <div className="flex justify-end">
             <Button variant="admin" onClick={handleFinish}>확인</Button>
           </div>

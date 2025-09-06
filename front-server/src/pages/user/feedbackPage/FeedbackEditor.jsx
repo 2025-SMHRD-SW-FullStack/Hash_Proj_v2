@@ -80,7 +80,7 @@ const FeedbackEditor = () => {
       .then((data) => {
         if (data?.product) setProduct(data.product);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [productId]);
 
   // 이미지 프리뷰
@@ -152,6 +152,14 @@ const FeedbackEditor = () => {
       setSuccessModalOpen(true);
     } catch (e) {
       console.error("피드백 제출 실패:", e);
+      const status = e?.response?.status;
+      const code = e?.response?.data?.code || e?.response?.data?.error || '';
+      // ✅ 이미 작성된 경우: 에디터에서 만들지 말고 "수정"으로 유도
+      if (status === 409 && /ALREADY_WRITTEN_FOR_PRODUCT/i.test(code)) {
+        alert('이미 작성한 피드백이 있어 수정 화면으로 이동합니다.');
+        navigate('/user/mypage/orders');
+        return;
+      }
       const errorMessage = e?.response?.data?.message || e.message || "알 수 없는 오류가 발생했습니다.";
       alert(`피드백 제출 중 오류가 발생했습니다: ${errorMessage}`);
     } finally {

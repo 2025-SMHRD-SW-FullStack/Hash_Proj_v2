@@ -147,6 +147,14 @@ export default function OrdersPage() {
     setSearchParams(next)
   }
 
+  useEffect(() => {
+    if (isComp) return;                    // 조합 중엔 대기
+    const id = setTimeout(() => {
+      if (qInput !== q) setParam({ q: qInput, page: 0 });
+    }, 400);
+    return () => clearTimeout(id);
+  }, [qInput, isComp, q, setParam]);
+
   const handleReset = () => {
     setParam({ status: 'ALL', q: '' })
     setSelected(new Set())
@@ -626,7 +634,8 @@ const openExchangeDetail = (row) => {
         <TableToolbar
           searchPlaceholder="주문번호/받는이/연락처 검색"
           searchValue={qInput}
-          onChangeSearch={(v) => { setQInput(v); if (isComp) return }}
+          onChangeSearch={setQInput}
+          onCompChange={setIsComp}
           onSubmitSearch={() => setParam({ q: qInput })}
           onReset={handleReset}
           right={

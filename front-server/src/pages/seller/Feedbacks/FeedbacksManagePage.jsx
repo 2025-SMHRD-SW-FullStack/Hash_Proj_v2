@@ -47,12 +47,12 @@ export default function FeedbacksManagePage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const resolveFeedbackId = (r) =>
-  r?.feedbackId ?? r?.id ?? r?.feedback?.id ??
-  (Array.isArray(r?.feedbacks) && r.feedbacks[0]?.id) ??
-  r?.feedback_id ?? null;
+    r?.feedbackId ?? r?.id ?? r?.feedback?.id ??
+    (Array.isArray(r?.feedbacks) && r.feedbacks[0]?.id) ??
+    r?.feedback_id ?? null;
   const [reportOpen, setReportOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
-  
+
 
   const setParam = useCallback((patch) => {
     const next = new URLSearchParams(searchParams);
@@ -88,12 +88,29 @@ export default function FeedbacksManagePage() {
 
   const { counts, filtered } = useFeedbackFilters(rows, statusKey);
 
+  // ✅ q 폴백 텍스트 필터: 주문번호/상품명/구매자/본문에서 부분 일치
+  const filteredByQ = useMemo(() => {
+    const kw = (q || '').trim().toLowerCase();
+    if (!kw) return filtered;
+    return filtered.filter((r) => {
+      const fields = [
+        r?.orderNo ?? r?.order?.orderNo ?? r?.order_no,             // 주문번호 후보
+        r?.productName ?? r?.product?.name ?? r?.product_name,       // 상품명 후보
+        r?.buyerName ?? r?.user?.nickname ?? r?.user?.name ?? r?.buyer, // 구매자/닉네임 후보
+        r?.content ?? r?.feedback?.content,                          // 피드백 본문
+      ];
+      return fields.some(f => String(f ?? '').toLowerCase().includes(kw));
+    });
+  }, [filtered, q]);
+
   const onOpenOrder = (row) => {
     setSelectedRow(row);
     setDetailOpen(true);
   };
 
   const onRequestReport = (row) => {
+    const rs = String(row?.reportStatus ?? row?.report?.status ?? row?.report_status ?? '').toUpperCase();
+    if (['PENDING', 'APPROVED', 'REJECTED'].includes(rs)) return; // 이미 신고 이력 있음 → 모달
     const feedbackId = row?.feedbackId ?? row?.feedback?.id ?? row?.id;
     console.log('[OPEN_REPORT_MODAL]', { feedbackId, row });
     setReportTarget({ ...row, feedbackId });
@@ -142,11 +159,11 @@ export default function FeedbacksManagePage() {
           searchValue={qInput}
           onChangeSearch={setQInput}
           onSubmitSearch={() => setParam({ q: qInput })}
-          right={(
-            <Button size="md" variant="admin" onClick={() => setParam({ q: qInput })}>
-              조회
-            </Button>
-          )}
+          onCompChange={setIsComp}                   // ✅ 추가: 조합 입력 시작/끝 전달
+          onReset={() => {                           // ✅ 선택: 초기화 버튼 동작
+            setQInput('');
+            setParam({ q: '', page: 0 });
+          }}
         />
       </section>
 
@@ -170,17 +187,23 @@ export default function FeedbacksManagePage() {
                 <tr><td colSpan={7} className="py-10 text-center text-gray-500">불러오는 중…</td></tr>
               ) : error ? (
                 <tr><td colSpan={7} className="py-10 text-center text-rose-600">{String(error)}</td></tr>
-              ) : filtered.length === 0 ? (
+              ) : filteredByQ.length === 0 ? (
                 <tr><td colSpan={7} className="py-10 text-center text-gray-500">데이터가 없습니다.</td></tr>
               ) : (
-                filtered.map((row) => (
-                  <FeedbackRow
-                    key={row.id ?? row.feedbackId ?? row.orderItemId}
-                    row={row}
-                    onOpenOrder={onOpenOrder}
-                    onRequestReport={onRequestReport}
-                  />
-                ))
+                filteredByQ.map((row) => {
+                  const rs = String(row?.reportStatus ?? row?.report?.status ?? row?.report_status ?? '').toUpperCase();
+                  const reportDisabled = ['PENDING', 'APPROVED', 'REJECTED'].includes(rs);
+                  return (
+                    <FeedbackRow
+                      key={row.id ?? row.feedbackId ?? row.orderItemId}
+                      row={row}
+                      onOpenOrder={onOpenOrder}
+                      onRequestReport={onRequestReport}
+                      reportDisabled={reportDisabled}
+                      reportState={rs}
+                    />
+                  );
+                })
               )}
             </tbody>
           </table>
