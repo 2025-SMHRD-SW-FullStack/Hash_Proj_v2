@@ -5,9 +5,12 @@ import { formatDateTime, formatPrice } from '../../util/format';
 import { getOrderStatusText } from '../../util/orderUtils';
 import Button from '../common/Button';
 import StatusBadge from '../common/StatusBadge';
+import { feedbackActionState, canEditFeedback } from '/src/util/feedbacksStatus';
 
 // 각 주문 아이템을 표시하는 컴포넌트
-const MyOrderItem = ({ order }) => {
+// ※ onOpenWrite, onOpenEdit 는 부모(MyOrderList)에서 내려줌
+const MyOrderItem = ({ order, onOpenWrite, onOpenEdit }) => {
+
   const navigate = useNavigate();
   // ✅ [수정] 주문 상세 정보를 담을 state와 로딩 상태를 추가합니다.
   const [detail, setDetail] = useState(null);
@@ -70,6 +73,58 @@ const MyOrderItem = ({ order }) => {
           <p className="text-sm text-gray-500">{formatDateTime(order.createdAt)}</p>
           <p className="text-lg font-bold mt-1">{formatPrice(order.payAmount)}원</p>
         </div>
+      </div>
+      {/* ✅ 각 주문 아이템별 '피드백 작성/완료/수정' 액션 영역 */}
+      <div className="mt-4 space-y-3">
+        {(detail.items || []).map((oi) => {
+          // deliveredAt/status가 아이템에 없으면 상세/주문 레벨에서 보강
+          const merged = {
+            ...oi,
+            status: oi.status || detail.status || order.status,
+            deliveredAt: oi.deliveredAt || detail.deliveredAt || order.deliveredAt,
+          };
+          // 이미 작성된 피드백 존재 여부
+          const existingFeedback =
+            oi.feedback || (oi.feedbackId ? { id: oi.feedbackId } : null);
+
+          const { label, sub, state } = feedbackActionState(merged, existingFeedback);
+          const disabled = state !== 'enabled';
+          const showEdit = !!existingFeedback && canEditFeedback(merged, existingFeedback);
+
+          return (
+            <div key={oi.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t pt-3">
+              {/* 좌측: 아이템 요약 (이름/수량 등 — 기존 스타일 유지) */}
+              <div>
+                <div className="font-medium">{oi.productName}</div>
+                {typeof oi.qty === 'number' && (
+                  <div className="text-sm text-gray-600">수량: {oi.qty}개</div>
+                )}
+              </div>
+
+              {/* 우측: 버튼/안내 (요구사항: 이미 작성이면 '피드백 수정'으로 변경) */}
+              <div className="flex items-center gap-2">
+                {existingFeedback ? (
+                  <Button
+                    size="sm"
+                    disabled={!canEditFeedback(merged, existingFeedback)}  // 7일 지나면 비활성
+                    onClick={() => canEditFeedback(merged, existingFeedback) && onOpenEdit?.(existingFeedback, merged)}
+                  >
+                    {canEditFeedback(merged, existingFeedback) ? '피드백 수정' : '피드백 작성 완료'}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    disabled={state !== 'enabled'}
+                    onClick={() => onOpenWrite?.(merged)}
+                  >
+                    피드백 작성
+                  </Button>
+                )}
+                {!!sub && <span className="text-xs text-gray-500">{sub}</span>}
+              </div>
+            </div>
+          );
+        })}
       </div>
       <div className="flex justify-end mt-4">
         <Button

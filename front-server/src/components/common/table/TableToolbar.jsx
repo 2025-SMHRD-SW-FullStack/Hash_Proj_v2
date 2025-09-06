@@ -15,8 +15,19 @@ export default function TableToolbar({
   statusChips = [],
   selectedStatus = null,
   onSelectStatus,
+  onCompChange,            // ✅ 추가: 한글 조합 상태를 부모에 알림(선택)
 }) {
   const isMobile = useMediaQuery({ maxWidth: 767 })
+
+  const handleChange = (e) => {
+    onChangeSearch?.(e.target.value);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.isComposing || e.nativeEvent?.isComposing) return; // ✅ 조합 중 엔터 막기
+    if (e.key === 'Enter') onSubmitSearch?.();
+  };
+
 
   return (
     <div className={`mb-3 flex flex-col gap-2 ${className}`}>
@@ -34,9 +45,14 @@ export default function TableToolbar({
           {/* 2줄: 검색 input + 초기화 */}
           <div className="flex w-full items-center gap-2">
             <input
-              value={searchValue}
-              onChange={(e) => onChangeSearch?.(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && onSubmitSearch?.()}
+              value={searchValue ?? ''}                  // 안전하게 제어형 유지
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              onCompositionStart={() => onCompChange?.(true)}
+              onCompositionEnd={(e) => {
+                onCompChange?.(false);
+                onChangeSearch?.(e.currentTarget.value); // ✅ 최종 문자열만 반영
+              }}
               placeholder={searchPlaceholder}
               className="h-10 flex-1 rounded-lg border px-3 text-sm"
             />
@@ -66,9 +82,14 @@ export default function TableToolbar({
           />
           <div className="flex flex-1 items-center gap-2">
             <input
-              value={searchValue}
-              onChange={(e) => onChangeSearch?.(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && onSubmitSearch?.()}
+              value={searchValue ?? ''}   // ✅ 제어형 보장
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              onCompositionStart={() => onCompChange?.(true)}
+              onCompositionEnd={(e) => {
+                onCompChange?.(false);
+                onChangeSearch?.(e.currentTarget.value);
+              }}
               placeholder={searchPlaceholder}
               className="h-10 flex-1 rounded-lg border px-3 text-sm"
             />

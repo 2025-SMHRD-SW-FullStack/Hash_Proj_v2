@@ -1,6 +1,10 @@
 // /src/util/feedbacksStatus.js
 
-// 날짜 포맷: 'YYYY-MM-DD'만 필요
+// ===== 공통 상수 =====
+/** 수정/신규표시 등 기간 기준(일) — 하드코딩 금지, 한 곳에서만 관리 */
+export const FEEDBACK_EDIT_WINDOW_DAYS = 7;
+
+// ===== 공통 날짜 유틸 =====
 export const fmtDate = (iso) => {
   if (!iso) return '-'
   const d = typeof iso === 'string' ? new Date(iso) : iso
@@ -11,7 +15,19 @@ export const fmtDate = (iso) => {
   return `${y}-${m}-${day}`
 }
 
-// 내부: D-문자열 파싱
+// 'YYYY-MM-DD' 또는 ISO 문자열 모두 안전 파싱 → 자정(로컬)로 정규화
+const toDate0 = (val) => {
+  if (!val) return null
+  const s = String(val)
+  const d = new Date(s.includes('T') ? s : `${s}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return null
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+const addDays = (d, n) => new Date(d.getTime() + n * 86400000)
+const today0 = () => { const t = new Date(); t.setHours(0,0,0,0); return t }
+
+// 내부: D-문자열 파싱 (예: 'D-5' → 5)
 const parseDday = (feedbackDue) => {
   if (!feedbackDue) return null
   const m = /^D-(\d+)$/.exec(String(feedbackDue).trim())
@@ -19,12 +35,67 @@ const parseDday = (feedbackDue) => {
   return parseInt(m[1], 10)
 }
 
-/** 상태 계산
- * row는 주문 그리드 행에 아래 필드 중 일부가 있을 수 있음:
- * - feedbackDue: 'D-5' 같은 문자열
- * - statusText: 주문/배송 상태 원문
- * - feedbackAt: 피드백 작성시각(백엔드에서 아직 제공되지 않을 수 있음 → 없으면 판단 제외)
- * - reportStatus: 'PENDING' | 'APPROVED' | 'REJECTED' (없을 수 있음)
+// ===== 작성/수정 가능 여부 유틸 =====
+/** 배송완료일 기준 수정 가능 마감(자정 기준) */
+export const feedbackDeadline = (deliveredAt) => {
+  const d0 = toDate0(deliveredAt)
+  return d0 ? addDays(d0, FEEDBACK_EDIT_WINDOW_DAYS) : null
+}
+
+/** 오늘이 마감일(포함) 이전인지 */
+export const isWithinEditWindow = (deliveredAt) => {
+  const dl = feedbackDeadline(deliveredAt)
+  if (!dl) return false
+  return today0().getTime() <= dl.getTime()
+}
+
+/**
+ * canWrite: 구매확정(CONFIRMED) + 기간 내 + 아직 작성 없음
+ * orderItem: { status, deliveredAt, ... }
+ * existingFeedback: null | { id: ... }
+ */
+export const canWriteFeedback = (orderItem, existingFeedback) => {
+  if (!orderItem) return false
+  const isConfirmed = orderItem.status === 'CONFIRMED'
+  const periodOK = isWithinEditWindow(orderItem.deliveredAt)
+  const notWritten = !existingFeedback
+  return isConfirmed && periodOK && notWritten
+}
+
+/** canEdit: 기간 내 + 피드백 존재 */
+export const canEditFeedback = (orderItem, existingFeedback) => {
+  if (!orderItem) return false
+  const periodOK = isWithinEditWindow(orderItem.deliveredAt)
+  return Boolean(existingFeedback) && periodOK
+}
+
+/** 버튼/라벨 상태 (주문 상세/목록의 액션 영역에서 사용) */
+export const feedbackActionState = (orderItem, existingFeedback) => {
+  if (existingFeedback) {
+    if (isWithinEditWindow(orderItem?.deliveredAt)) {
+      return { label: '피드백 작성 완료', sub: '수정 가능(7일 내)', state: 'done-editable' }
+    }
+    return { label: '피드백 작성 완료', sub: '수정 기간 만료', state: 'done-locked' }
+  }
+  if (!orderItem) return { label: '피드백 작성', sub: '', state: 'disabled' }
+
+  if (orderItem.status !== 'CONFIRMED') {
+    return { label: '피드백 작성', sub: '구매확정 후 가능', state: 'disabled' }
+  }
+  if (!isWithinEditWindow(orderItem.deliveredAt)) {
+    return { label: '피드백 작성', sub: `작성 가능 기간(${FEEDBACK_EDIT_WINDOW_DAYS}일) 만료`, state: 'disabled' }
+  }
+  return { label: '피드백 작성', sub: '', state: 'enabled' }
+}
+
+// ===== 표 상태 계산 (기존 로직 개선: 7일 상수화/중복 제거) =====
+/**
+ * row 필드 예:
+ * - feedbackDue: 'D-5'
+ * - statusText: 주문/배송 상태 원문(예: '교환...')
+ * - feedbackAt | feedbackCreatedAt | createdAt: 작성시각 후보
+ * - feedbackContent | content: 내용 유무
+ * - reportStatus: 'PENDING' | 'APPROVED' | 'REJECTED'
  */
 export const computeFeedbackState = (row = {}) => {
   // 1) 신고 계열 우선
@@ -39,25 +110,22 @@ export const computeFeedbackState = (row = {}) => {
   }
 
   // 3) 작성 여부 우선 판단
-  //    - 작성시각 후보: feedbackAt(기존 로직 유지) → feedbackCreatedAt → createdAt
-  //    - 내용만 있어도 작성으로 인정
   const writtenAt = row.feedbackAt || row.feedbackCreatedAt || row.createdAt || null
   const hasContent = !!(row?.feedbackContent ?? row?.content)
 
   if (writtenAt || hasContent) {
     if (writtenAt) {
-      const dt = new Date(writtenAt)
-      if (!Number.isNaN(dt.getTime())) {
-        // 3-1) 최근 24시간 이내면 '신규작성' (셀러 메인에서 쓰는 규칙 유지)
-        const diff = Date.now() - dt.getTime()
-        if (diff >= 0 && diff < 24 * 3600 * 1000) {
+      const wt = toDate0(writtenAt)
+      if (wt) {
+        // 3-1) 최근 24시간 이내면 '신규작성'
+        const diffMs = Date.now() - new Date(writtenAt).getTime()
+        if (diffMs >= 0 && diffMs < 24 * 3600 * 1000) {
           return { key: 'NEW', label: '신규작성' }
         }
-        // 3-2) 작성 후 7일(자정 기준)까지는 '작성완료', 그 이후는 '기간만료'
-        const expiry = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate())
-        expiry.setDate(expiry.getDate() + 7)
+        // 3-2) 작성 후 N일(자정 기준)까지는 '작성완료', 이후 '기간만료'
+        const expiry = addDays(wt, FEEDBACK_EDIT_WINDOW_DAYS)
         if (Date.now() < expiry.getTime()) {
-          return { key: 'NEW', label: '작성완료' }  // 스타일은 NEW(초록), 라벨만 변경
+          return { key: 'NEW', label: '작성완료' }  // 스타일 NEW(초록), 라벨만 변경
         }
         return { key: 'EXPIRED', label: '기간만료' }
       }
@@ -67,23 +135,17 @@ export const computeFeedbackState = (row = {}) => {
   }
 
   // 4) 미작성: D-day(feedbackDue='D-5')로 판단
-  const d = (() => {
-    const v = row.feedbackDue
-    if (!v) return null
-    const m = /^D-(\d+)$/.exec(String(v).trim())
-    return m ? parseInt(m[1], 10) : null
-  })()
-
+  const d = parseDday(row.feedbackDue)
   if (typeof d === 'number') {
     if (d >= 0) return { key: 'WAIT', label: `작성대기 (D-${d})` }
     return { key: 'EXPIRED', label: '기간만료' }
   }
 
-  // 5) D-day 없으면 보수적으로 '작성대기' (이전엔 무조건 만료 처리하던 문제 방지)
+  // 5) 정보가 모자라면 보수적으로 '작성대기'
   return { key: 'WAIT', label: '작성대기' }
 }
 
-// 표에서 쓰는 뱃지 클래스와 라벨
+// ===== 표 뱃지 스타일 (기존 유지) =====
 export const statusBadge = (row = {}) => {
   const { key, label } = computeFeedbackState(row)
   const base = 'inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[12px] font-medium'
@@ -94,6 +156,6 @@ export const statusBadge = (row = {}) => {
   else if (key === 'REPORT_PENDING') cls = `${base} bg-violet-50 text-violet-700 ring-1 ring-violet-200`
   else if (key === 'REPORTED') cls = `${base} bg-blue-50 text-blue-700 ring-1 ring-blue-200`
   else if (key === 'REPORT_REJECTED') cls = `${base} bg-gray-100 text-gray-700 ring-1 ring-gray-200`
-  else if (key === 'EXCHANGE') cls = `${base} bg-sky-50 text-sky-700 ring-1 ring-sky-200`
+  else if (key === 'EXCHANGE') cls = `${base} bg-sky-50 text-sky-700 ring-sky-200`
   return { key, label, cls }
 }
