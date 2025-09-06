@@ -17,7 +17,7 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    private final long accessTokenValidityInMillis = 1000L * 60 * 10;           // 10분
+    private final long accessTokenValidityInMillis = 1000L * 60 * 30;           // 30분
     private final long refreshTokenValidityInMillis = 1000L * 60 * 60 * 24 * 14; // 14일
 
     private static final String HEADER = "Authorization";

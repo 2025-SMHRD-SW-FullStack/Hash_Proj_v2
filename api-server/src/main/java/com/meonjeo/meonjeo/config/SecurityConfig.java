@@ -102,6 +102,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/shipping/webhooks/**", "/api/shipping/events").permitAll()
                         .requestMatchers("/api/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/ads/active/**").permitAll() // ✅ 광고 조회 공개
+                        // ✅ 상품 상세의 '피드백 목록 조회'는 비로그인 공개 (보기 전용)
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.HEAD, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/uploads/**").permitAll()

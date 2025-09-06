@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { submitFeedback } from "../../../service/feedbackService";
+import { submitFeedback, getMyFeedbacks, getFeedbackDetail, updateFeedback } from "../../../service/feedbackService";
 import { uploadImages } from "../../../service/uploadService";
 import { getMyPointBalance } from "../../../service/pointService";
 import Button from "../../../components/common/Button";
@@ -17,7 +17,6 @@ import AIChatBox from "../../../components/feedback/AIChatBox";
 
 const MAX_LENGTH = 1000;
 
-// 카테고리 정규화(백엔드/DB에서 오는 값이 영문/별칭/혼합일 때 대비)
 const CATEGORY_ALIASES = {
   electronics: "전자제품",
   appliance: "전자제품",
@@ -40,7 +39,7 @@ function normalizeCategory(raw) {
   for (const k of Object.keys(CATEGORY_ALIASES)) {
     if (low.includes(k)) return CATEGORY_ALIASES[k];
   }
-  return null; // 미매칭 시 가이드 미표시
+  return null;
 }
 
 const FeedbackEditor = () => {
@@ -52,10 +51,14 @@ const FeedbackEditor = () => {
   const type = searchParams.get("type") || "MANUAL";
   const overallScore = searchParams.get("overallScore");
   const scoresJson = searchParams.get("scoresJson");
+  const feedbackIdQ = searchParams.get("feedbackId"); // 'auto' or id
+  const isEdit = Boolean(feedbackIdQ);
 
   const addFeedback = useFeedbackStore((state) => state.addFeedback);
   const setPoints = useAuthStore((state) => state.setPoints);
   const userId = useAuthStore((state) => state.user?.id) || 0;
+
+  const [resolvedFeedbackId, setResolvedFeedbackId] = useState(null);
 
   // 상품/가이드
   const [product, setProduct] = useState(null);
@@ -83,6 +86,43 @@ const FeedbackEditor = () => {
       .catch(() => { });
   }, [productId]);
 
+  // 수정 모드: 내 피드백 자동 로딩
+  useEffect(() => {
+    (async () => {
+      if (!isEdit) return;
+      let fid = feedbackIdQ;
+
+      if (fid === "auto") {
+        try {
+          const page = await getMyFeedbacks();
+          const list = page?.content ?? page?.items ?? [];
+          const mine = list.find(f => String(f?.orderItemId) === String(orderItemId));
+          fid = mine?.id;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      if (!fid) {
+        alert("수정할 피드백을 찾지 못했습니다.");
+        return;
+      }
+      setResolvedFeedbackId(Number(fid));
+
+      try {
+        const detail = await getFeedbackDetail(Number(fid));
+        setManualContent(detail?.content ?? "");
+        try {
+          const imgs = JSON.parse(detail?.imagesJson || "[]");
+          const arr = Array.isArray(imgs) ? imgs : [];
+          setImagePreviews(arr);
+        } catch { /* noop */ }
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, [isEdit, feedbackIdQ, orderItemId]);
+
   // 이미지 프리뷰
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files).slice(0, 5 - selectedFiles.length);
@@ -99,14 +139,16 @@ const FeedbackEditor = () => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
-  // 수기 제출
+  // 수기 제출 / 수정
   const handleSubmit = async () => {
     const finalContent = manualContent;
     if (!finalContent.trim()) {
       alert("피드백 내용을 입력해주세요.");
       return;
     }
-    if (!orderItemId || !productId || !overallScore || !scoresJson) {
+
+    // 작성 모드일 때만 필수 파라미터 체크
+    if (!isEdit && (!orderItemId || !productId || !overallScore || !scoresJson)) {
       alert("필수 정보가 누락되었습니다. (orderItemId, productId, score 등)");
       return;
     }
@@ -116,11 +158,22 @@ const FeedbackEditor = () => {
       // 이미지 업로드
       let uploadedImageUrls = [];
       if (selectedFiles.length > 0) {
-        // 서버의 ImageType이 FEEDBACK이 아닌 경우 프로젝트 설정에 맞춰 변경
         const uploadResults = await uploadImages("FEEDBACK", selectedFiles);
         uploadedImageUrls = uploadResults.map((res) => res.url);
       }
 
+      if (isEdit) {
+        // 새 파일 없으면 기존 프리뷰(기존 이미지 URL들) 유지
+        const imgs = uploadedImageUrls.length ? uploadedImageUrls : imagePreviews;
+        await updateFeedback(Number(resolvedFeedbackId), { content: finalContent, images: imgs });
+        const newTotalBalance = await getMyPointBalance();
+        setPoints(newTotalBalance);
+        setFeedbackResult({ awarded: 0, total: newTotalBalance });
+        setSuccessModalOpen(true);
+        return;
+      }
+
+      // 작성 모드
       const payload = {
         orderItemId: Number(orderItemId),
         type: "MANUAL",
@@ -151,28 +204,26 @@ const FeedbackEditor = () => {
 
       setSuccessModalOpen(true);
     } catch (e) {
-      console.error("피드백 제출 실패:", e);
+      console.error("피드백 제출/수정 실패:", e);
       const status = e?.response?.status;
       const code = e?.response?.data?.code || e?.response?.data?.error || '';
-      // ✅ 이미 작성된 경우: 에디터에서 만들지 말고 "수정"으로 유도
-      if (status === 409 && /ALREADY_WRITTEN_FOR_PRODUCT/i.test(code)) {
+      if (!isEdit && status === 409 && /ALREADY_WRITTEN_FOR_PRODUCT/i.test(code)) {
         alert('이미 작성한 피드백이 있어 수정 화면으로 이동합니다.');
         navigate('/user/mypage/orders');
         return;
       }
       const errorMessage = e?.response?.data?.message || e.message || "알 수 없는 오류가 발생했습니다.";
-      alert(`피드백 제출 중 오류가 발생했습니다: ${errorMessage}`);
+      alert(`처리 중 오류가 발생했습니다: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // AI 게시 성공 콜백(ai-server -> Spring 저장 완료 후)
   const handleAIAccepted = async () => {
     try {
       const newTotal = await getMyPointBalance();
       setPoints(newTotal);
-      setFeedbackResult({ awarded: 500, total: newTotal }); // 서버가 포인트를 명시 안 주면 기본값
+      setFeedbackResult({ awarded: 500, total: newTotal });
     } catch {
       setFeedbackResult((s) => ({ ...s, awarded: s.awarded || 500 }));
     } finally {
@@ -180,7 +231,6 @@ const FeedbackEditor = () => {
     }
   };
 
-  // 렌더링
   return (
     <>
       {type === "AI" ? (
@@ -192,7 +242,6 @@ const FeedbackEditor = () => {
             <div className="text-red-600">유효하지 않은 접근입니다. (로그인/주문항목 확인)</div>
           ) : (
             <div className="h-[75vh] min-h-[600px] border rounded-2xl shadow-lg overflow-hidden">
-              {/* ChatRoom 대신 ai-server 직결 컴포넌트 */}
               <AIChatBox
                 userId={userId}
                 orderItemId={Number(orderItemId)}
@@ -203,12 +252,10 @@ const FeedbackEditor = () => {
           )}
         </div>
       ) : (
-        // 수기 피드백 작성
         <div className="p-8 max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2">수기 피드백 작성</h1>
-          <p className="text-gray-600 mb-8">상품에 대한 솔직한 피드백을 남겨주세요. 포인트가 지급됩니다.</p>
+          <h1 className="text-3xl font-bold mb-2">{isEdit ? "수기 피드백 수정" : "수기 피드백 작성"}</h1>
+          <p className="text-gray-600 mb-8">상품에 대한 솔직한 피드백을 남겨주세요. {isEdit ? "수정 후 저장됩니다." : "포인트가 지급됩니다."}</p>
 
-          {/* 작성 가이드 */}
           {guidelines.length > 0 && (
             <div className="mb-6">
               <h2 className="font-semibold mb-2">작성 가이드</h2>
@@ -274,7 +321,7 @@ const FeedbackEditor = () => {
               disabled={isSubmitting}
               className="px-10 py-4 text-lg font-bold"
             >
-              {isSubmitting ? "제출 중..." : "제출하고 포인트 받기"}
+              {isSubmitting ? (isEdit ? "수정 중..." : "제출 중...") : (isEdit ? "수정 완료" : "제출하고 포인트 받기")}
             </Button>
           </div>
         </div>

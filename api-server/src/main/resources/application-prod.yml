@@ -8,6 +8,12 @@ logging:
     org.springframework.messaging: INFO
     org.springframework.web.socket: INFO
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
 spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL}
