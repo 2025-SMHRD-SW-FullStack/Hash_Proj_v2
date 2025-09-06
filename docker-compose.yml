@@ -25,6 +25,15 @@ services:
       - REDIS_PORT=6379
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
+      - SPRING_DATASOURCE_URL
+      - SPRING_DATASOURCE_USERNAME
+      - SPRING_DATASOURCE_PASSWORD
+      - STORAGE_S3_BUCKET=meonjeo
+      - STORAGE_S3_REGION=kr-standard
+      - STORAGE_S3_ENDPOINT=https://kr.object.ncloudstorage.com
+      - STORAGE_S3_PATH_STYLE=true
+      - STORAGE_S3_PUBLIC_BASE_URL=https://kr.object.ncloudstorage.com/meonjeo
+      - STORAGE_S3_SECRETKEY=ncp_iam_BPKMKR63vHkWdL44Gqf404YiLu6LM71CdH
       - JWT_SECRET
       - SPRING_JPA_HIBERNATE_DDL_AUTO=none
     depends_on:
@@ -43,12 +52,12 @@ services:
       - API_SERVER_URL=http://api-server:8080
       - FEEDBACK_CREATE_PATH=/api/feedbacks
       - FEEDBACK_ELIGIBILITY_PATH=/api/feedbacks/eligibility
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - JWT_SECRET=${JWT_SECRET}
+      - OPENAI_API_KEY
+      - JWT_SECRET
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=0
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL
     depends_on:
       - redis
     networks:

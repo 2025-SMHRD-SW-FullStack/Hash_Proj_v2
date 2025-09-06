@@ -80,13 +80,6 @@ ai:
 #     accessKey: ${STORAGE_S3_ACCESS_KEY}
 #     secretKey: ${STORAGE_S3_SECRET_KEY}
 
-phone:
-  short-token:
-    validity-seconds: 600
-  code:
-    ttl-seconds: 180
-    max-attempts: 5
-
 COOLSMS_API_KEY: ${COOLSMS_API_KEY}
 COOLSMS_API_SECRET: ${COOLSMS_API_SECRET}
 COOLSMS_FROM_NUMBER: ${COOLSMS_FROM_NUMBER}
