@@ -3,7 +3,7 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { updateFeedback } from '../../service/feedbackService';
 import { uploadImages } from '../../service/uploadService';
-import { canEditFeedback } from '/src/util/feedbacksStatus';
+import { canEditFeedback } from '../../util/feedbacksStatus';
 
 export default function FeedbackEditModal({ 
     open, 
