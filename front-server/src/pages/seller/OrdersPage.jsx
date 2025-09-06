@@ -1,7 +1,7 @@
 // src/pages/seller/OrdersPage.jsx
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useMediaQuery } from 'react-responsive' // ⬅️ 추가
+import { useMediaQuery } from 'react-responsive'
 import StatusChips from '../../components/seller/StatusChips'
 import Button from '../../components/common/Button'
 import Modal from '../../components/common/Modal'
@@ -15,14 +15,17 @@ import BaseTable from '../../components/common/table/BaseTable'
 import TableToolbar from '../../components/common/table/TableToolbar'
 import { useOrderStore } from '../../stores/orderStore'
 import { getExchangeStatusLabel } from '../../constants/exchange'
-import CategorySelect from '../../components/common/CategorySelect' // ⬅️ 추가
+import CategorySelect from '../../components/common/CategorySelect'
+
+// ⬇️ 추가: 상세 API 호출을 위해 axios 인스턴스
+import api from '../../config/axiosInstance'
 
 // ---- UI 토큰
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 
 // 서버 enum에 맞춘 칩 (백엔드 OrderStatus와 일치)
 const ORDER_STATUS_CHIPS = [
-  { value: 'ALL', label: '전체' }, // ⬅️ key -> value 로 변경
+  { value: 'ALL', label: '전체' },
   { value: 'PAID', label: '신규주문' },
   { value: 'READY', label: '배송준비중' },
   { value: 'IN_TRANSIT', label: '배송중' },
@@ -49,6 +52,32 @@ function getSelectedCartIdsFromQuery() {
 // 리스트 높이(10행 기준)
 const SCROLL_Y = 48 * 10 + 44 // rowH * 10 + headerH
 
+// ⬇️ 추가: 교환 상세용 상수/헬퍼 (CSS 영향 없음)
+const EXCHANGE_BASE = '/api/seller/exchanges';
+
+const pick = (v, ...paths) => {
+  for (const p of paths) {
+    const val = p.split('.').reduce((a, c) => (a ? a[c] : undefined), v);
+    if (val !== undefined && val !== null && val !== '') return val;
+  }
+  return '';
+};
+
+const formatDateTime = (s) => {
+  if (!s) return '';
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return String(s);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const makeAddress = (detail) => {
+  const a1 = pick(detail, 'order.address1', 'order.addr1', 'order.addressLine1');
+  const a2 = pick(detail, 'order.address2', 'order.addr2', 'order.addressLine2');
+  const zip = pick(detail, 'order.zipcode', 'order.zonecode', 'order.postalCode');
+  return [a1, a2, zip ? `(${zip})` : ''].filter(Boolean).join(' ');
+};
+
 export default function OrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const status = (searchParams.get('status') || 'ALL').toUpperCase()
@@ -62,7 +91,7 @@ export default function OrdersPage() {
     []
   );
 
-  // 모바일 화면 여부 확인 (최대 767px) ⬅️ 추가
+  // 모바일 여부
   const isMobile = useMediaQuery({ maxWidth: 767 })
 
   // 전역 주문 상태
@@ -93,6 +122,10 @@ export default function OrdersPage() {
   // 상세 모달
   const [detailOpen, setDetailOpen] = useState(false)
   const [detailRow, setDetailRow] = useState(null)
+
+  // 교환 상세 모달(이미지/사유)
+  const [exDetailOpen, setExDetailOpen] = useState(false)
+  const [exDetail, setExDetail] = useState(null)
 
   // 운송장 입력/편집
   const [shipForm, setShipForm] = useState({}) // { [orderId]: { carrierCode, trackingNo } }
@@ -139,36 +172,70 @@ export default function OrdersPage() {
     setShipForm(next)
   }
 
-  // 데이터 로드 (주문/교환 분기 1회)
+    // 교환 사진 URL 정규화 (문자/배열/객체 대응 + 상대경로 보정)
+  const normalizeImageUrls = (val) => {
+    if (!val) return [];
+    let arr = val;
+    if (typeof val === 'string') {
+      try {
+        const parsed = JSON.parse(val);
+        arr = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        arr = [val];
+      }
+    }
+    if (!Array.isArray(arr)) arr = [arr];
+    const fileBase =
+      (import.meta.env?.VITE_FILE_BASE_URL || '') ||
+      (new URL(api.defaults?.baseURL ?? '', window.location.origin)).origin;
+    const base = String(fileBase).replace(/\/$/, '');
+    return arr
+      .map((it) => (typeof it === 'string' ? it : (it?.imageUrl || it?.url || it?.path)))
+      .filter(Boolean)
+      .map((u) => /^(https?:|data:|blob:)/.test(u) ? u : (u.startsWith('/') ? (base + u) : u));
+  };
+
+// 주문번호 클릭 → 교환 상세 모달 열기
+const openExchangeDetail = (row) => {
+  const photos = normalizeImageUrls(row.photos || row.images || row.photoUrls);
+  setExDetail({ ...row, photos });
+  setExDetailOpen(true);
+};
+
+  // 데이터 로드
   const load = useCallback(async () => {
     setLoading(true); setError(null)
     try {
       if (isExchange) {
-        // ✅ /pending 은 Swagger상 파라미터 없음. 그대로 호출
-        const raw = await fetchPendingExchanges()
-        // 형태 안전화(배열/페이지형 대응)
-        const list = Array.isArray(raw?.content) ? raw.content
-          : Array.isArray(raw) ? raw
-            : Array.isArray(raw?.list) ? raw.list
-              : []
-        // 🔍 디버깅용(필요 시만 확인)
-        console.debug('[exchanges/pending] raw:', raw)
+      // 1) 기본 목록
+      const raw = await fetchPendingExchanges();
+      const list = Array.isArray(raw?.content) ? raw.content
+        : Array.isArray(raw) ? raw
+        : Array.isArray(raw?.list) ? raw.list
+        : [];
 
-        const mapped = list.map(v => ({
-          id: v.id,
-          orderItemId: v.orderItemId,
-          productId: v.productId,
-          qty: v.qty,
-          status: v.status,
-          reasonText: v.reasonText,
-          createdAt: v.createdAt,
-          // 필요 시 나중에 enrichment(상품명/신청자)로 보강
-        }))
-        setRows(mapped)
+      // 2) 서버가 확장해 준 필드들을 그대로 매핑 (추가 호출 없음)
+      const mapped = list.map((v) => ({
+        id: v.id,
+        orderId: v.orderId ?? null,
+        orderUid: v.orderUid || '-',                                         // 주문번호
+        productName: v.productName || '-',                                   // 상품명
+        receiver: v.receiver || '-',                                         // 받는이
+        address: [v.addr1, v.addr2, v.zipcode ? `(${v.zipcode})` : '']       // 주소
+                  .filter(Boolean).join(' ') || '-',
+        phone: v.phone || '-',                                               // 연락처
+        deliveryMemo: v.requestMemo || '-',                                  // 배송요청사항
+        status: v.status || 'REQUESTED',                                     // 상태
+        reasonText: v.reasonText || '-',                                     // 사유
+        createdAt: v.createdAt || null,                                      // 신청일 (원시값, 아래 컬럼에서 format)
+        photos: v.photos || v.images || v.photoUrls || [],                   // 사진 보존
+      }));
+
+        setRows(mapped);
         setPagination(p => ({ ...p, page: 0, size: 200, totalElements: mapped.length, totalPages: 1 }))
         setSelected(new Set())
       } else {
-        // 백엔드 API와 일치하는 상태값 사용
+        // 주문 목록
         const apiStatus =
           (status === 'ALL' || status === 'EXCHANGE')
             ? undefined
@@ -182,16 +249,11 @@ export default function OrdersPage() {
           size: 200
         })
 
-        // 백엔드 응답 구조에 맞춰 처리
         const arr = response?.content || response?.items || []
         setRows(arr)
 
-        // 전역 상태에도 저장 (메인페이지 동기화용)
-        if (arr.length > 0) {
-          setGlobalOrders(arr)
-        }
+        if (arr.length > 0) setGlobalOrders(arr)
 
-        // 페이지네이션 정보 설정
         if (response?.page) {
           setPagination({
             page: response.page.number || 0,
@@ -202,7 +264,6 @@ export default function OrdersPage() {
         }
 
         prefillShipFormFromRows(arr)
-        // 선택 유지(페이지에 존재하는 것만)
         setSelected(prev => {
           const visible = new Set(arr.map(r => r?.id))
           const next = new Set()
@@ -228,35 +289,30 @@ export default function OrdersPage() {
       (gridRow.courierCode && { code: gridRow.courierCode }) ||
       resolveCarrier(gridRow.courierName || '')
 
-    // ✅ 원본 gridRow를 먼저 펼치고(모든 키 보존), 필요한 표기용 키만 덮어쓰기
     const normalized = {
-      // 주문번호 계열(모달에서도 toOrderNo가 주워가도록)
       orderUid: gridRow.orderUid ?? gridRow.orderNo ?? gridRow.orderId ?? gridRow.id,
       orderNo: gridRow.orderNo ?? undefined,
       orderId: gridRow.orderId ?? undefined,
 
-      // 날짜/상태(원본도 보존하고, 사람이 읽기 쉬운 statusText를 함께 둠)
       orderedAt: gridRow.orderDate ?? gridRow.orderedAt ?? gridRow.createdAt ?? null,
       status: mapStatusForDisplay(gridRow.status) || gridRow.statusText || gridRow.status || '',
       statusText: mapStatusForDisplay(gridRow.status) || gridRow.statusText || gridRow.status || '',
       deliveredAt: gridRow.deliveredAt ?? gridRow.deliveryCompletedAt ?? null,
       feedbackAt: gridRow.feedbackAt ?? gridRow.feedbackWrittenAt ?? null,
 
-      // 배송/수취/상품
       carrierCode: gridRow.carrierCode ?? gridRow.courierCode ?? carrier?.code ?? '',
       trackingNo: gridRow.trackingNo ?? gridRow.trackingNumber ?? '',
-      buyer: gridRow.receiver ?? gridRow.buyerName ?? gridRow.buyer?.name ?? '',
+      buyer: gridRow.receiver ?? gridRow.buyer?.name ?? '',
       phone: gridRow.phone ?? gridRow.receiverPhone ?? gridRow.buyer?.phone ?? '',
       address: gridRow.address ?? gridRow.deliveryAddress ?? gridRow.address1 ?? '',
       product: gridRow.productName ?? gridRow.product?.name ?? gridRow.product ?? '',
 
-      // 기타 표시용
       price: amt,
       requestNote: gridRow.requestMemo ?? gridRow.requestNote ?? gridRow.deliveryMemo ?? '',
       feedbackText: gridRow.feedbackText ?? gridRow.feedback ?? '',
     }
 
-    setDetailRow({ ...gridRow, ...normalized }) // ← 원본 + 보정치 동시 전달
+    setDetailRow({ ...gridRow, ...normalized })
     setDetailOpen(true)
   }
 
@@ -288,10 +344,9 @@ export default function OrdersPage() {
         trackingNo: f.trackingNo,
       })
 
-      // 성공 시 로컬 상태 업데이트
       const updatedOrder = {
         ...row,
-        status: 'READY', // 배송준비중으로 상태 변경
+        status: 'READY',
         statusText: '배송준비중',
         courierName: carrierLabel(f.carrierCode),
         courierCode: f.carrierCode,
@@ -302,14 +357,12 @@ export default function OrdersPage() {
         r.id === id ? updatedOrder : r
       ))
 
-      // 전역 상태도 업데이트 (메인페이지 동기화)
       updateGlobalOrderStatus(id, 'READY', {
         courierName: carrierLabel(f.carrierCode),
         courierCode: f.carrierCode,
         trackingNo: f.trackingNo
       })
 
-      // 강제 새로고침 플래그 설정하여 SellerMain에서 즉시 반영
       setGlobalForceRefresh(true)
 
       cancelEdit(id)
@@ -345,7 +398,7 @@ export default function OrdersPage() {
     })
   }
 
-  // 주문 컬럼
+  // 주문 컬럼 (원본 유지)
   const orderColumns = useMemo(() => ([
     {
       key: 'orderNo',
@@ -463,12 +516,42 @@ export default function OrdersPage() {
     },
   ]), [editing, shipForm])
 
-  // 교환 컬럼
+  // 교환 행/모달 동시 패치 (즉시 반영)
+  const patchExchangeRow = useCallback((id, patch) => {
+    setRows(prev => prev.map(r => (r?.id === id ? { ...r, ...patch } : r)));
+    setExDetail(prev => (prev && prev.id === id ? { ...prev, ...patch } : prev));
+  }, []);
+
+  // pending 목록에서 행 제거(승인/반려/발송/완료 등)
+  const removeExchangeRow = useCallback((id) => {
+    setRows(prev => prev.filter(r => r?.id !== id));
+    setExDetail(prev => (prev && prev.id === id ? null : prev));
+    setExDetailOpen(prev => (prev && exDetail?.id === id ? false : prev));
+  }, [exDetail]);
+
+  // ⬇️ 교환 컬럼 (요청한 9개 필드 + 작업 버튼)
   const exchangeColumns = useMemo(() => ([
-    { key: 'id', header: '교환ID', width: 90 },
-    { key: 'orderItemId', header: '주문아이템', width: 120 },
-    { key: 'productId', header: '상품ID', width: 120 },
-    { key: 'qty', header: '수량', width: 80 },
+    {
+      key: 'orderUid',
+      header: '주문번호',
+      width: 140,
+      render: (r) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-auto p-0 text-blue-600 hover:underline"
+          onClick={(e) => { e.stopPropagation(); openExchangeDetail(r) }}
+        >
+          {r.orderUid || '-'}
+        </Button>
+      ),
+    },
+    { key: 'productName',  header: '상품명',        width: 220 },
+    { key: 'receiver',     header: '받는이',        width: 120 },
+    { key: 'address',      header: '주소',          width: 300 },
+    { key: 'phone',        header: '연락처',        width: 130 },
+    { key: 'deliveryMemo', header: '배송요청사항',  width: 220,
+      render: (r) => (r?.deliveryMemo ?? '') || '-' },
     {
       key: 'status',
       header: '상태',
@@ -479,43 +562,63 @@ export default function OrdersPage() {
         </span>
       )
     },
-    { key: 'reasonText', header: '사유', width: 300, className: 'text-left' },
+    { key: 'reasonText',   header: '사유',          width: 300, className: 'text-left' },
     {
       key: 'createdAt', header: '신청일', width: 160,
-      render: r => (r.createdAt || '').toString().slice(0, 16).replace('T', ' ')
+      render: r => formatDateTime(r.createdAt)
     },
     {
-      key: 'actions', header: '작업', width: 240,
-      render: r => (
+      key: 'actions',
+      header: '작업',
+      width: 240,
+      render: (r) => (
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="whiteBlack" onClick={(e) => {
-            e.stopPropagation(); (async () => {
-              const reason = window.prompt('반려 사유를 입력하세요.')
-              if (!reason) return
-              // ✅ 서버 바디 표준화: { reason }
-              await rejectExchange(r.id, { reason })
-              alert('반려 처리되었습니다.')
+          {/* 반려 */}
+          <Button
+            variant="danger"   // Button.jsx의 빨강 스타일
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              (async () => {
+                const reason = window.prompt('반려 사유를 입력하세요.');
+                if (!reason) return;
+                await rejectExchange(r.id, { reason });
+                patchExchangeRow(r.id, { status: 'REJECTED', reasonText: reason });
+                if (r.orderId) updateGlobalOrderStatus(r.orderId, 'DELIVERED');
+                alert('반려 처리되었습니다.');
+                removeExchangeRow(r.id);
+                setGlobalForceRefresh(true);
+                // load();
+              })();
+            }}
+          >
+            반려
+          </Button>
 
-              // 전역 상태 강제 새로고침
-              setGlobalForceRefresh(true)
-              load()
-            })()
-          }}>반려</Button>
-          <Button size="sm" variant="admin" onClick={(e) => {
-            e.stopPropagation(); (async () => {
-              await approveExchange(r.id)
-              alert('승인되었습니다. 발송 등록을 진행하세요.')
-
-              // 전역 상태 강제 새로고침
-              setGlobalForceRefresh(true)
-              setShipTarget(r)
-              load()
-            })()
-          }}>승인</Button>
-          <Button size="sm" onClick={(e) => { e.stopPropagation(); setShipTarget(r) }}>발송등록</Button>
+          {/* 운송장등록 */}
+          <Button
+            variant="primary" size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              (async () => {
+                try {
+                  // 1) 아직 신청이면 먼저 승인 (서버에 빈 JSON 본문 필수)
+                  if (r.status === 'REQUESTED') {
+                    await approveExchange(r.id, {});               // ⬅️ 서버 승인(DB 변경)
+                    patchExchangeRow(r.id, { status: 'APPROVED' }); // UI 즉시 반영
+                    if (r.orderId) updateGlobalOrderStatus(r.orderId, 'READY'); // 주문 탭도 '배송준비중'
+                  }
+                  // 2) 운송장 등록 모달 열기
+                  setShipTarget({ ...r, status: 'APPROVED' });
+                } catch (err) {
+                  alert(err?.response?.data?.message || err?.message || '승인 처리 중 오류');
+                }
+              })();
+            }}
+          >운송장등록</Button>
         </div>
-      )
-    },
+      ),
+    }
   ]), [load, setGlobalForceRefresh])
 
   const selectedStatusItem = useMemo(() => {
@@ -590,22 +693,85 @@ export default function OrdersPage() {
         {detailRow ? <OrderDetailContent row={detailRow} /> : <div className="p-4">불러오는 중…</div>}
       </Modal>
 
+      {/* 교환 상세 모달 (이미지 + 사유) */}
+      <Modal isOpen={exDetailOpen} onClose={() => setExDetailOpen(false)} title="교환 상세">
+        {!exDetail ? (
+          <div className="p-4">불러오는 중…</div>
+        ) : (
+          <div className="p-4 space-y-4">
+            {/* 상단 기본 정보 */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="mb-1 text-sm text-gray-500">주문번호</div>
+                <div className="rounded-lg border p-3">{exDetail.orderUid || '-'}</div>
+              </div>
+              <div>
+                <div className="mb-1 text-sm text-gray-500">상품명</div>
+                <div className="rounded-lg border p-3">{exDetail.productName || '-'}</div>
+              </div>
+              <div>
+                <div className="mb-1 text-sm text-gray-500">받는이</div>
+                <div className="rounded-lg border p-3">{exDetail.receiver || '-'}</div>
+              </div>
+              <div>
+                <div className="mb-1 text-sm text-gray-500">연락처</div>
+                <div className="rounded-lg border p-3">{exDetail.phone || '-'}</div>
+              </div>
+              <div className="col-span-2">
+                <div className="mb-1 text-sm text-gray-500">주소</div>
+                <div className="rounded-lg border p-3">{exDetail.address || '-'}</div>
+              </div>
+              <div className="col-span-2">
+                <div className="mb-1 text-sm text-gray-500">배송요청사항</div>
+                <div className="rounded-lg border p-3">{exDetail.deliveryMemo || '-'}</div>
+              </div>
+              <div>
+                <div className="mb-1 text-sm text-gray-500">상태</div>
+                <div className="rounded-lg border p-3">{getExchangeStatusLabel(exDetail.status) || '-'}</div>
+              </div>
+              <div>
+                <div className="mb-1 text-sm text-gray-500">신청일</div>
+                <div className="rounded-lg border p-3">{formatDateTime(exDetail.createdAt) || '-'}</div>
+              </div>
+            </div>
+
+            {/* 교환 사유 */}
+            <div>
+              <div className="mb-1 text-sm text-gray-500">교환 사유</div>
+              <div className="rounded-lg border p-3 whitespace-pre-wrap">{exDetail.reasonText || '-'}</div>
+            </div>
+
+            {/* 이미지 갤러리 */}
+            <div>
+              <div className="mb-1 text-sm text-gray-500">첨부 이미지</div>
+              {Array.isArray(exDetail.photos) && exDetail.photos.length > 0 ? (
+                <div className="grid grid-cols-3 gap-3">
+                  {exDetail.photos.map((src, i) => (
+                    <img key={i} src={src} alt={`ex-photo-${i}`} className="h-24 w-24 rounded-lg border object-cover" />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg border p-3 text-gray-500">이미지가 없습니다.</div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* 교환 발송 등록 모달 */}
       <ExchangeShipDialog
         open={!!shipTarget}
         onClose={() => setShipTarget(null)}
         onSubmit={async ({ courierCode, trackingNumber }) => {
           if (!shipTarget) return
-          // ✅ 파라미터 호환(백엔드가 carrier/invoiceNo를 기대해도 안전)
           await shipExchange(
             shipTarget.id,
             { courierCode, trackingNumber, carrier: courierCode, invoiceNo: trackingNumber }
           )
+          patchExchangeRow(shipTarget.id, { status: 'REPLACEMENT_SHIPPED' });
+          removeExchangeRow(shipTarget.id);
           alert('교환 발송이 등록되었습니다.')
-
-          // 전역 상태 강제 새로고침
           setGlobalForceRefresh(true)
-
           setShipTarget(null)
           load()
         }}

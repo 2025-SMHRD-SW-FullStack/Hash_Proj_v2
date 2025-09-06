@@ -29,4 +29,7 @@ public class ChatRoom {
     private LocalDateTime createdAt;
     @UpdateTimestamp @Column(name="updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "last_product_id")
+    private Long lastProductId;
 }

@@ -6,7 +6,8 @@ public enum ImageType {
     PRODUCT_THUMB("product/thumb"),
     PRODUCT_CONTENT("product/content"),
     AD("ad"),
-    FEEDBACK("feedback"); // ✅ 추가
+    FEEDBACK("feedback"),
+    CHAT("chat");
 
     private final String subdir;
     ImageType(String subdir){ this.subdir = subdir; }

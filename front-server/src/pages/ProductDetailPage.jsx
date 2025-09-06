@@ -83,13 +83,19 @@ const ProductDetailPage = () => {
 
   // 총 금액
   const totalPrice = useMemo(() => {
-    if (!productData) return 0;
-    const itemsTotal = selectedItems.reduce((total, currentItem) => {
-      const variant = productData.variants.find(v => v.id === parseInt(currentItem.variantId));
-      const itemPrice = (productData.product.salePrice + (variant?.addPrice || 0)) * currentItem.quantity;
-      return total + itemPrice;
+    if (!productData || selectedItems.length === 0) return 0;
+    const { product } = productData;
+    const unit =
+      (product?.salePrice ?? 0) > 0 ? (product.salePrice ?? 0) : (product?.basePrice ?? 0);
+
+    const itemsTotal = selectedItems.reduce((sum, it) => {
+      const variant = productData.variants.find(v => v.id === Number(it.variantId));
+      const add = variant?.addPrice ?? 0;
+      const qty = it?.quantity ?? 1;
+      return sum + (unit + add) * qty;
     }, 0);
-    return itemsTotal > 0 ? itemsTotal + deliverFee : 0;
+
+    return itemsTotal + deliverFee; // 항목이 있으면 배송비 포함
   }, [selectedItems, productData, deliverFee]);
 
   // --- 데이터 로딩 ---
@@ -218,7 +224,17 @@ const ProductDetailPage = () => {
     try {
       setChatLoading(true);
       const room = await findOrCreateRoomByProduct(Number(productId));
-      navigate(`/user/chat/rooms/${room.roomId}`);
+      const p = productData?.product ?? {};
+      // 제품 요약정보를 state로 전달 → 채팅 헤더에서 즉시 표시
+      navigate(`/user/chat/rooms/${room.roomId}`, {
+        state: {
+          product: {
+            id: Number(productId),
+            name: p.name,
+            imageUrl: p.thumbnailUrl
+          }
+        }
+      });
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || '채팅방 생성 중 오류가 발생했습니다.';
       alert(msg);
@@ -265,29 +281,26 @@ const ProductDetailPage = () => {
       setSelectedItems(prev => [...prev, { variantId: String(selectedVariantId), quantity: 1 }]);
     };
 
-    const handleQuantityChange = (variantId, amount) => {
-      setSelectedItems(prev =>
-        prev
-          .map(item =>
-            item.variantId === variantId
-              ? { ...item, quantity: Math.max(1, item.quantity + amount) }
-              : item
-          )
-      );
-    };
-
     const handleQuantityInputChange = (variantId, value) => {
       const quantity = parseInt(value, 10);
       setSelectedItems(prev =>
         prev.map(item =>
-          item.variantId === variantId
-            ? { ...item, quantity: isNaN(quantity) || quantity < 1 ? 1 : quantity }
-            : item
+          item.variantId === variantId ? { ...item, quantity: isNaN(quantity) || quantity < 1 ? 1 : quantity } : item
         )
       );
     };
 
-    const handleRemoveItem = (variantId) => {
+    const handleQuantityChange = (variantId, amount) => {
+      setSelectedItems(prev =>
+        prev.map(item =>
+          item.variantId === variantId
+            ? { ...item, quantity: Math.max(1, item.quantity + amount) }
+            : item
+        ).filter(item => item.quantity > 0)
+      );
+    };
+
+    const handleRemoveItem = variantId => {
       setSelectedItems(prev => prev.filter(item => item.variantId !== variantId));
     };
 
@@ -355,7 +368,16 @@ const ProductDetailPage = () => {
                       type="number"
                       min={1}
                       value={item.quantity}
-                      onChange={(e) => handleQuantityInputChange(item.variantId, e.target.value)}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value);
+                        if (!isNaN(value) && value > 0) {
+                          setSelectedItems(prev =>
+                            prev.map(si =>
+                              si.variantId === item.variantId ? { ...si, quantity: value } : si
+                            )
+                          );
+                        }
+                      }}
                       className="w-14 text-center text-base font-semibold border border-gray-300 rounded-md focus:ring-1 focus:ring-primary focus:outline-none"
                     />
                     <Icon
@@ -442,9 +464,8 @@ const ProductDetailPage = () => {
           </div>
 
           <div
-            className={`w-full overflow-hidden transition-all duration-500 ease-in-out ${
-              isDescriptionExpanded ? 'max-h-full' : 'max-h-96'
-            }`}
+            className={`w-full overflow-hidden transition-all duration-500 ease-in-out ${isDescriptionExpanded ? 'max-h-full' : 'max-h-96'
+              }`}
           >
             <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: product.detailHtml }} />
           </div>

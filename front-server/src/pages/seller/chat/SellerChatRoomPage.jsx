@@ -9,7 +9,7 @@ export default function SellerChatRoomPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl p-4">
-      <ChatRoom roomId={valid ? rid : undefined} onClose={() => navigate(-1)} />
+      <ChatRoom role="seller" roomId={valid ? rid : undefined} onClose={() => navigate(-1)} />
     </div>
   )
 }

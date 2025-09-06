@@ -2,6 +2,7 @@ package com.meonjeo.meonjeo.exchange;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.meonjeo.meonjeo.common.OrderStatus;
 import com.meonjeo.meonjeo.exchange.dto.ExchangeCreateRequest;
 import com.meonjeo.meonjeo.exchange.dto.ExchangeDecisionRequest;
 import com.meonjeo.meonjeo.exchange.dto.ExchangeResponse;
@@ -23,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.meonjeo.meonjeo.exchange.ExchangeStatus.*;
 
@@ -104,6 +104,8 @@ public class ExchangeService {
         }
 
         exchangeRepo.save(ex);
+        // ⬇️ 주문 상태: 교환요청
+        item.getOrder().setStatus(OrderStatus.EXCHANGE);
         return toDto(ex);
     }
 
@@ -126,6 +128,8 @@ public class ExchangeService {
 
         ex.setApprovedVariant(target);
         ex.setStatus(APPROVED);
+        // ⬇️ 주문 상태: 배송준비중
+        ex.getOrderItem().getOrder().setStatus(OrderStatus.READY);
         return toDto(ex);
     }
 
@@ -139,6 +143,12 @@ public class ExchangeService {
         }
         ex.setRejectReason(req.reason());
         ex.setStatus(ExchangeStatus.REJECTED);
+        // 주문 상태: 교환거절
+        var order = ex.getOrderItem().getOrder();
+        order.setStatus(OrderStatus.DELIVERED);
+        if (order.getDeliveredAt() == null) {
+            order.setDeliveredAt(LocalDateTime.now());
+        }
         return toDto(ex);
     }
 
@@ -159,6 +169,8 @@ public class ExchangeService {
 
         ex.setReplacementShipmentId(shipmentId);
         ex.setStatus(REPLACEMENT_SHIPPED);
+        // 주문 상태: 배송준비중(멱등 보강, 이미 READY면 유지)
+        ex.getOrderItem().getOrder().setStatus(OrderStatus.READY);
         return toDto(ex);
     }
 
@@ -169,6 +181,11 @@ public class ExchangeService {
                 .orElseThrow(() -> new IllegalArgumentException("EXCHANGE_NOT_FOUND"));
         if (ex.getStatus() == REPLACEMENT_SHIPPED) {
             ex.setStatus(REPLACEMENT_DELIVERED);
+            var order = ex.getOrderItem().getOrder();
+            if (order.getDeliveredAt() == null) {
+                order.setDeliveredAt(LocalDateTime.now());
+            }
+            order.setStatus(OrderStatus.DELIVERED);
         }
     }
 
@@ -183,21 +200,50 @@ public class ExchangeService {
 
     // 컨트롤러에서 호출할 수 있도록 public
     public ExchangeResponse toDto(OrderExchange e) {
+        var item    = e.getOrderItem();
+        var order   = (item != null) ? item.getOrder() : null;
+        var product = e.getProduct();
+
+        Long   orderId     = (order != null) ? order.getId()         : null;
+        String orderUid    = (order != null) ? order.getOrderUid()   : null;
+
+        // ⬇ Order 실제 필드명에 정확히 맞춤(네가 준 Order.java 기준)
+        String receiver    = (order != null) ? order.getReceiver()   : null;
+        String phone       = (order != null) ? order.getPhone()      : null;
+        String addr1       = (order != null) ? order.getAddr1()      : null;
+        String addr2       = (order != null) ? order.getAddr2()      : null;
+        String zipcode     = (order != null) ? order.getZipcode()    : null;
+        String requestMemo = (order != null) ? order.getRequestMemo(): null;
+
+        Long   productId   = (product != null) ? product.getId()     : null;
+        String productName = (product != null) ? product.getName()   : null;
+
         return new ExchangeResponse(
                 e.getId(),
-                e.getOrderItem().getId(),
-                e.getProduct().getId(),
-                e.getOriginalVariant().getId(),
+                item != null ? item.getId() : null,
+                productId,
+                e.getOriginalVariant() != null ? e.getOriginalVariant().getId() : null,
                 e.getRequestedVariant() != null ? e.getRequestedVariant().getId() : null,
-                e.getApprovedVariant() != null ? e.getApprovedVariant().getId() : null,
+                e.getApprovedVariant()  != null ? e.getApprovedVariant().getId()  : null,
                 e.getQty(),
                 e.getStatus().name(),
                 e.getReasonText(),
                 e.getRejectReason(),
-                e.getPhotos().stream().map(OrderExchangePhoto::getImageUrl).collect(Collectors.toList()),
+                e.getPhotos().stream().map(OrderExchangePhoto::getImageUrl).toList(),
                 e.getWindowEndsAt().toString(),
                 e.getReplacementShipmentId(),
-                e.getCreatedAt().toString()
+                e.getCreatedAt().toString(),
+
+                // ↓ 추가 필드들
+                orderId,
+                orderUid,
+                receiver,
+                phone,
+                addr1,
+                addr2,
+                zipcode,
+                requestMemo,
+                productName
         );
     }
 
