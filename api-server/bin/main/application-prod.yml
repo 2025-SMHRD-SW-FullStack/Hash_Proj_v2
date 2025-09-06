@@ -9,6 +9,8 @@ spring:
     host: ${REDIS_HOST}
     port: ${REDIS_PORT}
     database: ${REDIS_DB}
+    repositories:
+      enabled: false
 
   jpa:
     hibernate:
