@@ -16,6 +16,9 @@ const MyOrderItem = ({ order, onOpenWrite, onOpenEdit }) => {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // ✅ [추가] 아이템별 "내 피드백" 로컬 상태(작성/수정 성공 시 즉시 토글)
+  const [fbMap, setFbMap] = useState({}); // { [itemId]: feedbackObj }
+
   // ✅ [수정] order.id가 변경될 때마다 해당 주문의 상세 정보를 불러옵니다.
   useEffect(() => {
     const fetchOrderDetail = async () => {
@@ -32,6 +35,18 @@ const MyOrderItem = ({ order, onOpenWrite, onOpenEdit }) => {
     };
     fetchOrderDetail();
   }, [order.id]);
+
+  // ✅ 상세 로드 시 초기 피드백 맵 구성(서버에 이미 있는 건 반영)
+  useEffect(() => {
+    if (!detail?.items) return;
+    const next = {};
+    detail.items.forEach((oi) => {
+      const f = oi.feedback || (oi.feedbackId ? { id: oi.feedbackId } : null);
+      if (f) next[oi.id] = f;
+    });
+    setFbMap(next);
+  }, [detail?.items]);
+
 
   // ✅ [수정] detail state가 로드되기 전에는 로딩 상태를 표시합니다.
   if (loading) {
@@ -83,9 +98,9 @@ const MyOrderItem = ({ order, onOpenWrite, onOpenEdit }) => {
             status: oi.status || detail.status || order.status,
             deliveredAt: oi.deliveredAt || detail.deliveredAt || order.deliveredAt,
           };
-          // 이미 작성된 피드백 존재 여부
+          // ✅ 로컬 상태(fbMap)가 우선 → 작성/수정 직후 즉시 반영
           const existingFeedback =
-            oi.feedback || (oi.feedbackId ? { id: oi.feedbackId } : null);
+            presenceByProduct?.[oi.productId] || fbMap[oi.id] || oi.feedback || (oi.feedbackId ? { id: oi.feedbackId } : null);
 
           const { label, sub, state } = feedbackActionState(merged, existingFeedback);
           const disabled = state !== 'enabled';
@@ -107,7 +122,9 @@ const MyOrderItem = ({ order, onOpenWrite, onOpenEdit }) => {
                   <Button
                     size="sm"
                     disabled={!canEditFeedback(merged, existingFeedback)}  // 7일 지나면 비활성
-                    onClick={() => canEditFeedback(merged, existingFeedback) && onOpenEdit?.(existingFeedback, merged)}
+                    onClick={() => canEdit && onOpenEdit?.(existingFeedback, merged, {
+                      onUpdated: (updated) => setFbMap(prev => ({ ...prev, [merged.id]: updated })),
+                    })}
                   >
                     {canEditFeedback(merged, existingFeedback) ? '피드백 수정' : '피드백 작성 완료'}
                   </Button>
@@ -115,7 +132,9 @@ const MyOrderItem = ({ order, onOpenWrite, onOpenEdit }) => {
                   <Button
                     size="sm"
                     disabled={state !== 'enabled'}
-                    onClick={() => onOpenWrite?.(merged)}
+                    onClick={() => onOpenWrite?.(merged, {
+                      onCreated: (created) => setFbMap(prev => ({ ...prev, [merged.id]: created })),
+                    })}
                   >
                     피드백 작성
                   </Button>

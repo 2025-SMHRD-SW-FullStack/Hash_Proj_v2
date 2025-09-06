@@ -1,4 +1,3 @@
-// src/pages/user/myPage/OrderCard.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -47,7 +46,7 @@ function GroupedProductRow({ product }) {
             e.target.onerror = null; // 무한 루프 방지
             e.target.src = TestImg;
           }} 
-          />
+        />
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-base mb-2">{product.productName}</div>
@@ -72,6 +71,9 @@ const OrderCard = ({ order, onChanged }) => {
   const [openExchangeModal, setOpenExchangeModal] = useState(false);
   const [existingExchangeIds, setExistingExchangeIds] = useState(new Set());
 
+  // 7일 윈도우 상태
+  const [confirmWindow, setConfirmWindow] = useState({ open: true, remainingSeconds: null });
+
   const firstItem = useMemo(() => detail?.items?.[0], [detail]);
 
   useEffect(() => {
@@ -85,17 +87,34 @@ const OrderCard = ({ order, onChanged }) => {
     })();
   }, [order.id]);
 
+  // 구매확정/피드백 가능 윈도우 조회
+  useEffect(() => {
+    if (["DELIVERED", "CONFIRMED"].includes(order.status)) {
+      (async () => {
+        try {
+          const w = await getConfirmWindow(order.id);
+          setConfirmWindow({ open: Boolean(w?.open), remainingSeconds: w?.remainingSeconds ?? null });
+        } catch {
+          setConfirmWindow({ open: false, remainingSeconds: null });
+        }
+      })();
+    } else {
+      setConfirmWindow({ open: true, remainingSeconds: null });
+    }
+  }, [order.id, order.status]);
+
+  // 피드백 존재 여부: 반드시 orderItemId로 체크
   useEffect(() => {
     if (firstItem && ["DELIVERED", "CONFIRMED"].includes(order.status)) {
-        (async () => {
-          try {
-            const isDone = await checkFeedbackDone(firstItem.productId);
-            setFeedbackDone(isDone);
-          } catch (e) {
-            console.error(e);
-            setFeedbackDone(false);
-          }
-        })();
+      (async () => {
+        try {
+          const isDone = await checkFeedbackDone(firstItem.id);
+          setFeedbackDone(isDone);
+        } catch (e) {
+          console.error(e);
+          setFeedbackDone(false);
+        }
+      })();
     } else {
       setFeedbackDone(false);
     }
@@ -121,16 +140,14 @@ const OrderCard = ({ order, onChanged }) => {
 
   const handleOpenExchangeModal = async () => {
     try {
-      // ✅ [복구] 정상적으로 교환 내역을 조회합니다.
       const exchanges = await getMyExchanges();
       const itemIdsInOrder = new Set(items.map(it => it.id));
       const requestedIds = new Set(
         exchanges.filter(ex => itemIdsInOrder.has(ex.orderItemId)).map(ex => ex.orderItemId)
       );
       setExistingExchangeIds(requestedIds);
-      setOpenExchangeModal(true); // 성공 시 모달 열기
+      setOpenExchangeModal(true);
     } catch (e) {
-      // ✅ [개선] 만약의 서버 오류 발생 시 사용자에게 알림
       alert('교환 내역을 조회하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       console.error("교환 내역 조회 실패:", e);
     }
@@ -165,6 +182,9 @@ const OrderCard = ({ order, onChanged }) => {
     return Object.values(groups);
   }, [items]);
 
+  // 윈도우 기반 상태
+  const withinWindow = Boolean(confirmWindow?.open);
+
   return (
     <div className="rounded-2xl border border-gray-200 p-4 bg-white">
       <div className="flex flex-col md:flex-row md:justify-between gap-1 md:gap-0 text-sm text-gray-600">
@@ -190,25 +210,53 @@ const OrderCard = ({ order, onChanged }) => {
         </div>
         
         <div className="flex flex-wrap gap-2 mt-2">
-            {order.status === "PENDING" && <Button className="flex-1">다시 주문하기</Button>}
-            {order.status === "READY" && <Button className="flex-1" variant="unselected" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
-            {order.status === "IN_TRANSIT" && <Button className="flex-1" variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
-            
-            {order.status === "DELIVERED" && !feedbackDone && (
-              <>
-                <Button className="flex-1" onClick={() => setOpenConfirm(true)}>구매확정 후 피드백 작성</Button>
-                <Button className="flex-1" variant="signUp" onClick={handleOpenExchangeModal}>교환 신청</Button>
-              </>
-            )}
+          {order.status === "PENDING" && <Button className="flex-1">다시 주문하기</Button>}
+          {order.status === "READY" && <Button className="flex-1" variant="unselected" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
+          {order.status === "IN_TRANSIT" && <Button className="flex-1" variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
+          
+          {/* 배송완료: 구매확정 유도 */}
+          {order.status === "DELIVERED" && !feedbackDone && (
+            <>
+              <Button className="flex-1" onClick={() => setOpenConfirm(true)}>구매확정 후 피드백 작성</Button>
+              <Button className="flex-1" variant="signUp" onClick={handleOpenExchangeModal}>교환 신청</Button>
+            </>
+          )}
 
-            {order.status === "CONFIRMED" && !feedbackDone &&
-                <Button className="flex-1" onClick={() => navi(`/user/survey?orderItemId=${firstItem.id}&productId=${firstItem.productId}`)}>피드백 작성</Button>
-            }
-            {feedbackDone &&
-                <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">피드백 작성 완료</span>
-            }
+          {/* 구매확정 + 기간/완료 상태에 따른 버튼/라벨 */}
+          {order.status === "CONFIRMED" && !feedbackDone && withinWindow && firstItem && (
+            <Button
+              className="flex-1"
+              onClick={() => navi(`/user/survey?orderId=${order.id}`)} // ✅ 다건 주문 대응 (설문에서 선택)
+            >
+              피드백 작성
+            </Button>
+          )}
 
-            <Button className="flex-1" variant="unselected" onClick={() => navi(`/user/mypage/orders/${order.id}`)}>주문 상세 보기</Button>
+          {feedbackDone && withinWindow && firstItem && (
+            <Button
+              className="flex-1"
+              variant="unselected"
+              onClick={() =>
+                navi(`/user/feedback/editor?orderItemId=${firstItem.id}&productId=${firstItem.productId}&feedbackId=auto&type=MANUAL`)
+              }
+            >
+              피드백 수정
+            </Button>
+          )}
+
+          {feedbackDone && !withinWindow && (
+            <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">
+              피드백 작성 완료
+            </span>
+          )}
+
+          {!feedbackDone && !withinWindow && (
+            <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-rose-100 text-rose-700">
+              기간 만료
+            </span>
+          )}
+
+          <Button className="flex-1" variant="unselected" onClick={() => navi(`/user/mypage/orders/${order.id}`)}>주문 상세 보기</Button>
         </div>
       </div>
 
@@ -230,7 +278,8 @@ const OrderCard = ({ order, onChanged }) => {
             setOpenConfirm(false);
             onChanged?.();
             if (firstItem) {
-              navi(`/user/survey?orderItemId=${firstItem.id}&productId=${firstItem.productId}`);
+              // 구매확정 후 설문 진입은 다건 대응 위해 orderId만 전달
+              navi(`/user/survey?orderId=${order.id}`);
             }
           } catch (e) {
             const msg = e?.message || e?.error || (typeof e === "string" ? e : "구매확정 중 오류가 발생했습니다.");

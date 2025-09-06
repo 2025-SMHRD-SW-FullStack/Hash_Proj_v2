@@ -21,7 +21,7 @@ import FeedbackItem from '../components/product/FeedbackItem.jsx';
 import CategorySelect from '../components/common/CategorySelect.jsx';
 
 const ProductDetailPage = () => {
-  const { productId } = useParams();
+  const { productId: paramId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoggedIn, isAdmin } = useAuthStore();
@@ -31,6 +31,10 @@ const ProductDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
+
+  // 라우트 파라미터(or 로딩된 데이터)에서 안전한 pid 보장
+  const pid = useMemo(() => Number(paramId || productData?.product?.id || 0), [paramId, productData]);
+
 
   // 배송비 (무형자산 0원)
   const deliverFee = useMemo(() => {
@@ -103,7 +107,7 @@ const ProductDetailPage = () => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const data = await getProductDetail(productId);
+        const data = await getProductDetail(paramId);
         setProductData(data);
       } catch (err) {
         setError(err.message || '상품 정보를 불러오는 데 실패했습니다.');
@@ -112,8 +116,12 @@ const ProductDetailPage = () => {
       }
     };
     fetchProduct();
-    loadFeedbacks(0, true);
-  }, [productId]);
+  }, [paramId]);
+
+  // pid 확정되면 피드백 로드 (잘못된 /products/?page… 방지)
+  useEffect(() => {
+    if (pid) loadFeedbacks(0, true);
+  }, [pid]);
 
   // 단일상품일 때 기본 선택
   useEffect(() => {
@@ -129,7 +137,7 @@ const ProductDetailPage = () => {
     if (feedbacksLoading && !reset) return;
     setFeedbacksLoading(true);
     try {
-      const data = await getProductFeedbacks(productId, { page, size: 5 });
+      const data = await getProductFeedbacks(pid, { page, size: 5 });
       setFeedbacks(prev => reset ? data.content : [...prev, ...data.content]);
       setHasMoreFeedbacks(!data.last);
       setFeedbackPage(page);
@@ -144,7 +152,7 @@ const ProductDetailPage = () => {
   const handleProductDelete = async () => {
     if (window.confirm('이 상품을 정말 삭제하시겠습니까? 복구할 수 없습니다.')) {
       try {
-        await adminDeleteProduct(productId);
+        await adminDeleteProduct(pid);
         alert('상품이 삭제되었습니다.');
         navigate('/products');
       } catch (error) {
@@ -173,7 +181,7 @@ const ProductDetailPage = () => {
       return;
     }
     const itemsQuery = selectedItems.map(item => `${item.variantId}_${item.quantity}`).join(',');
-    navigate(`/user/order?productId=${productId}&items=${itemsQuery}`);
+    navigate(`/user/order?productId=${pid}&items=${itemsQuery}`);
   };
 
   const handleAddToCart = async () => {
@@ -223,13 +231,13 @@ const ProductDetailPage = () => {
 
     try {
       setChatLoading(true);
-      const room = await findOrCreateRoomByProduct(Number(productId));
+      const room = await findOrCreateRoomByProduct(pid);
       const p = productData?.product ?? {};
       // 제품 요약정보를 state로 전달 → 채팅 헤더에서 즉시 표시
       navigate(`/user/chat/rooms/${room.roomId}`, {
         state: {
           product: {
-            id: Number(productId),
+            id: pid,
             name: p.name,
             imageUrl: p.thumbnailUrl
           }
@@ -511,7 +519,7 @@ const ProductDetailPage = () => {
           </div>
         </div>
 
-        <aside className="hidden lg:block sticky top-8 w/full lg:w-1/4 h-[calc(100vh-4rem)] flex-shrink-0 p-4 lg:p-8">
+        <aside className="hidden lg:block sticky top-8 w-full lg:w-1/4 h-[calc(100vh-4rem)] flex-shrink-0 p-4 lg:p-8">
           <PurchaseOptionsPanel />
         </aside>
       </div>

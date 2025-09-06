@@ -258,14 +258,14 @@ export async function fetchFeedbackStats({ productId, from, to }) {
   return {
     summary: sum
       ? {
-          totalCount: normalizedTotal,
-          averageOverallScore:
-            typeof sum.averageOverallScore === 'number'
-              ? sum.averageOverallScore
-              : toNum(sum.avg) || toNum(sum.average) || 0,
-          from: sum.from,
-          to: sum.to,
-        }
+        totalCount: normalizedTotal,
+        averageOverallScore:
+          typeof sum.averageOverallScore === 'number'
+            ? sum.averageOverallScore
+            : toNum(sum.avg) || toNum(sum.average) || 0,
+        from: sum.from,
+        to: sum.to,
+      }
       : null,
     stars: {
       overallAvg:
@@ -288,8 +288,13 @@ export const getMyFeedbacks = () =>
 export const getFeedbackDetail = (feedbackId) =>
   api.get(`/api/feedbacks/${feedbackId}`).then(r => r.data)
 
-export const getProductFeedbacks = (productId, { page = 0, size = 5 } = {}) =>
-  api.get(`/api/feedbacks/products/${productId}`, { params: { page, size } }).then(r => r.data)
+export const getProductFeedbacks = (productId, { page = 0, size = 5 } = {}) => {
+  const id = Number(productId)
+  if (!id) throw new Error('getProductFeedbacks: valid productId is required')
+  return api
+    .get(`/api/feedbacks/products/${id}`, { params: { page, size } })
+    .then(r => r.data)
+}
 
 /** 관리자 삭제 */
 export async function deleteFeedbackByAdmin(feedbackId) {
