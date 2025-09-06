@@ -69,9 +69,9 @@ const MyPageLayout = () => {
   const selectedCategory = categorySelectItems.find(item => item.value === selectedNav.to);
 
   return (
-    <div className="flex flex-col md:flex-row bg-gray-50 min-h-screen p-4 md:p-8 md:gap-8">
+    <div className="flex h-full flex-col md:flex-row bg-gray-50 p-4 md:p-8 md:gap-8">
       {/* 왼쪽 사이드바 */}
-      <aside className="w-full md:w-1/5 flex-shrink-0">
+      <aside className="h-full w-full md:w-1/5 flex-shrink-0">
         <div className="flex flex-col p-4 border rounded-lg shadow bg-white">
           {/* 프로필 이미지와 닉네임 */}
           <div className="flex items-center w-full md:flex-col">

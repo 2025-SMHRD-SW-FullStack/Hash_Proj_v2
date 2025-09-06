@@ -56,8 +56,6 @@ const AppRouter = () => {
         {/* 비회원 전용 */}
         {!isLoggedIn && <Route path="/public/*" element={<PublicRouter />} />}
 
-        {/* 로그인 사용자 전용 */}
-        {isLoggedIn && <Route path="/user/*" element={<UserRouter />} />}
       </Route>
 
       {/* 셀러(중간관리자) */}

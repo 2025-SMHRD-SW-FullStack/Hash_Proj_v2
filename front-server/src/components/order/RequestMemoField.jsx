@@ -32,7 +32,7 @@ export default function RequestMemoField({ value = "", onChange, maxLen = 200, c
 
 
   return (
-    <section className={`mb-6 border-b w-full ${className}`}>
+    <section className={`border-b w-full ${className}`}>
       <h2 className="text-lg font-semibold mb-3">배송 요청사항</h2>
 
         <CategorySelect

@@ -382,130 +382,134 @@ const OrderPage = () => {
   if (!isCartMode && (!productInfo || orderItems.length === 0)) return <div className="px-4 py-6">주문 상품 정보가 없습니다.</div>;
 
   return (
-    <div className="w-full max-x-5xl mx-auto flex flex-col">
-      <section className='w-full max-w-5xl mx-auto'>
-        <h1 className="text-3xl font-bold text-gray-900 px-4">주문/결제</h1>
+    <div className='bg-gray-50'>
+      <div className="flex flex-col min-h-screen w-full max-w-4xl mx-auto ">
+        <div className="px-4 sm:px-0 flex-1 flex flex-col justify-stretch ">
+            <h1 className="pt-2 sm:pt-0 sm:my-8 text-2xl font-bold text-gray-900 ">주문/결제</h1>
+          <section className='flex flex-col w-full max-w-5xl mx-auto gap-5  '>
 
-        {/* 배송지 */}
-        <div className="flex-1 px-4">
-          <h2 className="text-xl font-semibold mb-4">배송지</h2>
-          {addrLoading ? (
-            <div className="text-sm text-gray-500">주소 불러오는 중…</div>
-          ) : selectedAddress ? (
-            <div className="rounded-2xl border p-5 bg-white shadow-md flex justify-between items-start">
-              <div>
-                <div className="font-medium text-gray-800">{selectedAddress.receiver} ({selectedAddress.phone})</div>
-                <div className="text-sm text-gray-500 mt-1">
-                  ({selectedAddress.zipcode}) {selectedAddress.addr1} {selectedAddress.addr2}
-                </div>
-                {selectedAddress.primaryAddress && (
-                  <span className="mt-2 inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                    기본 배송지
-                  </span>
-                )}
-              </div>
-              <Button variant="outline" onClick={() => setAddrModalOpen(true)}>
-                변경
-              </Button>
-            </div>
-          ) : (
-            <Button variant="primary" onClick={() => setAddrModalOpen(true)}>
-              배송지 추가
-            </Button>
-          )}
-        </div>
-
-        {/* 요청사항 */}
-        <RequestMemoField value={requestMemo} onChange={setRequestMemo} className='px-4 w-full' />
-
-        {/* 주문 상품 정보 */}
-        <section className="w-full mb-6 px-4">
-          <h2 className="text-xl font-semibold mb-4">주문 상품 정보</h2>
-          {isCartMode ? (
-            cartLoading ? (
-              <div className="text-sm text-gray-500">장바구니 불러오는 중…</div>
-            ) : cartData.items.length === 0 ? (
-              <div className="text-sm text-gray-600">장바구니가 비어 있습니다.</div>
-            ) : (
-              <div className="space-y-4">
-                {cartData.items.map(row => (
-                  <div key={row.cartItemId} className="rounded-xl border p-4 bg-white shadow-sm flex justify-between items-center">
-                    <div>
-                      <div className="font-medium text-gray-800">{row.productName}</div>
-                      <div className="text-xs text-gray-500 break-words">{row.optionsJson}</div>
-                      {!row.inStock && (
-                        <div className="text-xs text-red-600 mt-1">품절 또는 재고 부족</div>
-                      )}
+            {/* 배송지 */}
+            <div className="flex-1">
+              <h2 className="my-0 text-xl font-semibold mb-4">배송지</h2>
+              {addrLoading ? (
+                <div className="text-sm text-gray-500">주소 불러오는 중…</div>
+              ) : selectedAddress ? (
+                <div className="rounded-2xl border p-5 bg-white shadow-md flex justify-between items-center">
+                  <div>
+                    <div className="font-medium text-gray-800">{selectedAddress.receiver} ({selectedAddress.phone})</div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      ({selectedAddress.zipcode}) {selectedAddress.addr1} {selectedAddress.addr2}
                     </div>
-                    <div className="text-sm font-medium text-gray-700">수량: {row.qty}개</div>
-                  </div>
-                ))}
-              </div>
-            )
-          ) : (
-            <div className="flex flex-col md:flex-row items-start gap-6">
-              
-              <div className="flex-1 space-y-2 ">
-                {orderItems.map((item) => (
-                  <div key={item.variant.id} className="flex p-3 rounded-lg border shadow-md flex-row gap-2 ">
-                    {productInfo?.thumbnailUrl && (
-                      <img
-                        src={productInfo.thumbnailUrl || TestImg}
-                        alt="상품 썸네일"
-                        className="w-36 h-36 object-cover rounded-lg flex-shrink-0"
-                        onError={(e) => { e.target.onerror = null; e.target.src = TestImg; }}
-                      />
+                    {selectedAddress.primaryAddress && (
+                      <span className="mt-2 inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                        기본 배송지
+                      </span>
                     )}
-                    <div>
-                      <p className="text-lg font-semibold text-gray-800">{productInfo?.name}</p>
-                      <p className="text-sm text-gray-700">
-                        선택 옵션: {item.variant.option1Value}
-                        {item.variant.option2Value && ` / ${item.variant.option2Value}`}
-                      </p>
-                      <p className="text-sm text-gray-700">수량: {item.quantity}개</p>
-                    </div>
                   </div>
-                ))}
+                  <Button variant="outline" onClick={() => setAddrModalOpen(true)} >
+                    변경
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="primary" onClick={() => setAddrModalOpen(true)}>
+                  배송지 추가
+                </Button>
+              )}
+            </div>
+
+            {/* 요청사항 */}
+            <RequestMemoField value={requestMemo} onChange={setRequestMemo} className='w-full' />
+
+            {/* 주문 상품 정보 */}
+            <section className="w-full mb-6">
+              <h2 className="text-xl font-semibold mb-4">주문 상품 정보</h2>
+              {isCartMode ? (
+                cartLoading ? (
+                  <div className="text-sm text-gray-500">장바구니 불러오는 중…</div>
+                ) : cartData.items.length === 0 ? (
+                  <div className="text-sm text-gray-600">장바구니가 비어 있습니다.</div>
+                ) : (
+                  <div className="space-y-4">
+                    {cartData.items.map(row => (
+                      <div key={row.cartItemId} className="rounded-xl border p-4 bg-white shadow-sm flex justify-between items-center">
+                        <div>
+                          <div className="font-medium text-gray-800">{row.productName}</div>
+                          <div className="text-xs text-gray-500 break-words">{row.optionsJson}</div>
+                          {!row.inStock && (
+                            <div className="text-xs text-red-600 mt-1">품절 또는 재고 부족</div>
+                          )}
+                        </div>
+                        <div className="text-sm font-medium text-gray-700">수량: {row.qty}개</div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : (
+                <div className="flex-1 flex flex-col md:flex-row gap-6 bg-white">
+                  <div className='flex-1 justify-center'>
+                    {orderItems.map((item) => (
+                      <div key={item.variant.id} className="flex items-center p-3 rounded-lg border shadow-md flex-row gap-2 ">
+                        {productInfo?.thumbnailUrl && (
+                          <img
+                            src={productInfo.thumbnailUrl || TestImg}
+                            alt="상품 썸네일"
+                            className="w-20 h-20 sm:w-32 sm:h-32 object-cover rounded-lg flex-shrink-0"
+                            onError={(e) => { e.target.onerror = null; e.target.src = TestImg; }}
+                          />
+                        )}
+                        <div className='flex flex-col space-y-2'>
+                          <span className="text-lg font-semibold text-gray-800">{productInfo?.name}</span>
+                          <span className="text-sm text-gray-700">
+                            선택 옵션: {item.variant.option1Value}
+                            {item.variant.option2Value && ` / ${item.variant.option2Value}`}
+                          </span>
+                          <span className="text-sm text-gray-700">수량: {item.quantity}개</span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+              )}
+              
+            </section>
+          </section>
+        </div>
+
+        {/* 주문 요약 / 결제 footer */}
+        <div className="sticky bottom-0 bg-white border-t shadow-[0_-4px_10px_rgba(0,0,0,0.1)] p-4 md:p-6 z-10">
+          <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+            <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto sm:items-center ">
+              <div className="flex justify-between min-w-[120px]">
+                <span>상품 합계&ensp;</span>
+                <b>{isCartMode ? (cartData.totalPrice ?? 0).toLocaleString() : (singleItemsSum ?? 0).toLocaleString()}원</b>
+              </div>
+              <div className="flex justify-between min-w-[100px]">
+                <span>배송비&ensp;</span>
+                <b>{deliveryFee.toLocaleString()}원</b>
+              </div>
+              <div className="flex justify-between min-w-[120px]">
+                <span className='text-xl'>결제 금액&ensp;</span>
+                <b className="text-primary text-xl font-semibold">{finalPayAmount.toLocaleString()}원</b>
               </div>
             </div>
-          )}
-        </section>
-      </section>
-
-      {/* 주문 요약 / 결제 footer */}
-      <div className="sticky bottom-0 bg-white border-t shadow-[0_-4px_10px_rgba(0,0,0,0.1)] p-4 md:p-6 z-10">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-          <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-            <div className="flex justify-between min-w-[120px]">
-              <span>상품 합계</span>
-              <b>{isCartMode ? (cartData.totalPrice ?? 0).toLocaleString() : (singleItemsSum ?? 0).toLocaleString()}원</b>
-            </div>
-            <div className="flex justify-between min-w-[100px]">
-              <span>배송비</span>
-              <b>{deliveryFee.toLocaleString()}원</b>
-            </div>
-            <div className="flex justify-between min-w-[120px]">
-              <span>결제 금액</span>
-              <b className="font-semibold">{finalPayAmount.toLocaleString()}원</b>
-            </div>
+            <Button
+              disabled={busy || !selectedAddress || (isCartMode && cartLoading)}
+              onClick={handlePay}
+              className="w-full md:w-48 py-3 md:py-4 text-lg font-semibold"
+            >
+              {busy ? '처리 중…' : '결제하기'}
+            </Button>
           </div>
-          <Button
-            disabled={busy || !selectedAddress || (isCartMode && cartLoading)}
-            onClick={handlePay}
-            className="w-full md:w-48 py-3 md:py-4 text-lg font-semibold"
-          >
-            {busy ? '처리 중…' : '결제하기'}
-          </Button>
+          {uiMsg && <div className="mt-3 text-sm text-red-700">{uiMsg}</div>}
         </div>
-        {uiMsg && <div className="mt-3 text-sm text-red-700">{uiMsg}</div>}
-      </div>
 
-      <AddressBookModal
-        open={addrModalOpen}
-        onClose={() => setAddrModalOpen(false)}
-        defaultAddressId={selectedAddress?.id}
-        onSelected={(addr) => setSelectedAddress(addr)}
-      />
+        <AddressBookModal
+          open={addrModalOpen}
+          onClose={() => setAddrModalOpen(false)}
+          defaultAddressId={selectedAddress?.id}
+          onSelected={(addr) => setSelectedAddress(addr)}
+        />
+      </div>
     </div>
   );
 };

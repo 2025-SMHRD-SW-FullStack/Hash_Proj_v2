@@ -152,10 +152,6 @@ const MemberManagementPage = () => {
                     setRoleFilter('ALL');
                     setPage(0);
                 }}
-                // --- 필터(토글) 기능에 필요한 props 전달 ---
-                statusChips={ROLE_STATUS_CHIPS}
-                selectedStatus={roleFilter}
-                onSelectStatus={setRoleFilter} // 필터 상태 변경 함수 전달
             />
 
             <BaseTable

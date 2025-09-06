@@ -41,12 +41,12 @@ const Footer = () => {
             <p>
               <span>유준선</span> | <span>유은지</span> | <span>김형진</span> | <span>공소정</span>
             </p>
-            <p>
+            {/* <p>
               문의:{" "}
-              {/* <a href="mailto:문의메일" className="hover:underline">
+              <a href="mailto:문의메일" className="hover:underline">
                 나중에 추가하기
-              </a> */}
-            </p>
+              </a>
+            </p> */}
           </div>
           <p className="text-center md:text-right text-gray-400">
             © {new Date().getFullYear()} Meonjeosseobom. All rights reserved.

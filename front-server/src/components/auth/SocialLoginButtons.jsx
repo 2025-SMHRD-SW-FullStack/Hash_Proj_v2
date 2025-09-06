@@ -9,11 +9,6 @@ const SocialLoginButtons = ({ title = '' }) => {
 
   return (
     <div className={styles.wrapper}>
-      <div className={styles.textWrapper}>
-        <hr className={styles.line}></hr>
-        <p>{title}</p>
-        <hr className={styles.line}></hr>
-      </div>
       <div className={styles.snsImgBox}>
         <a href={`${backendUrl}/oauth2/authorization/google`}>
           <img src={googleImg} alt="구글 로그인" />
