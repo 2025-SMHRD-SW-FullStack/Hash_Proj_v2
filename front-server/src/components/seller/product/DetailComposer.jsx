@@ -233,7 +233,7 @@ export default function DetailComposer({ initialBlocks = [], onChange, editorCla
           onChange={handleFiles}
           className="hidden"
         />
-        <Button type="button" size="sm" variant="signUp" className='text-sub' onClick={pickImage}>
+        <Button type="button" size="sm" variant="signUp" onClick={pickImage}>
           이미지 추가
         </Button>
       </div>

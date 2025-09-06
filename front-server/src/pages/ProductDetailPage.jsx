@@ -317,16 +317,14 @@ const ProductDetailPage = () => {
           ) : (
             <span className="text-2xl text-primary font-bold">{product.basePrice.toLocaleString()}원</span>
           )}
-          <div className="text-sm text-gray-600 space-y-1 mt-2">
-            <p>배송비: {deliverFee > 0 ? `${deliverFee.toLocaleString()}원` : '무료'}</p>
-            <p>지급 포인트: {product.feedbackPoint.toLocaleString()}P</p>
-            <p>모집 기간: ~{product.saleEndAt?.slice(0, 10)}</p>
+          <div className="flex flex-col text-sm text-gray-600 space-y-1 mt-2">
+            <span>배송비: {deliverFee > 0 ? `${deliverFee.toLocaleString()}원` : '무료'}</span>
+            <span>지급 포인트: {product.feedbackPoint.toLocaleString()}P</span>
+            <span>모집 기간: ~{product.saleEndAt?.slice(0, 10)}</span>
           </div>
         </div>
 
-        <hr className="my-4 border-t border-gray-200" />
-
-        <div className="pr-1 space-y-3">
+        <div className="mt-4 space-y-3">
           {useOptions && (
             <div className="mb-4">
               <CategorySelect
@@ -396,9 +394,9 @@ const ProductDetailPage = () => {
           })}
         </div>
 
-        <div className="pt-4 border-t border-gray-200 mt-auto">
+        <div className="border-t border-gray-200 mt-auto">
           {selectedItems.length > 0 && (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between py-3">
               <span className="text-lg font-bold">총 상품 금액</span>
               <span className="text-2xl font-bold text-primary">{totalPrice.toLocaleString()}원</span>
             </div>
@@ -416,7 +414,7 @@ const ProductDetailPage = () => {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              className="flex-1"
+              className="hidden sm:flex flex-1"
               onClick={handleAddToCart}
               disabled={isSoldOut || hasAnySelectedSoldOut}
               aria-disabled={isSoldOut || hasAnySelectedSoldOut}
@@ -427,7 +425,7 @@ const ProductDetailPage = () => {
             </Button>
             <Button 
               variant="outline" 
-              className="flex-1" 
+              className="hidden sm:flex flex-1" 
               onClick={handleOpenChat} 
               disabled={chatLoading}
               leftIcon={<img src={MessageIcon} className='!w-5 !h-5'/>}

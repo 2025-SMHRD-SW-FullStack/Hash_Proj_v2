@@ -382,12 +382,12 @@ const OrderPage = () => {
   if (!isCartMode && (!productInfo || orderItems.length === 0)) return <div className="px-4 py-6">주문 상품 정보가 없습니다.</div>;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="w-full max-x-5xl mx-auto flex flex-col">
       <section className='w-full max-w-5xl mx-auto'>
         <h1 className="text-3xl font-bold text-gray-900 px-4">주문/결제</h1>
 
         {/* 배송지 */}
-        <div className="flex-1 px-4 space-y-8">
+        <div className="flex-1 px-4">
           <h2 className="text-xl font-semibold mb-4">배송지</h2>
           {addrLoading ? (
             <div className="text-sm text-gray-500">주소 불러오는 중…</div>

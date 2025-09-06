@@ -30,16 +30,9 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4">
       <div className="mx-auto w-full max-w-sm">
-        {/* 로고 */}
         <div className="text-center mb-8">
-            <img
-            className="mx-auto h-20 w-auto cursor-pointer"
-            src={Logo}
-            alt="먼저써봄 로고"
-            onClick={() => navigate('/')}
-            />
             <h2 className="mt-6 text-2xl font-bold tracking-tight text-gray-900">
             로그인
             </h2>
