@@ -35,12 +35,18 @@ public class ChatService {
         return "U" + userId + "-S" + sellerId;
     }
 
+    // ⭐ 상품 단위 방 키
+    private static String roomKeyForUserSellerProduct(Long userId, Long sellerId, Long productId) {
+        return "U" + userId + "-S" + sellerId + "-P" + productId;
+    }
+
+    // ⭐ "U{uid}-S{sid}" 또는 "U{uid}-S{sid}-P{pid}" 를 모두 허용 (buyer/seller만 뽑음)
     private Long[] parseIdsFromKey(String key) {
         try {
             if (key == null) return new Long[]{null, null};
             String[] parts = key.split("-");
-            Long buyerId = Long.valueOf(parts[0].substring(1));
-            Long sellerId = Long.valueOf(parts[1].substring(1));
+            Long buyerId = parts.length >= 1 ? Long.valueOf(parts[0].substring(1)) : null; // U...
+            Long sellerId = parts.length >= 2 ? Long.valueOf(parts[1].substring(1)) : null; // S...
             return new Long[]{buyerId, sellerId};
         } catch (Exception e) {
             return new Long[]{null, null};
@@ -82,30 +88,27 @@ public class ChatService {
                 .toList();
 
         List<RoomResponse> out = new ArrayList<>();
-        for (ChatRoom r : rooms) {
-            out.add(toRoomSummary(r, userId));
-        }
+        for (ChatRoom r : rooms) out.add(toRoomSummary(r, userId));
         return out;
     }
 
     private RoomResponse toRoomSummary(ChatRoom r, Long userId) {
         List<ChatMember> members = memberRepo.findByRoomId(r.getId());
-        Long otherId = members.stream().map(ChatMember::getUserId).filter(id -> !id.equals(userId)).findFirst().orElse(null);
+        Long otherId = members.stream()
+                .map(ChatMember::getUserId)
+                .filter(id -> !id.equals(userId))
+                .findFirst().orElse(null);
         User other = otherId == null ? null : userRepo.findById(otherId).orElse(null);
 
         Long[] ids = parseIdsFromKey(r.getRoomKey());
         Long sellerId = ids[1];
 
         List<ChatMessage> latest = messageRepo.findPage(r.getId(), null, PageRequest.of(0, 1));
-        String preview = null;
-        LocalDateTime lastTime = null;
-        if (!latest.isEmpty()) {
-            ChatMessage lm = latest.get(0);
-            preview = (lm.getType() == ChatMessageType.IMAGE) ? "[사진]" : lm.getContent();
-            lastTime = lm.getCreatedAt();
-        }
+        String preview = latest.isEmpty() ? null : latest.get(0).getContent();
+        LocalDateTime lastTime = latest.isEmpty() ? null : latest.get(0).getCreatedAt();
 
-        Long lastRead = memberRepo.findByRoomIdAndUserId(r.getId(), userId).map(ChatMember::getLastReadMessageId).orElse(null);
+        Long lastRead = memberRepo.findByRoomIdAndUserId(r.getId(), userId)
+                .map(ChatMember::getLastReadMessageId).orElse(null);
         long unread = messageRepo.countUnread(r.getId(), lastRead, userId);
 
         Long otherLastRead =
@@ -114,6 +117,7 @@ public class ChatService {
                                 .map(ChatMember::getLastReadMessageId)
                                 .orElse(null);
 
+        // 셀러면 상호명 노출
         String displayName = other == null ? null : other.getNickname();
         if (otherId != null && sellerId != null && Objects.equals(otherId, sellerId)) {
             String shopName = sellerProfileRepo.findByUserId(otherId)
@@ -121,6 +125,7 @@ public class ChatService {
             if (shopName != null && !shopName.isBlank()) displayName = shopName;
         }
 
+        // 상품 요약(방이 상품 단위면 lastProductId가 고정)
         ProductView pv = null;
         if (r.getLastProductId() != null) {
             ProductSummary ps = productSummaryRepo.findSummaryById(r.getLastProductId()).orElse(null);
@@ -192,7 +197,7 @@ public class ChatService {
     @Transactional
     public void markRead(Long roomId, Long userId, Long lastReadMessageId) {
         ChatMember m = memberRepo.findByRoomIdAndUserId(roomId, userId).orElse(null);
-        if (m == null) return;
+        if (m == null) return; // 멤버 아니면 무시
 
         boolean advanced = false;
         if (m.getLastReadMessageId() == null) {
@@ -215,19 +220,26 @@ public class ChatService {
         broker.convertAndSend("/sub/chat/rooms/" + roomId, payload);
     }
 
+    // ⭐ 상품 문의는 아예 "U-S-P" 키로 별도 방 생성/조회
     @Transactional
     public ChatRoom createOrGetRoomByProduct(Long userId, Long productId) {
         Long sellerId = productSellerRepo.findSellerIdByProductId(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품에 연결된 셀러를 찾을 수 없습니다."));
-        ChatRoom room = createOrGetUserSellerRoom(userId, sellerId);
+        String key = roomKeyForUserSellerProduct(userId, sellerId, productId);
 
-        if (!Objects.equals(room.getLastProductId(), productId)) {
-            room.setLastProductId(productId);
-            room.setUpdatedAt(LocalDateTime.now());
-            roomRepo.save(room);
+        return roomRepo.findByRoomKey(key).orElseGet(() -> {
+            ChatRoom room = roomRepo.save(ChatRoom.builder()
+                    .roomUid(UUID.randomUUID().toString())
+                    .type(ChatRoomType.USER_SELLER)
+                    .roomKey(key)
+                    .lastProductId(productId)   // 헤더/목록 노출용
+                    .build());
+            memberRepo.save(ChatMember.builder().roomId(room.getId()).userId(userId).build());
+            memberRepo.save(ChatMember.builder().roomId(room.getId()).userId(sellerId).build());
+            // 목록 실시간 갱신
             notifyRoomEvent(room.getId(), "ROOM_UPDATED");
-        }
-        return room;
+            return room;
+        });
     }
 
     private void notifyRoomEvent(Long roomId, String type) {
