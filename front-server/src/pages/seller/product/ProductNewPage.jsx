@@ -417,10 +417,10 @@ export default function ProductNewPage() {
 
           {/* 액션 */}
           <div className="flex items-center justify-end gap-2 px-6 py-4">
-            <Button type="button" variant="signUp" onClick={() => navigate('/seller/products')}>
+            <Button type="button" variant="outline" onClick={() => navigate('/seller/products')}>
               취소
             </Button>
-            <Button type="submit">등록</Button>
+            <Button variant='admin' type="submit">등록</Button>
           </div>
         </form>
       </div>

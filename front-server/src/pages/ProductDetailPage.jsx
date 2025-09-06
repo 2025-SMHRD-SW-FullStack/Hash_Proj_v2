@@ -19,6 +19,8 @@ import Close from '../assets/icons/ic_close.svg';
 import TestImg from '../assets/images/ReSsol_TestImg.png';
 import FeedbackItem from '../components/product/FeedbackItem.jsx';
 import CategorySelect from '../components/common/CategorySelect.jsx';
+import BasketIcon from '../assets/icons/ic_basket.svg'
+import MessageIcon from '../assets/icons/ic_message.svg'
 
 const ProductDetailPage = () => {
   const { productId } = useParams();
@@ -413,16 +415,23 @@ const ProductDetailPage = () => {
           </Button>
           <div className="flex gap-2">
             <Button
-              variant="signUp"
+              variant="outline"
               className="flex-1"
               onClick={handleAddToCart}
               disabled={isSoldOut || hasAnySelectedSoldOut}
               aria-disabled={isSoldOut || hasAnySelectedSoldOut}
               title={(isSoldOut || hasAnySelectedSoldOut) ? '품절 상품은 장바구니에 담을 수 없습니다' : '장바구니'}
+              leftIcon={<img src={BasketIcon} className='!w-5 !h-5'/>}
             >
               장바구니
             </Button>
-            <Button variant="signUp" className="flex-1" onClick={handleOpenChat} disabled={chatLoading}>
+            <Button 
+              variant="outline" 
+              className="flex-1" 
+              onClick={handleOpenChat} 
+              disabled={chatLoading}
+              leftIcon={<img src={MessageIcon} className='!w-5 !h-5'/>}
+            >
               {chatLoading ? '열고 있어요…' : '1:1 문의하기'}
             </Button>
           </div>
@@ -518,16 +527,25 @@ const ProductDetailPage = () => {
 
       {/* ✅ 모바일 하단바: 품절 시 라벨/비활성화 */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white p-3 border-t shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-40 flex items-center gap-2">
-        <Button
-          variant="outline"
-          className="flex-1"
-          onClick={handleAddToCart}
-          disabled={isSoldOut || hasAnySelectedSoldOut}
-          aria-disabled={isSoldOut || hasAnySelectedSoldOut}
-          title={(isSoldOut || hasAnySelectedSoldOut) ? '품절 상품은 장바구니에 담을 수 없습니다' : '장바구니'}
-        >
-          장바구니
-        </Button>
+        <div className='flex gap-1'>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={handleAddToCart}
+            disabled={isSoldOut || hasAnySelectedSoldOut}
+            aria-disabled={isSoldOut || hasAnySelectedSoldOut}
+            title={(isSoldOut || hasAnySelectedSoldOut) ? '품절 상품은 장바구니에 담을 수 없습니다' : '장바구니'}
+            leftIcon={<img src={BasketIcon} className='!w-5 !h-5'/>}
+          />
+          <Button 
+              variant="outline" 
+              className="flex-1" 
+              onClick={handleOpenChat} 
+              disabled={chatLoading}
+              leftIcon={<img src={MessageIcon} className='!w-5 !h-5'/>}
+          />
+        </div>
+        
         <Button
           className="flex-1"
           onClick={

@@ -24,10 +24,10 @@ const StatusChip = ({ status }) => {
 }
 
 const STATUS_CHIPS = [
-    { value: 'REQUESTED', label: '대기중' },
-    { value: 'APPROVED', label: '승인' },
-    { value: 'REJECTED', label: '반려' },
-    { value: 'ALL', label: '전체' },
+  { value: 'ALL', label: '전체' },
+  { value: 'REQUESTED', label: '대기중' },
+  { value: 'APPROVED', label: '승인' },
+  { value: 'REJECTED', label: '반려' },
 ];
 
 // 날짜 포맷: YYYY.MM.DD hh:mm (값이 없으면 '-')
@@ -51,7 +51,7 @@ export default function PointsRedemptionsPage() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('') // 닉네임 검색어
-  const [statusFilter, setStatusFilter] = useState('REQUESTED'); 
+  const [statusFilter, setStatusFilter] = useState('ALL'); 
   const [data, setData] = useState({
     content: [],
     number: 0,

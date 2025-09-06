@@ -33,10 +33,10 @@ const statusBadge = (status) => {
 }
 
 const STATUS_CHIPS = [
-    { value: 'PENDING', label: '승인중' },
-    { value: 'APPROVED', label: '승인 완료' },
-    { value: 'REJECTED', label: '반려' },
-    { value: 'ALL', label: '전체' },
+  { value: 'ALL', label: '전체' },
+  { value: 'PENDING', label: '승인중' },
+  { value: 'APPROVED', label: '승인 완료' },
+  { value: 'REJECTED', label: '반려' },
 ];
 
 const PAGE_SIZE_OPTIONS = [
@@ -50,7 +50,7 @@ const SellerApprovalsPage = () => {
   const [loading, setLoading] = useState(true)
 
   // 검색/필터/페이지
-  const [status, setStatus] = useState('PENDING') // 기본 대기중
+  const [status, setStatus] = useState('ALL') // 기본 대기중
   const [q, setQ] = useState('')
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)

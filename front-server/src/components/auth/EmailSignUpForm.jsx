@@ -6,7 +6,7 @@ import lockIcon from '../../assets/images/lockIcon.png';
 import checkIcon from '../../assets/images/checkIcon.png';
 import errorIcon from '../../assets/images/error.png';
 import successIcon from '../../assets/images/success.png';
-import PersonIcon from '../../assets/icons/ic_person.svg';
+import PersonIcon from '../../assets/icons/ic_person.png';
 import {
   loginRequest,
   signupRequest,

@@ -18,7 +18,7 @@ const CategorySelect = ({ categories = [], selected = {}, onChange, className })
   }, []);
 
   return (
-    <div className={`relative w-full ${className}`} ref={containerRef}>
+    <div className={`relative ${className}`} ref={containerRef}>
       {/* 선택 버튼 */}
       <button
         onClick={() => setOpen((prev) => !prev)}
@@ -34,7 +34,7 @@ const CategorySelect = ({ categories = [], selected = {}, onChange, className })
 
       {/* 옵션 드롭다운 */}
       <div
-        className={`w-full absolute mt-1 bg-white border border-gray-300 rounded-md shadow-md max-h-64 overflow-auto z-20 transition-all duration-200 ${
+        className={`w-full mx-auto absolute mt-1 bg-white border border-gray-300 rounded-md shadow-md max-h-64 overflow-auto z-20 transition-all duration-200 ${
           open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
         }`}
       >

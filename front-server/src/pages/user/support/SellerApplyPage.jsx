@@ -78,47 +78,51 @@ const SellerApplyForm = ({ onApplySuccess }) => {
   };
 
   return (
-    <div className="mx-auto p-8 bg-white rounded-xl shadow-md">
-      <h2 className="text-sm sm:text-xl font-bold ">셀러 등록 신청</h2>
-      <p className="text-center text-gray-600 mb-8">
+    <div>
+      <h2 className="hidden md:block text-lg md:text-xl font-bold mb-4 text-gray-800">셀러 등록 신청</h2>
+      
+      
+      <div className="mx-auto p-6 bg-white rounded-xl shadow-md">
+        <p className="text-center text-gray-600 mb-8">
         먼저써봄과 함께 피드백으로 빛나는 상품을 만들어보세요.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <TextField id="shopName" name="shopName" label="상호명" value={form.shopName} onChange={handleChange} required />
-        <TextField id="ownerName" name="ownerName" label="대표자명" value={form.ownerName} onChange={handleChange} required />
-        <TextField id="bizNo" name="bizNo" label="사업자 등록번호" value={form.bizNo} onChange={handleChange} required />
-        <div className="flex gap-2">
-          <TextField id="addr" name="addr" label="사업장 주소" value={form.addr} onChange={handleChange} readOnly required className="flex-grow" />
-          <Button type="button" onClick={() => setIsModalOpen(true)} className="mt-auto">
-            주소 검색
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <TextField id="shopName" name="shopName" label="상호명" value={form.shopName} onChange={handleChange} required />
+          <TextField id="ownerName" name="ownerName" label="대표자명" value={form.ownerName} onChange={handleChange} required />
+          <TextField id="bizNo" name="bizNo" label="사업자 등록번호" value={form.bizNo} onChange={handleChange} required />
+          <div className="flex gap-2">
+            <TextField id="addr" name="addr" label="사업장 주소" value={form.addr} onChange={handleChange} readOnly required className="flex-grow" />
+            <Button type="button" onClick={() => setIsModalOpen(true)} className="mt-auto">
+              주소 검색
+            </Button>
+          </div>
+          <TextField id="phone" name="phone" label="대표 번호" type="tel" value={form.phone} onChange={handleChange} required />
+          <div className="flex flex-col">
+            <label htmlFor="category" className="text-sm font-medium text-gray-700 mb-2">
+              주요 판매 카테고리
+            </label>
+            <select id="category" name="category" value={form.category} onChange={handleChange} required className="w-full h-11 border border-gray-300 rounded-lg px-3">
+              <option value="">선택</option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <Button type="submit" disabled={loading} className="w-full mt-8">
+            {loading ? '신청 중...' : '셀러 등록하기'}
           </Button>
-        </div>
-        <TextField id="phone" name="phone" label="대표 번호" type="tel" value={form.phone} onChange={handleChange} required />
-        <div className="flex flex-col">
-          <label htmlFor="category" className="text-sm font-medium text-gray-700 mb-2">
-            주요 판매 카테고리
-          </label>
-          <select id="category" name="category" value={form.category} onChange={handleChange} required className="w-full h-11 border border-gray-300 rounded-lg px-3">
-            <option value="">선택</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-        </div>
+        </form>
 
-        <Button type="submit" disabled={loading} className="w-full mt-8">
-          {loading ? '신청 중...' : '셀러 등록하기'}
-        </Button>
-      </form>
-
-      <AddressSearchModal
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSelect={handleAddressSelect}
-      />
+        <AddressSearchModal
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSelect={handleAddressSelect}
+        />
+      </div>
     </div>
   );
 };

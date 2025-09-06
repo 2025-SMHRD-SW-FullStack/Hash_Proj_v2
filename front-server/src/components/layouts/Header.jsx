@@ -131,7 +131,7 @@ const Header = () => {
             <>
               {/* 모바일: 로그아웃 + 햄버거 */}
               <div className="flex items-center sm:hidden">
-                <Button size='sm' onClick={logout}>
+                <Button variant='signUp' size='sm' onClick={logout}>
                   로그아웃
                 </Button>
                 <button onClick={() => setIsMobileMenuOpen(true)} className='border-none bg-transparent'>
@@ -141,7 +141,7 @@ const Header = () => {
 
               {/* 데스크탑 아이콘들 */}
               <div className="hidden sm:flex items-center space-x-4">
-                <Button size='md' onClick={logout}>
+                <Button variant='signUp' size='md' onClick={logout}>
                   로그아웃
                 </Button>
                 <Icon src={User} alt="마이 페이지" onClick={() => navigate('/user/mypage')} />
@@ -163,9 +163,16 @@ const Header = () => {
               </div>
             </>
           ) : (
-            <Button size='sm' className='sm:size-md' onClick={() => navigate('/login')} >
-              로그인
-            </Button>
+            <div>
+              <Button size='md' className='hidden sm:block' onClick={() => navigate('/login')} >
+                로그인
+              </Button>
+              <Button size='sm' className='flex sm:hidden' onClick={() => navigate('/login')}>
+                로그인
+              </Button>
+
+            </div>
+            
           )}
         </div>
       </div>

@@ -47,13 +47,13 @@ const Button = ({
   return (
     <button className={finalClassName} {...props}>
       {leftIcon && (
-        <span className="mr-2 flex shrink-0">
+        <span className="sm:mr-2 flex shrink-0">
           {leftIcon}
         </span>
       )}
       {children}
       {rightIcon && (
-        <span className="ml-2 flex shrink-0">
+        <span className="sm:ml-2 flex shrink-0">
           {rightIcon}
         </span>
       )}

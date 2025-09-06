@@ -3,7 +3,7 @@ import useAuthStore from "../../stores/authStore";
 import { useState, useEffect } from "react";
 import Button from "../common/Button";
 import { getMyPointBalance } from "../../service/pointService";
-import PersonIcon from "../../assets/icons/ic_person.svg";
+import PersonIcon from "../../assets/icons/ic_person.png";
 import PointIcon from '../../assets/icons/ic_point.svg'
 import CategorySelect from "../common/CategorySelect";
 
@@ -20,7 +20,7 @@ const MyPageLayout = () => {
     { to: "/user/mypage/feedback-history", label: "작성한 피드백" },
     { to: "/user/mypage/edit", label: "내 정보 수정" },
     { to: "/user/mypage/cart", label: "장바구니" },
-    { to: "/user/mypage/support/qna", label: "문의내역" },
+    { to: "/user/mypage/support/qna", label: "문의 내역" },
     { to: "/user/mypage/seller-apply", label: "셀러 등록하기" },
   ];
   
@@ -145,7 +145,9 @@ const MyPageLayout = () => {
 
       {/* 오른쪽 콘텐츠 영역 */}
       <main className="flex-1">
-        <Outlet />
+        <div className='mx-auto w-full max-w-7xl lg:px-8'>
+          <Outlet />
+        </div>
       </main>
     </div>
   );

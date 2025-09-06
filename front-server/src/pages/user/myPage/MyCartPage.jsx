@@ -5,6 +5,8 @@ import MinusIcon from '../../../assets/icons/ic_minus.svg';
 import PlusIcon from '../../../assets/icons/ic_plus.svg';
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
 import { getCart, updateCartItemQty, removeCartItem, clearCart } from '../../../service/cartService';
+import Icon from '../../../components/common/Icon';
+import CloseIcon from '../../../assets/icons/ic_close.svg'
 
 const SHIPPING_FEE_PER_SELLER  = 3000;
 
@@ -31,7 +33,7 @@ const formatOptionsText = (optionsJson) => {
       const keys = Object.keys(data)
       if (!keys.length) return ''
       const parts = keys.map(k => (data[k] ? `${k}: ${data[k]}` : '')).filter(Boolean)
-      return parts.length ? `(${parts.join(' · ')})` : ''
+      return parts.length ? `${parts.join(' · ')}` : ''
     }
 
     return ''
@@ -178,121 +180,151 @@ const MyCartPage = () => {
     navi(`/user/order?mode=cart${qs}`);
   }
 
-  if (loading) return <div className="p-4">장바구니를 불러오는 중...</div>;
   if (error) return <div className="p-4 text-red-500">{error}</div>;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* 메인 컨텐츠 */}
-      <div className="flex-1 max-w-6xl mx-auto w-full pb-36">
-        {/* 헤더 */}
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold">장바구니</h1>
-          {items.length > 0 && (
-            <button
-              onClick={onClear}
-              className="text-sm text-red-500 hover:underline"
-            >
-              모두 비우기
-            </button>
-          )}
-        </div>
+      <div className="flex-1 max-w-6xl mx-auto w-full ">
+        <h1 className="hidden md:block text-lg md:text-xl font-bold mb-4 text-gray-800">장바구니</h1>
 
         {/* 리스트 */}
-        <div className="rounded-2xl border bg-white">
+        <div className="rounded-2xl border ">
           {items.length === 0 ? (
-            <div className="p-6 text-sm text-gray-600">장바구니가 비어 있습니다.</div>
+            <div className="rounded-lg p-4 h-60 flex items-center justify-center text-gray-400">장바구니가 비어 있습니다.</div>
           ) : (
-            <>
-              <div className="flex items-center p-4 border-b text-sm">
-                <input
-                  type="checkbox"
-                  id="selectAll"
-                  className="mr-2"
-                  checked={items.length > 0 && selectedIds.size === items.length}
-                  onChange={handleSelectAll}
-                />
-                <label htmlFor="selectAll">
-                  전체 선택 ({selectedIds.size}/{items.length})
-                </label>
+            <div className='bg-white'>
+              <div className="flex items-center justify-between p-4 border-b text-sm">
+                <div className='flex items-center'>
+                  <input
+                    type="checkbox"
+                    id="selectAll"
+                    className="mr-2"
+                    checked={items.length > 0 && selectedIds.size === items.length}
+                    onChange={handleSelectAll}
+                  />
+                  <label htmlFor="selectAll" className='text-base' >
+                    전체 선택 ({selectedIds.size}/{items.length})
+                  </label>
+                </div>
+                {items.length > 0 && (
+                  <Button
+                    variant='unselected'
+                    onClick={onClear}
+                    className='hover:bg-red-500 hover:text-white'
+                  >
+                    모두 비우기
+                  </Button>
+                )}
               </div>
 
-              <ul className="divide-y">
+              <ul className="divide-y pl-0">
                 {items.map(row => (
                   <li
                     key={row.cartItemId}
                     className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
                   >
-                    {/* 상품 정보 */}
-                    <div className="flex items-start sm:items-center">
-                      <input
-                        type="checkbox"
-                        className="mt-1 mr-3"
-                        checked={selectedIds.has(row.cartItemId)}
-                        onChange={() => handleSelectItem(row.cartItemId)}
-                      />
-                      <img
-                        src={row.thumbnailUrl || TestImg}
-                        alt={row.productName}
-                        className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-                        onError={(e) => {
-                          e.target.onerror = null; // 무한 루프 방지
-                          e.target.src = TestImg;
-                        }}
-                      />
-                      <div className="ml-4 flex flex-col">
-                        <div className="font-medium text-sm">{row.productName}</div>
-                        <div className="text-xs text-gray-500 break-words">
-                          {formatOptionsText(row.optionsJson)}
-                        </div>
-                        {!row.inStock && (
-                          <div className="text-xs text-red-600 mt-1">
-                            품절 또는 재고 부족
+                    {/* 체크 박스 & 상품 정보 & 수량 */}
+                    <div className="flex flex-1 items-center justify-between">
+                      <div className='flex justify-center items-center'>
+                        <input
+                          type="checkbox"
+                          className="mt-1 mr-3"
+                          checked={selectedIds.has(row.cartItemId)}
+                          onChange={() => handleSelectItem(row.cartItemId)}
+                        />
+                        <img
+                          src={row.thumbnailUrl || TestImg}
+                          alt={row.productName}
+                          className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                          onError={(e) => {
+                            e.target.onerror = null; // 무한 루프 방지
+                            e.target.src = TestImg;
+                          }}
+                        />
+                        <div>
+
+                        <div className="ml-4 flex flex-1 items-center sm:justify-between">
+                          <div className='space-y-1'>
+                            {/* 상품 정보 */}
+                            <div className='space-y-1'>
+                              <div className="font-medium text-sm">{row.productName}</div>
+                              <div className="text-xs text-gray-500 break-words">
+                                {formatOptionsText(row.optionsJson)}
+                              </div>
+                              {!row.inStock && (
+                                <div className="text-xs text-red-600 mt-1">
+                                  품절 또는 재고 부족
+                                </div>
+                              )}
+                            </div>
+                            {/* 수량 */}
+                            <div className="w-fit flex items-center border-[#CCC] border-solid rounded-md border-[1.5px] overflow-hidden">
+                              <button
+                                className="px-2 py-1 bg-transparent border-none hover:bg-gray-100"
+                                onClick={() => onQtyChange(row.cartItemId, row.qty - 1)}
+                              >
+                                <Icon src={MinusIcon} alt="-" className="!w-3 !h-3" />
+                              </button>
+                              <span className="px-3 py-1 text-sm">{row.qty}</span>
+                              <button
+                                className="px-2 py-1 bg-transparent border-none hover:bg-gray-100"
+                                onClick={() => onQtyChange(row.cartItemId, row.qty + 1)}
+                              >
+                                <Icon src={PlusIcon} alt="+" className="!w-3 !h-3" />
+                              </button>
+                            </div>
+
                           </div>
-                        )}
+                            {/* 상품 가격 */}
+                            <div className="w-24 text-base font-semibold">
+                              {row.subtotal.toLocaleString()}원
+                            </div>
+                        </div>
+                        </div>
+
                       </div>
+                        {/* 삭제 버튼 */}
+                        <div>
+                          <Button
+                            variant='danger'
+                            className='hidden sm:block bg-red-500/40 sm:hover:bg-red-500'
+                            onClick={() => onRemove(row.cartItemId)}
+                          >
+                            삭제
+                          </Button>
+
+                          <Button
+                            variant='outline'
+                            className='sm:hidden border-none'
+                            onClick={() => onRemove(row.cartItemId)}
+                            leftIcon={<img src={CloseIcon} alt='삭제' className='!w-5 !h-5'/>}
+                          />
+                      
+                          
+                        </div>
+                      
                     </div>
 
-                    {/* 수량 & 가격 */}
+                    {/* 가격 & 삭제 */}
                     <div className="flex items-center justify-between sm:justify-end gap-4">
-                      <div className="flex items-center border rounded-lg overflow-hidden">
-                        <button
-                          className="p-2 hover:bg-gray-50"
-                          onClick={() => onQtyChange(row.cartItemId, row.qty - 1)}
-                        >
-                          <img src={MinusIcon} alt="-" className="w-3 h-3" />
-                        </button>
-                        <span className="px-3 text-sm">{row.qty}</span>
-                        <button
-                          className="p-2 hover:bg-gray-50"
-                          onClick={() => onQtyChange(row.cartItemId, row.qty + 1)}
-                        >
-                          <img src={PlusIcon} alt="+" className="w-3 h-3" />
-                        </button>
-                      </div>
-                      <div className="w-24 text-right text-sm font-semibold">
-                        {row.subtotal.toLocaleString()}원
-                      </div>
-                      <button
-                        className="text-xs text-red-500 hover:underline"
-                        onClick={() => onRemove(row.cartItemId)}
-                      >
-                        삭제
-                      </button>
+                      
+                      
+                      
                     </div>
                   </li>
                 ))}
               </ul>
-            </>
+            </div>
           )}
         </div>
       </div>
 
       {/* 하단 고정 푸터 */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-white shadow-lg">
-        <div className="max-w-6xl mx-auto w-full px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <footer className="sticky bottom-0 left-0 right-0 border-t border-[#CCC] border-[1] bg-white shadow-md sm:mx-16 rounded-md ">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6">
           {/* 금액 정보 */}
-          <div className="flex flex-col text-sm sm:flex-row sm:items-center sm:gap-6">
+          <div className="flex flex-col text-sm sm:flex-row sm:items-center sm:gap-8 sm:text-base">
             <div className="flex justify-between sm:gap-2">
               <span className="text-gray-600">상품 합계</span>
               <span className="font-medium ml-2">{itemsTotal.toLocaleString()}원</span>
@@ -316,7 +348,7 @@ const MyCartPage = () => {
             결제하기
           </Button>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

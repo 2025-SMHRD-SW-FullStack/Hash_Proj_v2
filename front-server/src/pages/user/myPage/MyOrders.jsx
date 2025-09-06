@@ -23,7 +23,7 @@ const MyOrders = () => {
     <div className="space-y-4">
       <h1 className="hidden md:block text-xl font-semibold text-gray-800">내 주문/배송 내역</h1>
       {loading && <div>불러오는 중…</div>}
-      {!loading && rows.length === 0 && <div className="text-gray-500">주문 내역이 없습니다.</div>}
+      {!loading && rows.length === 0 && <div className="rounded-lg p-4 h-60 flex items-center justify-center text-gray-400">주문 내역이 없습니다.</div>}
 
       <div className="space-y-3 md:space-y-4">
         {rows.map(o => (

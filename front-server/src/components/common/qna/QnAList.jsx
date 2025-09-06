@@ -69,9 +69,7 @@ const QnAList = ({ refreshTrigger }) => {
 
   if (qnaList.length === 0) {
     return (
-      <div className="text-center py-8">
-        <div className="text-gray-500">등록된 문의가 없습니다.</div>
-      </div>
+        <div className="rounded-lg p-4 h-60 flex items-center justify-center text-gray-400">등록된 문의가 없습니다.</div>
     );
   }
 

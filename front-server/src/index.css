@@ -29,13 +29,60 @@ body {
   margin-bottom: 1em;
 }
 
-/* input 숫자 화살표 제거 */
-.no-spinner::-webkit-outer-spin-button,
-.no-spinner::-webkit-inner-spin-button {
+/* input 숫자 화살표 제거 추가하기*/
+
+/* 기본 라디오 버튼 및 체크박스 스타일 */
+input[type="radio"],
+input[type="checkbox"] {
   -webkit-appearance: none;
-  margin: 0;
+  -moz-appearance: none;
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid #d1d5db; /* 연한 회색 테두리 추가 */
+  border-radius: 9999px; /* 원형 모양 */
+  background-color: #ffffff;
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
 }
 
-.no-spinner {
-  -moz-appearance: textfield;
+/* 체크박스는 사각형으로 */
+input[type="checkbox"] {
+  border-radius: 0.25rem;
+}
+
+/* 선택됐을 때 스타일 */
+input[type="radio"]:checked,
+input[type="checkbox"]:checked {
+  background-color: primary;
+  border-color: primary;
+}
+
+/* 선택 표시 (체크 모양) */
+input[type="radio"]:checked::after,
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: block;
+}
+
+/* 라디오 버튼 선택 시 안의 원 */
+input[type="radio"]:checked::after {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: white;
+}
+
+/* 포커스 됐을 때 스타일 */
+input[type="radio"]:focus,
+input[type="checkbox"]:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #a5b4fc;
 }
