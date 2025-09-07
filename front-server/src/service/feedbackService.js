@@ -406,3 +406,7 @@ export const updateFeedback = async (id, { content, images = [] }) => {
   }
   return res?.data?.data ?? res?.data;
 };
+
+export const getPreSurveyByOrderItem = (orderItemId) =>
+  api.get(`/api/pre-feedback-surveys/by-order-item/${orderItemId}`)
+     .then(r => r.data);

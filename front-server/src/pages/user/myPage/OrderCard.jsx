@@ -1,3 +1,4 @@
+// OrderCard.jsx (네가 쓰는 경로 그대로에 붙여넣어)
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -150,16 +151,18 @@ const OrderCard = ({ order, onChanged }) => {
     }
   }, [order.status, firstItem]);
 
+  // 배송 조회 데이터
   useEffect(() => {
     if (["IN_TRANSIT", "DELIVERED", "CONFIRMED"].includes(order.status)) {
       (async () => { try { setTrack(await getTracking(order.id)); } catch (e) { console.error(e); } })();
     } else setTrack(null);
   }, [order.id, order.status]);
 
+  // 헤더 왼쪽 표기
   const headerLeft = useMemo(() => {
     if (["IN_TRANSIT", "DELIVERED", "CONFIRMED"].includes(order.status)) {
       const inv = track?.invoiceNo ?? "-";
-      const carr = track?.carrierName ?? "";
+      const carr = track?.carrier?.name ?? "";
       return `운송장 번호 ${inv}${carr ? ` · ${carr}` : ""}`;
     }
     return `주문 번호 ${order.orderUid ?? order.id}`;
@@ -238,7 +241,7 @@ const OrderCard = ({ order, onChanged }) => {
 
         <div className="flex flex-wrap gap-2 mt-2">
           {order.status === "PENDING" && <Button className="flex-1">다시 주문하기</Button>}
-          {order.status === "READY" && <Button className="flex-1" variant="unselected" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
+          {order.status === "READY" && <Button className="flex-1" variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
           {order.status === "IN_TRANSIT" && <Button className="flex-1" variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
 
           {/* 배송완료: 구매확정 유도 */}

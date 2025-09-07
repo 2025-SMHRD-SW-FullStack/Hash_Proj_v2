@@ -233,7 +233,11 @@ def post_feedback_to_spring(payload: dict, token: Optional[str] = None) -> Tuple
         logger.info("[spring] POST %s -> %s, resp=%s", url, r.status_code, snippet)
 
         if r.status_code in (200, 201):
-            return True, None
+            try:
+                data = r.json() if r.text else {}
+            except Exception:
+                data = {}
+            return True, data
 
         # 스프링 표준 에러 포맷이면 메시지 우선
         msg = _resp_message(r)
