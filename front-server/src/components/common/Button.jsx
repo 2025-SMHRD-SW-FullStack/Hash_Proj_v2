@@ -9,10 +9,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-[#5882F6] text-white',
+        primary: 'bg-primary text-white',
         signUp:
-          'border-solid border-[1px] border-[#C3C3C3] bg-white text-[#5882F6]',
-        admin: 'bg-[#D6BAE9] text-white',
+          'border-solid border-[1px] border-[#C3C3C3] bg-white text-primary',
+        admin: 'bg-sub text-white',
         unselected: 'bg-white border-[#C3C3C3] border-solid border-[1px] text-[#C3C3C3]',
         blackWhite: 'bg-white text-[#222] border-[#CCCCCC] border-solid border-[1px] ',
         outline: 'bg-white text-gray-800 border border-solid border-gray-300 hover:bg-gray-50',
@@ -47,13 +47,13 @@ const Button = ({
   return (
     <button className={finalClassName} {...props}>
       {leftIcon && (
-        <span className="mr-2 flex shrink-0">
+        <span className="sm:mr-2 flex shrink-0">
           {leftIcon}
         </span>
       )}
       {children}
       {rightIcon && (
-        <span className="ml-2 flex shrink-0">
+        <span className="sm:ml-2 flex shrink-0">
           {rightIcon}
         </span>
       )}

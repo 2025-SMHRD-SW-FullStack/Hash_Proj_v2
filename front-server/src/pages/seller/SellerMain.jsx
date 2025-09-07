@@ -407,7 +407,7 @@ export default function SellerMain() {
               문의가 없습니다.
             </div>
           ) : (
-            <div className="h-[220px] overflow-auto rounded-md border">
+            <div className="h-[350px] overflow-auto rounded-md border">
               <ul className="m-0 list-none divide-y p-0">
                 {inq.map((t) => (
                   <li key={t.id} className="p-2">

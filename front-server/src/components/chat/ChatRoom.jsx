@@ -66,7 +66,7 @@ const MessageBubble = ({ msg, isGroupStart, otherLastReadId }) => {
             <img
               src={msg.content}
               alt="첨부 이미지"
-              className="max-w-xs h-auto rounded-lg my-1"
+              className="w-full h-auto rounded-lg my-1"
             />
           ) : (
             msg.content && <div className="whitespace-pre-wrap break-words text-sm">{msg.content}</div>

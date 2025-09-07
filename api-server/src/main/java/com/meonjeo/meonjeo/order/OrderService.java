@@ -106,21 +106,12 @@ public class OrderService {
 
         int total = 0; // 상품 총액
 
-        // 단일 셀러 강제
-        Long masterSellerId = null;
-
         for (CheckoutItem ci : req.items()) {
             if (ci.qty() < 1)
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "QTY_MIN_1");
 
             Product p = productRepo.findById(ci.productId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND: " + ci.productId()));
-
-            if (masterSellerId == null) {
-                masterSellerId = p.getSellerId();
-            } else if (!Objects.equals(masterSellerId, p.getSellerId())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "MULTI_SELLER_NOT_SUPPORTED");
-            }
 
             String[] labels = { p.getOption1Name(), p.getOption2Name(), p.getOption3Name(), p.getOption4Name(), p.getOption5Name() };
             boolean hasAnyLabel = Arrays.stream(labels).anyMatch(Objects::nonNull);
@@ -181,7 +172,9 @@ public class OrderService {
         int payableBase = total + shippingFee;
 
         int balance = pointLedger.getBalance(userId);
-        int want = req.useAllPoint() ? payableBase : req.usePoint();
+        Integer reqUsePoint = req.usePoint();                   // null 허용
+        boolean useAll = Boolean.TRUE.equals(req.useAllPoint());
+        int want = useAll ? payableBase : (reqUsePoint == null ? balance : reqUsePoint);
         int usePoint = Math.max(0, Math.min(want, Math.min(balance, payableBase)));
         int pay = Math.max(0, payableBase - usePoint);
 
@@ -196,6 +189,11 @@ public class OrderService {
         // 포인트 선차감(멱등)
         if (usePoint > 0) {
             pointLedger.spend(userId, usePoint, "ORDER_PAY_PRE", "order:pre:" + saved.getId());
+        }
+
+        // (추가) 0원 결제면 즉시 확정(재고 차감 + READY 승격)
+        if (pay == 0) {
+            finalizePaidByUid(saved.getOrderUid(), 0);
         }
 
         return new CheckoutResponse(

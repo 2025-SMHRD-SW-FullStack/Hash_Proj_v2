@@ -1,7 +1,7 @@
 import React from 'react';
 import { SectionContainer, FormRow, inputStyle, readOnlyInputStyle } from '../../../pages/user/myPage/MyInfoPage';
 import Button from '../../common/Button';
-import PersonIcon from '../../../assets/icons/ic_person.svg';
+import PersonIcon from '../../../assets/icons/ic_person.png';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 

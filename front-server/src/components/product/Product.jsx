@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import testImg from '../../assets/images/ReSsol_TestImg.png';
 
-const Product = ({ product, onClick, isSimple = false, isPowerAd = false }) => {
+const Product = ({ product, onClick, isSimple = false, isPowerAd = false, className }) => {
   if (!product) return null;
 
   const [imgError, setImgError] = useState(false);
@@ -11,12 +11,11 @@ const Product = ({ product, onClick, isSimple = false, isPowerAd = false }) => {
   const imgSrc = product.thumbnailUrl && !imgError ? product.thumbnailUrl : testImg;
   const handleImageError = () => setImgError(true);
 
-  // ★★★ 수정: 즉시 할인이 적용되었는지 여부를 확인하는 변수
   const hasDiscount = product.salePrice > 0;
 
   return (
     <div
-      className="group cursor-pointer w-full max-w-[200px] mx-auto"
+      className={`group cursor-pointer ${className}`}
       onClick={handleClick}
     >
       {/* 광고 뱃지 */}
@@ -38,14 +37,13 @@ const Product = ({ product, onClick, isSimple = false, isPowerAd = false }) => {
 
       {/* 상품 정보 */}
       <div className="w-full mt-3 space-y-1 overflow-hidden px-1">
-        <strong className="text-base font-semibold text-gray-800 break-words line-clamp-2 leading-tight">
+        <strong className="h-[40px] text-base font-semibold text-gray-800 break-words line-clamp-2 leading-tight">
           [{product.brand}] {product.name}
         </strong>
 
-        {/* ★★★ 수정: hasDiscount 값에 따라 가격 표시를 다르게 함 */}
         <div className="flex items-baseline gap-2">
           {hasDiscount ? (
-            <>
+            <div className='flex flex-col lg:flex-row lg:gap-2 lg:items-center '>
               {/* 할인이 있을 경우: 할인가(파란색)와 원가(취소선) 표시 */}
               <span className="text-lg font-bold text-primary">
                 {product.salePrice.toLocaleString()}원
@@ -53,7 +51,7 @@ const Product = ({ product, onClick, isSimple = false, isPowerAd = false }) => {
               <span className="text-sm text-gray-500 line-through">
                 {product.basePrice.toLocaleString()}원
               </span>
-            </>
+            </div>
           ) : (
             <>
               {/* 할인이 없을 경우: 원가만 표시 */}

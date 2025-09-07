@@ -54,7 +54,7 @@ const MainProducts = ({ label, category, limit }) => {
   const visibleProducts = products.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="w-full max-w-6xl mx-auto mb-12">
+    <div className="w-full max-w-6xl mx-auto mb-6">
       {/* 카테고리 헤더 */}
       <div className="flex justify-between items-center px-2 sm:px-4 mb-4">
         <p className="text-lg sm:text-xl font-bold">{label}</p>
@@ -75,7 +75,7 @@ const MainProducts = ({ label, category, limit }) => {
             <p className="text-sm text-gray-500 w-full text-center">해당 카테고리 상품이 없습니다.</p>
           ) : (
             products.map((p) => (
-              <Product key={p.id} product={p} onClick={goProductDetail} isSimple={true} />
+              <Product key={p.id} product={p} onClick={goProductDetail} isSimple={true} className="w-[calc((100%-12px)/2.5)] sm:w-[calc((100%-24px)/3.5)] md:w-[calc((100%-32px)/4.5)] lg:w-[calc((100%-48px)/5.5)] flex-shrink-0" />
             ))
           )}
         </div>

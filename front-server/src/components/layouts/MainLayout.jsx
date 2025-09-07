@@ -4,12 +4,20 @@ import Footer from './Footer'
 
 const MainLayout = () => {
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex flex-col h-screen">
+      {/* 고정 Header */}
       <Header />
-      <main className="flex-1 overflow-y-auto">
+
+      {/* Main - 항상 화면 꽉 차고, 스크롤은 여기서만 */}
+      <main className="flex-1 overflow-y-auto bg-white">
+        <div className='min-h-[750px]'>
           <Outlet />
+        </div>
+        {/* 고정 Footer */}
         <Footer />
+        
       </main>
+
     </div>
   )
 }

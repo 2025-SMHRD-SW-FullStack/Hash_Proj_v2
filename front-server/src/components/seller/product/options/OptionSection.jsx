@@ -174,10 +174,10 @@ export default function OptionSection({ enabled = false, value, onChange, initia
       <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] sm:gap-4 sm:px-3">
         <div className="text-sm font-semibold text-gray-700 sm:pt-1">옵션</div>
         <div className="flex justify-start gap-2">
-          <Button type="button" size="sm" variant={useOptions ? 'signUp' : 'primary'} onClick={() => setUseOptions(false)}>
+          <Button type="button" size="sm" variant={useOptions ? 'outline' : 'admin'} onClick={() => setUseOptions(false)}>
             설정안함
           </Button>
-          <Button type="button" size="sm" variant={useOptions ? 'primary' : 'signUp'} onClick={() => setUseOptions(true)}>
+          <Button type="button" size="sm" variant={useOptions ? 'admin' : 'outline'} onClick={() => setUseOptions(true)}>
             설정함
           </Button>
         </div>

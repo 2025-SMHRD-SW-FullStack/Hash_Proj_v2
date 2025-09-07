@@ -103,17 +103,18 @@ public class SellerOrderService {
                 .build();
         orderShipmentRepo.save(os);
 
-        Shipment sm = shipmentRepository.findByOrderId(orderId).orElseGet(Shipment::new);
-        if (sm.getId() == null) {
-            sm.setOrderId(orderId);
-            sm.setSellerId(sellerId);
-            sm.setStatus(ShipmentStatus.READY);
-        }
-        sm.setCourierCode(normalizeCourierCode(req.courierCode(), req.courierName())); // 숫자코드로 정규화
-        sm.setTrackingNo(req.trackingNo());
-        sm.setLastSyncedAt(LocalDateTime.now());
+        // 2) 출고(Shipment) — ✅ 항상 새 레코드 생성 (멀티 셀러/부분출고 대비)
+        Shipment sm = Shipment.builder()
+                .orderId(orderId)
+                .sellerId(sellerId)
+                .status(ShipmentStatus.READY)
+                .courierCode(normalizeCourierCode(req.courierCode(), req.courierName()))
+                .trackingNo(req.trackingNo())
+                .lastSyncedAt(LocalDateTime.now())
+                .build();
         shipmentRepository.save(sm);
 
+        // 3) 이벤트 로그(송장 등록)
         ShipmentEvent ev0 = ShipmentEvent.builder()
                 .orderId(orderId)
                 .courierCode(req.courierCode())
@@ -125,7 +126,7 @@ public class SellerOrderService {
                 .build();
         shipmentRepo.save(ev0);
 
-// [핵심] "이벤트 저장 직후" 두 메서드 호출
+        // 4) 저장 직후 자동 승급(배송중/배송완료 판단)
         autoConfirm.updateInTransitIfMoved(orderId);
         autoConfirm.updateDeliveredIfComplete(orderId);
 

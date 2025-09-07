@@ -219,7 +219,7 @@ const MyOrderDetailPage = () => {
               기간 만료
             </span>
           )}
-          <Button variant="blackWhite" size="lg" onClick={() => navigate(-1)}>목록으로 돌아가기</Button>
+          <Button variant="blackWhite" size="lg" onClick={() => navigate('/user/mypage/orders')}>목록으로 돌아가기</Button>
         </div>
       </div>
 

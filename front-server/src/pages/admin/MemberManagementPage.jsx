@@ -36,14 +36,19 @@ const MemberManagementPage = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
+            // 'SELLER' 필터일 경우 백엔드에는 'USER' role로 요청 (셀러도 USER 역할을 가짐)
+            const apiRole = roleFilter === 'SELLER' ? 'USER' : roleFilter;
             const data = await adminSearchUsers({
                 q: searchTerm,
-                role: roleFilter,
+                role: apiRole, // 'ALL' 또는 'USER'
                 page,
                 size,
             });
-            setRows(data?.content ?? []);
-            setTotalElements(data?.totalElements ?? 0);
+
+            // 2. ADMIN 역할 제외 필터링
+            const filteredData = data?.content.filter(user => user.role !== 'ADMIN') ?? [];
+            setRows(filteredData);
+            setTotalElements(data?.totalElements ?? 0); // 페이지네이션은 백엔드 수치 그대로 사용
         } catch (e) {
             alert('회원 목록을 불러오는 데 실패했습니다.');
         } finally {
@@ -82,10 +87,26 @@ const MemberManagementPage = () => {
         }
     };
 
+    const filteredRows = useMemo(() => {
+        if (roleFilter === 'SELLER') {
+            return rows.filter(row => !!row.shopName); // shopName이 있으면 셀러
+        }
+        if (roleFilter === 'USER') {
+            return rows.filter(row => !row.shopName); // shopName이 없으면 일반 사용자
+        }
+        return rows; // 'ALL'
+    }, [rows, roleFilter]);
+
+
     const columns = [
         { header: '유저 닉네임', key: 'nickname' },
         { header: '상호명', key: 'shopName', render: (r) => r.shopName || '-' },
-        { header: 'Role', key: 'role', width: 100 },
+        {
+            header: '구분',
+            key: 'type',
+            width: 100,
+            render: (r) => (r.shopName ? '셀러' : '사용자'),
+        },
         { 
             header: '제재 이력',
             key: 'sanctionHistory',
@@ -131,15 +152,11 @@ const MemberManagementPage = () => {
                     setRoleFilter('ALL');
                     setPage(0);
                 }}
-                // --- 필터(토글) 기능에 필요한 props 전달 ---
-                statusChips={ROLE_STATUS_CHIPS}
-                selectedStatus={roleFilter}
-                onSelectStatus={setRoleFilter} // 필터 상태 변경 함수 전달
             />
 
             <BaseTable
                 columns={columns}
-                data={rows}
+                data={filteredRows}
                 rowKey="id"
                 emptyText={loading ? '회원 목록을 불러오는 중...' : '해당 조건의 회원이 없습니다.'}
             />

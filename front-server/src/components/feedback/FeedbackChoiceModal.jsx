@@ -5,7 +5,7 @@ import RobotIcon from "../../assets/icons/ic_robot.svg";
 
 const PencilIcon = () => (
   <svg
-    className="w-5 h-5"
+    className="w-5 h-5 mb-1 "
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
@@ -37,8 +37,9 @@ export default function FeedbackChoiceModal({
         <h2 className="text-lg sm:text-xl font-bold mb-2">
           피드백 작성 방법을 골라주세요!
         </h2>
-        <p className="text-sm sm:text-base text-gray-600 mb-6">
-          설문이 제출되었습니다. 아래 방법 중 하나로 피드백을 작성하세요.
+        <p className="flex flex-col text-sm sm:text-base text-gray-600 mb-6">
+          <span>설문이 제출되었습니다.</span>
+          <span>아래 방법 중 하나로 피드백을 작성하세요.</span>
         </p>
 
         <div className="space-y-3">
@@ -60,7 +61,7 @@ export default function FeedbackChoiceModal({
               <img
                 src={RobotIcon}
                 alt="AI 아이콘"
-                className="w-4 sm:w-5 h-4 sm:h-5"
+                className="!w-5 !h-5 mb-1 mr-0.5"
               />
             }
             onClick={onPickAI}

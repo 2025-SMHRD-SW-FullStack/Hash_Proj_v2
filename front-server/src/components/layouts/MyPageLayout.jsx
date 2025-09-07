@@ -3,7 +3,7 @@ import useAuthStore from "../../stores/authStore";
 import { useState, useEffect } from "react";
 import Button from "../common/Button";
 import { getMyPointBalance } from "../../service/pointService";
-import PersonIcon from "../../assets/icons/ic_person.svg";
+import PersonIcon from "../../assets/icons/ic_person.png";
 import PointIcon from '../../assets/icons/ic_point.svg'
 import CategorySelect from "../common/CategorySelect";
 
@@ -20,7 +20,7 @@ const MyPageLayout = () => {
     { to: "/user/mypage/feedback-history", label: "작성한 피드백" },
     { to: "/user/mypage/edit", label: "내 정보 수정" },
     { to: "/user/mypage/cart", label: "장바구니" },
-    { to: "/user/mypage/support/qna", label: "문의내역" },
+    { to: "/user/mypage/support/qna", label: "문의 내역" },
     { to: "/user/mypage/seller-apply", label: "셀러 등록하기" },
   ];
   
@@ -69,9 +69,9 @@ const MyPageLayout = () => {
   const selectedCategory = categorySelectItems.find(item => item.value === selectedNav.to);
 
   return (
-    <div className="flex flex-col md:flex-row bg-gray-50 min-h-screen p-4 md:p-8 md:gap-8">
+    <div className="flex h-full flex-col md:flex-row bg-gray-50 p-4 md:p-8 md:gap-8">
       {/* 왼쪽 사이드바 */}
-      <aside className="w-full md:w-1/5 flex-shrink-0">
+      <aside className="h-full w-full md:w-1/5 flex-shrink-0">
         <div className="flex flex-col p-4 border rounded-lg shadow bg-white">
           {/* 프로필 이미지와 닉네임 */}
           <div className="flex items-center w-full md:flex-col">
@@ -145,7 +145,9 @@ const MyPageLayout = () => {
 
       {/* 오른쪽 콘텐츠 영역 */}
       <main className="flex-1">
-        <Outlet />
+        <div className='min-h-[750px] mx-auto w-full max-w-7xl lg:px-8'>
+          <Outlet />
+        </div>
       </main>
     </div>
   );
