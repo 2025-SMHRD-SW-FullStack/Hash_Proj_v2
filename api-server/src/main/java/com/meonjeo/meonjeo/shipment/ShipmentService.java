@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import com.meonjeo.meonjeo.common.OrderStatus;
 
 import java.time.LocalDateTime;
 
@@ -22,6 +23,16 @@ public class ShipmentService {
     private final AuthSupport auth;               // ✅ 현재 사용자 ID
     private final SweetTrackerPort sweetTracker;  // 스윗트래커 연동 포트
 
+    // ⬇️ 상태 승급용 랭크(하향 금지)
+    private static final java.util.Map<OrderStatus, Integer> ORDER_RANK = java.util.Map.of(
+            OrderStatus.PENDING, 0,
+            OrderStatus.PAID, 1,
+            OrderStatus.READY, 2,
+            OrderStatus.IN_TRANSIT, 3,
+            OrderStatus.DELIVERED, 4,
+            OrderStatus.CONFIRMED, 5
+    );
+
     @Transactional
     public void dispatch(DispatchRequest req) {
         // 1) 주문 존재 확인
@@ -30,12 +41,10 @@ public class ShipmentService {
 
         Long me = auth.currentUserId();
 
-        // 2) 현재 로그인 사용자가 이 주문의 '모든 아이템'의 셀러인지 검증
-        boolean allMine = order.getItems().stream()
-                .map(OrderItem::getSellerId)
-                .allMatch(sellerId -> sellerId != null && sellerId.equals(me));
-
-        if (!allMine) {
+        // 🔸 (변경) “모든 아이템이 내 것” → “하나라도 내 것”
+        boolean anyMine = order.getItems().stream()
+                .anyMatch(it -> it.getSellerId() != null && it.getSellerId().equals(me));
+        if (!anyMine) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "FORBIDDEN_NOT_OWNER");
         }
 
@@ -55,6 +64,41 @@ public class ShipmentService {
         s.setStatus(ShipmentStatus.READY);
         s.setLastSyncedAt(LocalDateTime.now());
         repo.save(s);
+
+        // ⬇️ 추가: 등록 직후 실시간 상태 동기화 (배송중/완료면 즉시 반영)
+        try {
+            TrackingResponse tr = sweetTracker.fetch(req.courierCode(), req.trackingNo());
+            int level = tr.getCurrentLevel();
+            updateStatusFromLevel(s, level);  // Shipment 저장 + deliveredAt 세팅
+
+            // 주문 상태도 바로 승격 (READY / IN_TRANSIT / DELIVERED)
+            orderRepo.findById(req.orderId()).ifPresent(o -> {
+                OrderStatus next = mapOrderStatus(level);
+                if (shouldPromote(o.getStatus(), next)) {
+                    o.setStatus(next);
+                    // 배송완료면 주문 deliveredAt도 시그널이 있으면 세팅(선택)
+                    if (next == OrderStatus.DELIVERED && o.getDeliveredAt() == null) {
+                        o.setDeliveredAt(s.getDeliveredAt() != null ? s.getDeliveredAt() : LocalDateTime.now());
+                    }
+                    orderRepo.save(o);
+                }
+            });
+        } catch (Exception ignore) {
+            // 트래킹 실패는 무시(스케줄러가 추후 재동기화)
+        }
+    }
+
+    private boolean shouldPromote(OrderStatus cur, OrderStatus next) {
+        if (cur == null) return true;
+        if (cur == OrderStatus.CONFIRMED) return false;
+        int c = ORDER_RANK.getOrDefault(cur, 0);
+        int n = ORDER_RANK.getOrDefault(next, 0);
+        return n > c;
+    }
+    private OrderStatus mapOrderStatus(int lv) {
+        if (lv <= 2) return OrderStatus.READY;
+        if (lv <= 5) return OrderStatus.IN_TRANSIT;
+        return OrderStatus.DELIVERED;
     }
 
     // ⬇️ readOnly 제거 (상태 업데이트/저장 포함)

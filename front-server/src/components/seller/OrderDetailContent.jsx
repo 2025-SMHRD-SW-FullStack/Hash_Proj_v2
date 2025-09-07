@@ -1,7 +1,9 @@
 // /src/components/seller/OrderDetailContent.jsx
-import React, { useMemo } from 'react'
+import React, { useMemo, useEffect, useState } from 'react'
 import { toOrderNo, fmtYmd, resolveFeedbackDue } from '../../util/orderUtils'
 import { carrierLabel, resolveCarrier as resolveCarrierByName } from '../../constants/carriers'
+import { getShipmentTracking } from '../../service/orderService'
+import { levelToKorean } from '../../util/shipping'
 
 // 공통 pick
 const pick = (...vals) => vals.find(v => v != null && v !== '')
@@ -76,10 +78,41 @@ const resolveFeedbackText = (r) => {
 export default function OrderDetailContent({ row }) {
   if (!row) return null
 
+    // ── 트래킹(로직만 추가, CSS 변경 없음)
+  const orderId = row?.id ?? row?.orderId
+  const hasTracking = !!(row?.trackingNo || row?.trackingNumber) &&
+                      !!(row?.carrierCode || row?.courierCode || row?.courierName)
+  const [tracking, setTracking] = useState(row?._tracking || null)
+  const [trkLoading, setTrkLoading] = useState(false)
+
+  useEffect(() => {
+    if (!orderId || !hasTracking) return
+    let alive = true
+    ;(async () => {
+      try {
+        setTrkLoading(true)
+        const tr = await getShipmentTracking(orderId)
+        if (alive) setTracking(tr)
+      } catch { /* ignore */ }
+      finally { if (alive) setTrkLoading(false) }
+    })()
+    return () => { alive = false }
+  }, [orderId, hasTracking])
+
+  const trackingStatusText = useMemo(() => {
+    const lv = Number(tracking?.currentLevel ?? NaN)
+    return Number.isFinite(lv) ? levelToKorean(lv) : null
+  }, [tracking])
+
+
+
   // 표기 값들: 어떤 스키마가 와도 위 resolver가 알아서 처리
   const displayOrderNo      = useMemo(() => toOrderNo(row), [row])
   const displayOrderedAt    = useMemo(() => resolveOrderedAt(row), [row])
-  const displayStatus       = useMemo(() => resolveStatusText(row), [row])
+  const displayStatus = useMemo(() => {
+   const base = resolveStatusText(row);           // row.statusText / row.status 기반
+  return base === '구매확정' ? base : (trackingStatusText || base);
+ }, [row, trackingStatusText]);
   const displayFeedbackDue  = useMemo(() => resolveFeedbackDue(row), [row])
   const displayFeedbackAt   = useMemo(() => resolveFeedbackWrittenAt(row), [row])
   const displayCarrierName  = useMemo(() => resolveCarrierName(row), [row])
@@ -91,6 +124,20 @@ export default function OrderDetailContent({ row }) {
   const displayRequest      = useMemo(() => resolveRequest(row), [row])
   const displayFeedbackText = useMemo(() => resolveFeedbackText(row), [row])
 
+  // 타임라인을 "텍스트"로만 표 셀에 표시 (CSS 추가 없음)
+  const trackingLines = useMemo(() => {
+    if (!hasTracking) return '-'
+    if (trkLoading) return '불러오는 중…'
+    const evts = Array.isArray(tracking?.events) ? tracking.events : []
+    if (evts.length === 0) return '이력이 없습니다.'
+    return evts.map(e => {
+      const t = e?.timeText || ''
+      const st = e?.statusText || ''
+      const loc = e?.location ? ` · ${e.location}` : ''
+      return [t, st].filter(Boolean).join(' ') + loc
+    }).join('\n')
+  }, [hasTracking, trkLoading, tracking])
+
   const rows = [
     ['주문번호', <span className="font-mono">{displayOrderNo}</span>],
     ['주문일', displayOrderedAt],
@@ -99,6 +146,7 @@ export default function OrderDetailContent({ row }) {
     ['피드백 작성일', displayFeedbackAt],
     ['택배사', displayCarrierName],
     ['운송장', displayTrackingNo],
+    ['배송 조회', <span style={{ whiteSpace: 'pre-wrap' }}>{trackingLines}</span>],
     ['상품명', displayProduct],
     ['받는이', displayBuyer],
     ['연락처', displayPhone],
