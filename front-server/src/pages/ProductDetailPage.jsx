@@ -22,12 +22,13 @@ import CategorySelect from '../components/common/CategorySelect.jsx';
 import BasketIcon from '../assets/icons/ic_basket.svg'
 import MessageIcon from '../assets/icons/ic_message.svg'
 
+
 const ProductDetailPage = () => {
   const { productId: paramId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoggedIn, isAdmin } = useAuthStore();
-
+ 
   // --- 상태 관리 ---
   const [productData, setProductData] = useState(null);
   const [loading, setLoading] = useState(true);
