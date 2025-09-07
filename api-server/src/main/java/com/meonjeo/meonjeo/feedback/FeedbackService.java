@@ -78,8 +78,31 @@ public class FeedbackService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "NEED_MANUAL_CONFIRM_FIRST");
 
         Long productId = item.getProductId();
-        if (feedbackRepo.existsForUserAndProduct(uid, productId))
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "ALREADY_WRITTEN_FOR_PRODUCT");
+        Feedback existing = feedbackRepo.findByUserIdAndProductIdAndRemovedFalse(uid, productId).orElse(null);
+        if (existing != null) {
+            LocalDateTime newDeadline = eff.plusDays(7); // eff는 위에서 계산된 최신 배송완료시각
+            LocalDateTime now2 = LocalDateTime.now();
+
+            LocalDateTime existingDeadline = existing.getDeadlineAt();
+            if (existingDeadline == null) {
+                existingDeadline = newDeadline;
+                existing.setDeadlineAt(existingDeadline);
+            }
+            boolean editable = now2.isBefore(existingDeadline);
+            if (editable) {
+                // ✅ 재구매 주문 아이템으로 연동 (포인트 재지급 없음)
+                existing.setOrderItemId(orderItemId);
+                if (existing.getDeadlineAt() == null || existing.getDeadlineAt().isBefore(newDeadline)) {
+                    existing.setDeadlineAt(newDeadline); // 윈도우 최신화(교환/재배송 포함 최신 배송 기준)
+                }
+                feedbackRepo.save(existing);
+                return toResponse(existing);
+            } else {
+                // 기존 피드백은 있는데 마감됨 → 정책상 신규 버전/새 작성은 추후 결정
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "ALREADY_WRITTEN_LOCKED");
+            }
+        }
+
 
         Feedback fb = feedbackRepo.save(Feedback.builder()
                 .orderItemId(orderItemId)

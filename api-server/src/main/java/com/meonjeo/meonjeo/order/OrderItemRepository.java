@@ -53,4 +53,17 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     """)
     Long sumSalesAmountForProductSince(@Param("productId") Long productId,
                                        @Param("fromTs") LocalDateTime fromTs);
+
+    @Query("""
+      select (count(oi) > 0)
+      from OrderItem oi
+      join oi.order o
+      where o.userId = :userId
+        and oi.productId = :productId
+        and o.deliveredAt is not null
+        and o.deliveredAt < :threshold
+    """)
+    boolean existsDeliveredClosedByUserAndProduct(@Param("userId") Long userId,
+                                                  @Param("productId") Long productId,
+                                                  @Param("threshold") java.time.LocalDateTime threshold);
 }

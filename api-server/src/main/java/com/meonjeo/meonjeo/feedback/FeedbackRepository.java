@@ -137,4 +137,9 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
         """
         )
     Page<Feedback> pageBySeller(@Param("sellerId") Long sellerId, Pageable pageable);
+
+    Optional<Feedback> findByUserIdAndProductIdAndRemovedFalse(Long userId, Long productId);
+
+    boolean existsByUserIdAndProductIdAndRemovedFalse(Long userId, Long productId);
+
 }
