@@ -10,6 +10,7 @@ export default defineConfig({
     cors: true,
     allowedHosts: [
       'localhost',
+      '3.36.134.163',
       '.elasticbeanstalk.com', // 모든 EB 도메인 허용
       'hash-proj-v2.eba-ijnehrgn.ap-northeast-2.elasticbeanstalk.com'
     ],
