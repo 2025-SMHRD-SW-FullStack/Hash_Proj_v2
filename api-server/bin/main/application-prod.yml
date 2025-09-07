@@ -1,3 +1,4 @@
+
 spring:
   datasource:
     password: ${SPRING_DATASOURCE_PASSWORD}

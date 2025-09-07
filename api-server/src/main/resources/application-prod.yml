@@ -1,67 +1,73 @@
 spring:
+  # prod에서 secret 값을 자동 병합
+  config:
+    import: optional:file:./application-secret.yml
+
   datasource:
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    # 캠퍼스 원격 DB를 기본값으로 사용 (ENV로 언제든 override)
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://project-db-campus.smhrd.com:3307/campus_25SW_FS_p3_1?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:campus_25SW_FS_p3_1}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+
   data:
     redis:
-      host: localhost
-      port: 6379
-  security:
-    sms:
-      cooldown-seconds: 60
-      window10m-max: 3
-      window24h-max: 10
-      verify-max-attempts-hour: 5
-      lock-minutes: 15
-    oauth2:
-      success:
-        web-url: ${SPRING_SECURITY_OAUTH2_SUCCESS_WEB_URL}
-        app-url: "ressol://oauth-success"
-      client:
-        registration:
-          google:
-            client-id: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID}
-            client-secret: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET}
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope: [email, profile]
-          kakao:
-            client-id: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_ID}
-            redirect-uri: "{baseUrl}/login/oauth2/code/kakao"
-            authorization-grant-type: authorization_code
-            scope: [profile_nickname, profile_image]
-            client-name: Kakao
-          naver:
-            client-id: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_NAVER_CLIENT_ID}
-            client-secret: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_NAVER_CLIENT_SECRET}
-            redirect-uri: "{baseUrl}/login/oauth2/code/naver"
-            authorization-grant-type: authorization_code
-            scope: [name, email, gender, birthday, birthyear, mobile]
-            client-name: Naver
-        provider:
-          google:
-            authorization-uri: ${SPRING_SECURITY_OAUTH2_PROVIDER_GOOGLE_AUTHORIZATION_URI:https://accounts.google.com/o/oauth2/v2/auth}
-            token-uri: ${SPRING_SECURITY_OAUTH2_PROVIDER_GOOGLE_TOKEN_URI:https://oauth2.googleapis.com/token}
-            user-info-uri: ${SPRING_SECURITY_OAUTH2_PROVIDER_GOOGLE_USER_INFO_URI:https://www.googleapis.com/oauth2/v3/userinfo}
-          kakao:
-            authorization-uri: ${SPRING_SECURITY_OAUTH2_PROVIDER_KAKAO_AUTHORIZATION_URI:https://kauth.kakao.com/oauth/authorize}
-            token-uri: ${SPRING_SECURITY_OAUTH2_PROVIDER_KAKAO_TOKEN_URI:https://kauth.kakao.com/oauth/token}
-            user-info-uri: ${SPRING_SECURITY_OAUTH2_PROVIDER_KAKAO_USER_INFO_URI:https://kapi.kakao.com/v2/user/me}
-            user-name-attribute: ${SPRING_SECURITY_OAUTH2_PROVIDER_KAKAO_USER_NAME_ATTRIBUTE:id}
-          naver:
-            authorization-uri: ${SPRING_SECURITY_OAUTH2_PROVIDER_NAVER_AUTHORIZATION_URI:https://nid.naver.com/oauth2.0/authorize}
-            token-uri: ${SPRING_SECURITY_OAUTH2_PROVIDER_NAVER_TOKEN_URI:https://nid.naver.com/oauth2.0/token}
-            user-info-uri: ${SPRING_SECURITY_OAUTH2_PROVIDER_NAVER_USER_INFO_URI:https://openapi.naver.com/v1/nid/me}
-            user-name-attribute: ${SPRING_SECURITY_OAUTH2_PROVIDER_NAVER_USER_NAME_ATTRIBUTE:response}
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DB:0}
 
-jwt:
-  secret: ${JWT_SECRET}
+  servlet:
+    multipart:
+      max-file-size: 12MB
+      max-request-size: 40MB
 
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+
+storage:
+  # 운영 기본은 s3, 자격증명 없으면 ENV로 STORAGE_MODE=local 지정해서 로컬 업로드 테스트 가능
+  mode: ${STORAGE_MODE:s3}
+  local:
+    base-dir: ./uploads
+  s3:
+    bucket: ${STORAGE_S3_BUCKET}
+    region: ${STORAGE_S3_REGION}
+    endpoint: ${STORAGE_S3_ENDPOINT}
+    path-style: ${STORAGE_S3_PATH_STYLE:true}
+    public-base-url: ${STORAGE_S3_PUBLIC_BASE_URL}
+    acl-public-read: ${STORAGE_S3_ACL_PUBLIC_READ:true}
+
+phone:
+  short-token:
+    validity-seconds: 600
+  code:
+    ttl-seconds: 180
+    max-attempts: 5
+
+ai:
+  # 오타 수정: http://http://... → http://
+  base-url: ${AI_BASE_URL:http://ai-server:8000}
+  timeout:
+    connect-ms: 1500
+    read-ms: 3000
+
+# 단순 위임(ENV에서 주입)
 COOLSMS_API_KEY: ${COOLSMS_API_KEY}
 COOLSMS_API_SECRET: ${COOLSMS_API_SECRET}
 COOLSMS_FROM_NUMBER: ${COOLSMS_FROM_NUMBER}
 
 toss:
-  secretKey: ${TOSS_SECRET_KEY}
-  clientKey: ${TOSS_CLIENT_KEY}
+  successUrl: ${TOSS_SUCCESS_URL:http://hash-proj-v2.eba-ijnehrgn.ap-northeast-2.elasticbeanstalk.com/pay/success}
+  failUrl: ${TOSS_FAIL_URL:http://hash-proj-v2.eba-ijnehrgn.ap-northeast-2.elasticbeanstalk.com/pay/fail}
 
 sweettracker:
   api-key: ${SWEETTRACKER_API_KEY}
