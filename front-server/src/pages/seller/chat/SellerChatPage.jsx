@@ -17,14 +17,14 @@ export default function SellerChatPage() {
   const close = () => setSelectedRoomId(null)
 
   return (
-    <div className="relative flex h-full w-full justify-center overflow-hidden pt-8">
+    <div className="relative flex h-full w-full justify-center overflow-hidden">
       {selectedRoomId && (
         <div className="fixed inset-0 z-10 bg-black/50 transition-opacity duration-300" onClick={close} />
       )}
 
-      <div className="w-full max-w-xl px-4">
-        <strong className="mb-4 block text-2xl font-bold">채팅 목록</strong>
-        <div className="space-y-2 rounded-lg border p-4 shadow-sm">
+      <div className="flex h-full w-full max-w-xl flex-col px-4 pt-8">
+        <strong className="mb-4 block text-2xl font-bold shrink-0">채팅 목록</strong>
+        <div className="space-y-2 rounded-lg border p-4 shadow-sm flex-1 overflow-y-auto">
           {/* ✅ 콜백명 onOpenRoom */}
           <ChatList onOpenRoom={open} />
         </div>

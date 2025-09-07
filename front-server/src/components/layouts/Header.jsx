@@ -116,7 +116,7 @@ const Header = () => {
 
 
         {/* 가운데 로고 */}
-        <div className="flex flex-1 justify-center">
+        <div className="flex justify-center">
           <img
             src={Logo}
             alt="먼저써봄 로고"
@@ -140,8 +140,8 @@ const Header = () => {
               </div>
 
               {/* 데스크탑 아이콘들 */}
-              <div className="hidden sm:flex items-center space-x-4">
-                <Button variant='signUp' size='md' onClick={logout}>
+              <div className="hidden  sm:flex items-center space-x-4">
+                <Button variant='signUp' size='sm' onClick={logout}>
                   로그아웃
                 </Button>
                 <Icon src={User} alt="마이 페이지" onClick={() => navigate('/user/mypage')} />

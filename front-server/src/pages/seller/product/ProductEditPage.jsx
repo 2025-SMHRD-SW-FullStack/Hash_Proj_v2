@@ -353,6 +353,21 @@ export default function ProductEditPage() {
       ? Math.max(0, basePrice - Number(form.discount || 0))
       : 0
 
+    // ✅ (1) 썸네일: 새 파일을 선택한 경우 업로드해서 URL 교체
+    let thumbnailUrl = serverSnapshotRef.current.thumbnailUrl || ''
+    if (form.thumbnail instanceof File) {
+      try {
+        const uploaded = await uploadImages('PRODUCT_THUMB', [form.thumbnail])
+        const url = uploaded?.[0]?.url
+        if (!url) throw new Error('썸네일 업로드 실패')
+        thumbnailUrl = url
+      } catch (err) {
+        console.error(err)
+        alert('썸네일 업로드에 실패했습니다.')
+        return
+      }
+    }
+
     // ✅ 상세 블록 내 이미지들을 먼저 업로드/치환 (blob/File → S3 URL)
     const detailBlocksUploaded = await extractAndUploadDetailImages(
       form.detailBlocks || []
@@ -385,7 +400,7 @@ export default function ProductEditPage() {
       category: form.category,
       basePrice,
       salePrice,
-      thumbnailUrl: serverSnapshotRef.current.thumbnailUrl || '',
+      thumbnailUrl,
       detailHtml: blocksToHtml(detailBlocksUploaded),
       // 백엔드가 LocalDateTime(yyyy-MM-dd'T'HH:mm:ss) 요구
       saleStartAt: serverSnapshotRef.current.saleStartAt || toIsoStart(form.saleStart),
@@ -404,6 +419,7 @@ export default function ProductEditPage() {
 
     try {
       await updateMyProduct(id, payload)
+      serverSnapshotRef.current.thumbnailUrl = thumbnailUrl
       alert('수정 저장 완료')
       navigate('/seller/products?status=ALL')
     } catch (err) {

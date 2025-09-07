@@ -151,6 +151,7 @@ export default function ChatRoom({ roomId, onClose, role }) {
   const asRole = role ?? (me?.isSeller ? 'seller' : 'user');
 
   const [roomInfo, setRoomInfo] = useState(null);
+  const roomInfoRef = useRef(null);
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [otherLastReadId, setOtherLastReadId] = useState(undefined);
@@ -197,11 +198,16 @@ export default function ChatRoom({ roomId, onClose, role }) {
         const merged = overrideProduct ? { ...currentRoom, product: overrideProduct } : currentRoom;
 
         setRoomInfo(merged);
+        roomInfoRef.current = merged;
+
         const hasField = merged && Object.prototype.hasOwnProperty.call(merged, 'otherLastReadMessageId');
         setOtherLastReadId(hasField ? (merged.otherLastReadMessageId ?? null) : undefined);
 
         const data = await listMessages(rid, null, 50);
-        const decorated = (data || []).map(m => ({ ...m, isMine: me?.id && m.senderId === me.id }));
+        const decorated = (data || []).map(m => ({ ...m, isMine: me?.id && m.senderId === me.id,
+          senderProfileUrl: (me?.id && m.senderId === me.id) ? me.profileImageUrl : merged?.other?.profileImageUrl,
+         }));
+        
         setMsgs(decorated);
 
         const lastId = decorated?.[decorated.length - 1]?.id;
@@ -229,8 +235,10 @@ export default function ChatRoom({ roomId, onClose, role }) {
         }
 
         const isMine = me?.id && evt.senderId === me.id;
+        const profileUrl = isMine ? me.profileImageUrl : roomInfoRef.current?.other?.profileImageUrl;
+
         setMsgs(prev => {
-          const next = [...prev, { ...evt, isMine }];
+          const next = [...prev, { ...evt, isMine, senderProfileUrl: profileUrl }];
           setTimeout(() => {
             const last = next[next.length - 1]?.id;
             bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

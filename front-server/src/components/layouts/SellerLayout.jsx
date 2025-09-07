@@ -74,7 +74,7 @@ export default function SellerLayout({ children }) {
   const selectedLinkStyle = 'bg-[#CFADE5] text-white font-semibold'; // 👈 Seller 테마에 맞게 변경
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-gray-50 flex flex-col">
       <Header />
 
       {/* 모바일 상단 바 */}
@@ -236,9 +236,8 @@ export default function SellerLayout({ children }) {
           )}
         </AnimatePresence>
 
-        {/* 콘텐츠 (main 태그로 변경하고, flex-1 적용) */}
         <main className="flex-1 w-full max-w-[1600px] p-4 sm:p-6">
-          <div className='mx-auto w-full max-w-7xl lg:px-8'>
+           <div className='mx-auto w-full max-w-7xl lg:px-8 h-full'>
             {children || <Outlet />}
           </div>
         </main>
