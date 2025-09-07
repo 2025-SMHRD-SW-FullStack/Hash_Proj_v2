@@ -15,7 +15,7 @@ import Button from "../../../components/common/Button";
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
 import { getMyExchanges } from "../../../service/exchangeService";
 import Modal from "../../../components/common/Modal";
-import { normalizeTracking } from "../../../adapters/tracking";
+import { hasMyFeedbackForProduct, getMyFeedbackIdByProduct } from "../../../service/feedbackService";
 
 const statusLabel = (s) => ({
   READY: "배송 준비중",
@@ -40,14 +40,14 @@ function GroupedProductRow({ product }) {
   return (
     <div className="flex items-start gap-4">
       <div className="w-24 h-24 rounded-lg bg-gray-100 shrink-0 overflow-hidden">
-        <img 
-          src={product.thumbnailUrl || TestImg} 
-          alt={product.productName} 
+        <img
+          src={product.thumbnailUrl || TestImg}
+          alt={product.productName}
           className="w-full h-full object-cover"
           onError={(e) => {
-            e.target.onerror = null; // 무한 루프 방지
+            e.target.onerror = null;
             e.target.src = TestImg;
-          }} 
+          }}
         />
       </div>
       <div className="flex-1 min-w-0">
@@ -76,15 +76,44 @@ const OrderCard = ({ order, onChanged }) => {
   // 7일 윈도우 상태
   const [confirmWindow, setConfirmWindow] = useState({ open: true, remainingSeconds: null });
 
+  // 상품 단위 상태
+  const [prodHasFeedback, setProdHasFeedback] = useState(false);
+  const [prodFeedbackId, setProdFeedbackId] = useState(null);
+
   const firstItem = useMemo(() => detail?.items?.[0], [detail]);
 
+  // 윈도우 기반 상태
+  const withinWindow = Boolean(confirmWindow?.open);
+  const showEditForThisProduct = Boolean(firstItem && withinWindow && prodHasFeedback);
+  const completedAny = Boolean(prodHasFeedback);
+
+  // 상품 단위 존재/ID 조회
   useEffect(() => {
-    (async () => { 
-      try { 
+    const pid = firstItem?.productId;
+    if (!pid) { setProdHasFeedback(false); setProdFeedbackId(null); return; }
+    (async () => {
+      try {
+        const exists = await hasMyFeedbackForProduct(pid);
+        setProdHasFeedback(Boolean(exists));
+        if (exists) {
+          const id = await getMyFeedbackIdByProduct(pid);
+          setProdFeedbackId(id);
+        }
+      } catch (e) {
+        console.error(e);
+        setProdHasFeedback(false);
+        setProdFeedbackId(null);
+      }
+    })();
+  }, [firstItem?.productId, order.status]);
+
+  useEffect(() => {
+    (async () => {
+      try {
         const detailData = await getMyOrderDetail(order.id);
         setDetail(detailData);
-      } catch (e) { 
-        console.error(e); 
+      } catch (e) {
+        console.error(e);
       }
     })();
   }, [order.id]);
@@ -125,12 +154,7 @@ const OrderCard = ({ order, onChanged }) => {
   // 배송 조회 데이터
   useEffect(() => {
     if (["IN_TRANSIT", "DELIVERED", "CONFIRMED"].includes(order.status)) {
-      (async () => {
-        try {
-          const raw = await getTracking(order.id);
-          setTrack(normalizeTracking(raw || {}));
-        } catch (e) { console.error(e); }
-      })();
+      (async () => { try { setTrack(await getTracking(order.id)); } catch (e) { console.error(e); } })();
     } else setTrack(null);
   }, [order.id, order.status]);
 
@@ -177,8 +201,8 @@ const OrderCard = ({ order, onChanged }) => {
       const optionValues = [];
       try {
         const opts = JSON.parse(item.optionSnapshotJson || '{}');
-        Object.values(opts).forEach(v => { if(v) optionValues.push(String(v)); });
-      } catch(e) {}
+        Object.values(opts).forEach(v => { if (v) optionValues.push(String(v)); });
+      } catch (e) {}
       const optsString = optionValues.filter(Boolean).join(" / ") || "기본";
       acc[groupId].variations.push({
         id: item.id,
@@ -190,9 +214,6 @@ const OrderCard = ({ order, onChanged }) => {
     }, {});
     return Object.values(groups);
   }, [items]);
-
-  // 윈도우 기반 상태
-  const withinWindow = Boolean(confirmWindow?.open);
 
   return (
     <div className="rounded-2xl border border-gray-200 p-4 bg-white">
@@ -226,19 +247,30 @@ const OrderCard = ({ order, onChanged }) => {
           {/* 배송완료: 구매확정 유도 */}
           {order.status === "DELIVERED" && !feedbackDone && (
             <>
-              <Button className="flex-1" onClick={() => setOpenConfirm(true)}>구매확정 후 피드백 작성</Button>
+              <Button className="flex-1" onClick={() => setOpenConfirm(true)}>
+                {showEditForThisProduct ? '구매확정 후 피드백 수정' : '구매확정 후 피드백 작성'}
+              </Button>
               <Button className="flex-1" variant="signUp" onClick={handleOpenExchangeModal}>교환 신청</Button>
             </>
           )}
 
           {/* 구매확정 + 기간/완료 상태에 따른 버튼/라벨 */}
           {order.status === "CONFIRMED" && !feedbackDone && withinWindow && firstItem && (
-            <Button
-              className="flex-1"
-              onClick={() => navi(`/user/survey?orderId=${order.id}`)} // ✅ 다건 주문 대응
-            >
-              피드백 작성
-            </Button>
+            showEditForThisProduct ? (
+              <Button
+                className="flex-1"
+                variant="unselected"
+                onClick={() =>
+                  navi(`/user/feedback/editor?${prodFeedbackId ? `feedbackId=${prodFeedbackId}` : 'feedbackId=auto'}&productId=${firstItem.productId}`)
+                }
+              >
+                피드백 수정
+              </Button>
+            ) : (
+              <Button className="flex-1" onClick={() => navi(`/user/survey?orderId=${order.id}`)}>
+                피드백 작성
+              </Button>
+            )
           )}
 
           {feedbackDone && withinWindow && firstItem && (
@@ -253,13 +285,13 @@ const OrderCard = ({ order, onChanged }) => {
             </Button>
           )}
 
-          {feedbackDone && !withinWindow && (
+          {completedAny && !withinWindow && (
             <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">
               피드백 작성 완료
             </span>
           )}
 
-          {!feedbackDone && !withinWindow && (
+          {!completedAny && !withinWindow && (
             <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-rose-100 text-rose-700">
               기간 만료
             </span>
@@ -287,13 +319,20 @@ const OrderCard = ({ order, onChanged }) => {
             setOpenConfirm(false);
             onChanged?.();
             if (firstItem) {
-              navi(`/user/survey?orderId=${order.id}`);
+              if (prodHasFeedback) {
+                const url =
+                  `/user/feedback/editor?${prodFeedbackId ? `feedbackId=${prodFeedbackId}` : 'feedbackId=auto'}&productId=${firstItem.productId}`;
+                navi(url); // ✅ 재구매면 수정으로
+              } else {
+                navi(`/user/survey?orderId=${order.id}`); // 신규 작성
+              }
             }
           } catch (e) {
             const msg = e?.message || e?.error || (typeof e === "string" ? e : "구매확정 중 오류가 발생했습니다.");
             alert(msg);
           }
         }}
+        isEdit={showEditForThisProduct}
       />
       <TrackingModal open={openTrack} onClose={() => setOpenTrack(false)} orderId={order.id} />
       <Modal

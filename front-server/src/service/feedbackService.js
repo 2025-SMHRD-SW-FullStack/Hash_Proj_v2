@@ -296,6 +296,37 @@ export const getProductFeedbacks = (productId, { page = 0, size = 5 } = {}) => {
     .then(r => r.data)
 }
 
+// 상품 기준으로 내가 피드백을 가진 상태인지
+export const hasMyFeedbackForProduct = async (productId) => {
+  const { data } = await api.get(`/api/feedbacks/product/${productId}/done`);
+  return Boolean(data?.done ?? data);
+};
+
+// 상품 기준: 내 피드백 수정 가능 윈도우 (없으면 open=false로 리턴)
+export const getMyFeedbackWindowForProduct = async (productId) => {
+  const res = await api.get(`/api/feedbacks/me/product/${productId}/window`, { validateStatus: () => true });
+  if (res.status >= 200 && res.status < 300) return res.data; // { open, remainingSeconds, deadlineAt, feedbackId }
+  return { open: false, remainingSeconds: 0, deadlineAt: null };
+};
+
+export const getMyFeedbackEligibilityForProduct = async (productId) => {
+  const res = await api.get(`/api/feedbacks/me/product/${productId}/eligibility`, { validateStatus: () => true });
+  if (res.status >= 200 && res.status < 300) return res.data; // { hasFeedback, canEdit, blocked }
+  return { hasFeedback: false, canEdit: false, blocked: false };
+};
+
+// 상품 기준으로 내 피드백 ID 가져오기(있으면 ID, 없으면 null)
+export const getMyFeedbackIdByProduct = async (productId) => {
+  try {
+    const res = await api.get(`/api/feedbacks/me/product/${productId}/id`, { validateStatus: () => true });
+    if (res.status >= 200 && res.status < 300) {
+      return res?.data?.feedbackId ?? res?.data?.id ?? null;
+    }
+  } catch (_) {}
+  return null;
+};
+
+
 /** 관리자 삭제 */
 export async function deleteFeedbackByAdmin(feedbackId) {
   if (!feedbackId) throw new Error('feedbackId is required');

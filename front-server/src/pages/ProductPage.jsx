@@ -9,6 +9,7 @@ import { useLocation } from 'react-router-dom';
 import { getActiveAds } from '../service/adsService.js';
 import { AD_SLOT_TYPES } from '../constants/ads.js';
 import CategorySelect from '../components/common/CategorySelect.jsx';
+import DefaultAdImg from "../assets/images/ReSsol_TestImg.png"
 
 // PowerAdProduct 컴포넌트는 이전과 동일하게 유지합니다.
 const PowerAdProduct = ({ ad, onClick }) => {
@@ -26,9 +27,10 @@ const PowerAdProduct = ({ ad, onClick }) => {
       </div>
       <div className="aspect-square w-full overflow-hidden rounded-xl border border-gray-200">
         <img
-          src={ad.bannerImageUrl || "https://via.placeholder.com/192"}
+          src={ad.bannerImageUrl || DefaultAdImg}
           alt={ad.productName || '광고 상품'}
           className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = DefaultAdImg; }}
         />
       </div>
       <div className="w-full mt-3 px-1">

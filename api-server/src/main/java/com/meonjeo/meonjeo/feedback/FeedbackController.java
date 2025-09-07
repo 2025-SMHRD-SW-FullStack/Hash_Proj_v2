@@ -8,9 +8,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 @Tag(name="피드백")
@@ -65,7 +70,7 @@ public class FeedbackController {
     @GetMapping("/product/{productId}/done")
     public Map<String, Boolean> doneForProduct(@PathVariable Long productId) {
         Long uid = auth.currentUserId();
-        boolean done = feedbackRepo.existsForUserAndProduct(uid, productId);
+        boolean done = feedbackRepo.existsByUserIdAndProductIdAndRemovedFalse(uid, productId);
         return Map.of("done", done);
     }
 
@@ -75,4 +80,61 @@ public class FeedbackController {
         // ok / reason 리턴
         return Map.of("ok", true);
     }
+
+    @Operation(summary="내가 작성한 특정 상품의 피드백 ID 조회")
+    @GetMapping("/me/product/{productId}/id")
+    public Map<String, Long> myFeedbackIdByProduct(@PathVariable Long productId) {
+        Long uid = auth.currentUserId();
+        Feedback fb = feedbackRepo.findByUserIdAndProductIdAndRemovedFalse(uid, productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "FEEDBACK_NOT_FOUND"));
+        return Map.of("feedbackId", fb.getId());
+    }
+
+    @Operation(summary="내가 작성한 특정 상품의 피드백 수정 가능 윈도우(상품 단위 공유)")
+    @GetMapping("/me/product/{productId}/window")
+    public Map<String, Object> myFeedbackWindowByProduct(@PathVariable Long productId) {
+        Long uid = auth.currentUserId();
+        Feedback fb = feedbackRepo.findByUserIdAndProductIdAndRemovedFalse(uid, productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "FEEDBACK_NOT_FOUND"));
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime deadline = fb.getDeadlineAt();
+        boolean open = (deadline != null) && now.isBefore(deadline);
+        long remaining = open ? Duration.between(now, deadline).getSeconds() : 0L;
+
+        Map<String, Object> out = new HashMap<>();
+        out.put("open", open);
+        out.put("remainingSeconds", remaining);
+        out.put("deadlineAt", deadline);
+        out.put("feedbackId", fb.getId());
+        return out;
+    }
+
+    @Operation(summary="내가 특정 상품에 대해 피드백 작성/수정 가능 여부(상품 단위, 재구매에도 공유)")
+    @GetMapping("/me/product/{productId}/eligibility")
+    public Map<String, Object> myFeedbackEligibility(@PathVariable Long productId) {
+        Long uid = auth.currentUserId();
+        boolean has = feedbackRepo.existsByUserIdAndProductIdAndRemovedFalse(uid, productId);
+
+        boolean canEdit = false;
+        boolean blocked = false;
+
+        if (has) {
+            // 이미 쓴 피드백의 수정 가능 여부(마감 전이면 true)
+            var fbOpt = feedbackRepo.findByUserIdAndProductIdAndRemovedFalse(uid, productId);
+            var fb = fbOpt.orElse(null);
+            var deadline = (fb == null) ? null : fb.getDeadlineAt();
+            canEdit = (deadline != null) && java.time.LocalDateTime.now().isBefore(deadline);
+            // 이미 "작성한 적"이 있으면 새 작성은 금지. 수정만 허용.
+            // 수정기간이 지났다면(=canEdit=false) 완전히 차단.
+            blocked = !canEdit;
+
+        }
+
+        return Map.of(
+                "hasFeedback", has,
+                "canEdit", canEdit,
+                "blocked", blocked
+        );
+    }
+
 }
