@@ -53,6 +53,31 @@ public class TrackingController {
             @Parameter(name = "invoice", description = "운송장 번호(숫자만)", example = "612345678901")
             @RequestParam String invoice
     ) {
+        // 1) code가 "04" 같은 2자리 숫자가 아니어도 이름으로 맞춰줌
+        String sweetCode = resolveSweetCode(code);
+        if (sweetCode == null) throw new IllegalArgumentException("알 수 없는 택배사: " + code);
+
+        // 2) 운송장 정규화(숫자/영문/하이픈만) + 최소 길이 가드
+        String inv = invoice == null ? null : invoice.replaceAll("[^0-9A-Za-z-]", "");
+        if (inv == null || inv.length() < 6) throw new IllegalArgumentException("운송장 형식 오류");
+
         return tracking.track(code, invoice);
+    }
+
+    // === 아래 유틸 메서드 컨트롤러 내부에 추가 ===
+    private String resolveSweetCode(String input) {
+        if (input == null) return null;
+        String s = input.trim();
+        if (s.matches("\\d{2}")) return s; // 이미 2자리 숫자
+        // 코드로 직접 찾기
+        var byCode = repo.findByCode(s);
+        if (byCode.isPresent()) return byCode.get().getCode();
+        // 이름 부분 일치로 찾기
+        String q = s.toLowerCase();
+        return repo.findAll().stream()
+                .filter(c -> c.getName()!=null && c.getName().toLowerCase().contains(q))
+                .map(CourierCompany::getCode)
+                .findFirst()
+                .orElse(null);
     }
 }
