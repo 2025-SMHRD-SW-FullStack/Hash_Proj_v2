@@ -378,7 +378,8 @@ const EmailSignUpForm = () => {
   }, [datePickerRef]);
 
   return (
-    <div className="bg-white py-12 px-4 sm:px-6 lg:px-8">
+  <div className='h-full overflow-y-auto'>
+    <div className="bg-white  py-12 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-lg">
         <h1 className="text-3xl font-bold text-center text-gray-900">회원가입</h1>
         <p className="mt-2 text-center text-sm text-gray-600">
@@ -485,8 +486,8 @@ const EmailSignUpForm = () => {
           {!phoneVerified && leftSec > 0 && (
             <div className="flex gap-2">
               <TextField id="otp" label="인증번호" type="text" value={otp} onChange={(e) => { const v = onlyDigits(e.target.value).slice(0, 6); setOtp(v); setOtpError(''); }} />
-              <Button type="button" onClick={onVerifyCode} disabled={isVerifying}>
-                {isVerifying ? '확인중...' : '인증확인'}
+              <Button className='mx-2' type="button" onClick={onVerifyCode} disabled={isVerifying}>
+                {isVerifying ? '확인중...' : '인증'}
               </Button>
             </div>
           )}
@@ -559,6 +560,7 @@ const EmailSignUpForm = () => {
           </Button>
         </form>
       </div>
+    </div>
     </div>
   );
 };
