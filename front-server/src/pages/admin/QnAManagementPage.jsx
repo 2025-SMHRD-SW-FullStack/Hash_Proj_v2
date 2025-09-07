@@ -117,12 +117,6 @@ const QnAManagementPage = () => {
 
   const columns = [
     {
-      header: '목록 번호',
-      key: 'id',
-      width: 100,
-      align: 'center',
-    },
-    {
       header: '작성자 닉네임',
       key: 'userNickname',
       width: 150,

@@ -63,7 +63,6 @@ export default function FeedbackReportsPage() {
   }
 
   const columns = [
-    { header: 'ID', key: 'id', width: 80 },
     { header: '피드백ID', key: 'feedbackId', width: 100 },
     { header: '셀러ID', key: 'sellerId', width: 100 },
     { header: '사유', key: 'reason', className: 'max-w-[240px] truncate' },

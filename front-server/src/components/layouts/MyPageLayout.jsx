@@ -145,7 +145,7 @@ const MyPageLayout = () => {
 
       {/* 오른쪽 콘텐츠 영역 */}
       <main className="flex-1">
-        <div className='mx-auto w-full max-w-7xl lg:px-8'>
+        <div className='min-h-[750px] mx-auto w-full max-w-7xl lg:px-8'>
           <Outlet />
         </div>
       </main>

@@ -132,13 +132,6 @@ const SellerApprovalsPage = () => {
   // ------ 테이블 컬럼 정의 ------
   const columns = [
     {
-      header: '번호',
-      key: 'no',
-      width: 70,
-      align: 'center',
-      render: (_row, idx) => page * size + idx + 1,
-    },
-    {
       header: '상태',
       key: 'status',
       width: 110,

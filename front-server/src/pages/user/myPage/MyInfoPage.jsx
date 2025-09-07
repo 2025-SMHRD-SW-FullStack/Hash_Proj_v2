@@ -295,8 +295,19 @@ const MyInfoPage = () => {
                   </div>
               </FormRow>
               <FormRow label="아이디(이메일)">
-              <input type="text" value={user?.email || ''} readOnly disabled className={readOnlyInputStyle} />
-              </FormRow>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={user?.email || ''}
+                  readOnly
+                  disabled
+                  className={readOnlyInputStyle}
+                />
+              ) : (
+                <div className="h-11 flex items-center px-3">{user?.email}</div>
+              )}
+            </FormRow>
+
               <FormRow label="닉네임">
                   {isEditing ? (
                       <input id="nickname" type="text" value={nickname}

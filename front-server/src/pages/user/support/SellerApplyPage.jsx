@@ -84,15 +84,15 @@ const SellerApplyForm = ({ onApplySuccess }) => {
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-md">
-      <div className='flex items-center justify-center gap-2 mb-4'>
-        <h2 className="hidden md:block text-lg md:text-xl font-bold mb-4 text-gray-800">셀러 등록 신청</h2>
-        <div className="flex flex-col sm:flex-row sm:gap-1 text-center text-primary/80 ">
+      <div className='flex sm:flex-col items-center justify-center gap-2 mb-4'>
+        <h2 className="hidden md:block text-lg md:text-xl font-bold text-gray-800">셀러 등록 신청</h2>
+        <div className="flex flex-col sm:flex-row sm:gap-1 mb-4 text-center text-primary/80 ">
           <span>먼저써봄과 함께</span>
           <span>피드백으로 빛나는 상품을 만들어보세요.</span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 px-10 ">
         <TextField id="shopName" name="shopName" label="상호명" value={form.shopName} onChange={handleChange} required />
         <TextField id="ownerName" name="ownerName" label="대표자명" value={form.ownerName} onChange={handleChange} required />
         <TextField id="bizNo" name="bizNo" label="사업자 등록번호" value={form.bizNo} onChange={handleChange} required />

@@ -17,7 +17,7 @@ public final class SurveyCatalog {
                     q("ELEC_BATTERY_EFF","배터리/전력 효율",     SCALE_1_5, true),
                     qc("ELEC_HEAT_NOISE","발열/소음 수준", List.of(
                             opt("VERY_HIGH","매우 높음"), opt("HIGH","높음"), opt("MID","보통"),
-                            opt("LOW","낮음"), opt("VERY_LOW","매우 낮음"), opt("NA","해당없음")
+                            opt("LOW","낮음"), opt("VERY_LOW","매우 낮음")
                     ))
             ));
             case "COSMETICS", "화장품" -> new SurveyTemplateResponse(cat, List.of(
@@ -25,7 +25,7 @@ public final class SurveyCatalog {
                     q("COS_SCENT","향",           SCALE_1_5, true),
                     qc("COS_IRRITATION","자극/트러블", List.of(
                             opt("NONE","없음"), opt("SLIGHT","약간"), opt("MID","보통"),
-                            opt("SEVERE","심함"), opt("NA","해당없음")
+                            opt("SEVERE","심함")
                     )),
                     q("COS_LONGEVITY","지속력", SCALE_1_5, true),
                     qc("COS_REPURCHASE","재구매 의향", List.of(
@@ -50,7 +50,7 @@ public final class SurveyCatalog {
                     q("MEAL_COOK_GUIDE","조리 시간·난이도 안내 정확성", SCALE_1_5, false),
                     q("MEAL_PACKAGING","포장 상태(누수/파손)", SCALE_1_5, false),
                     qc("MEAL_SPICINESS","맵기 정도", List.of(
-                            opt("MILD","순함"), opt("MEDIUM","적당함"), opt("HOT","매움"), opt("NA","해당없음")
+                            opt("MILD","순함"), opt("MEDIUM","적당함"), opt("HOT","매움")
                     )),
                     qc("MEAL_REPURCHASE","재구매 의향", List.of(
                             opt("YES","예"), opt("NO","아니오"), opt("MAYBE","미정")

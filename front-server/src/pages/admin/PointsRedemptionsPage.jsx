@@ -137,13 +137,6 @@ export default function PointsRedemptionsPage() {
   const columns = useMemo(
     () => [
       {
-        header: '번호',
-        key: 'no',
-        width: 72,
-        align: 'center',
-        render: (_r, idx) => (page - 1) * (data.size || PAGE_SIZE) + idx + 1,
-      },
-      {
         header: '상태',
         key: 'status',
         width: 110,
