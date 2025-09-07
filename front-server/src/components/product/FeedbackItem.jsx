@@ -1,18 +1,16 @@
-// src/components/product/Feedltem.jsx
-
+// /src/components/product/Feedltem.jsx
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
-import FeedbackSuccessModal from '../feedback/FeedbackSuccessModal';
+// import FeedbackSuccessModal from '../feedback/FeedbackSuccessModal'; // ✅ 수정: 편집에는 사용 안함
 import FeedbackEditModal from '../feedback/FeedbackEditModal';
 import Button from '../common/Button';
 import { deleteFeedbackByAdmin } from '../../service/feedbackService';
 
-// [추가] 날짜 포맷팅을 위한 유틸리티 함수
+// 날짜 포맷터
 const formatDate = (dateString) => {
   if (!dateString) return '';
   const date = new Date(dateString);
-  // '2023. 9. 5.' 형식으로 변환
   return date.toLocaleDateString('ko-KR');
 };
 
@@ -29,9 +27,7 @@ const safeParseImages = (json) => {
 
 const FeedbackItem = ({ feedback, onFeedbackDeleted }) => {
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuthStore();
-  const myPoint = user?.point ?? user?.pointBalance ?? 0;
-  const myId = user?.id ?? user?.userId;
+  const { isAdmin } = useAuthStore();
   const isAuthor = feedback?.mine === true;
 
   const [self, setSelf] = useState(feedback);
@@ -61,26 +57,28 @@ const FeedbackItem = ({ feedback, onFeedbackDeleted }) => {
     }
   };
 
-  // ====== 수정 모달/완료 모달 상태 ======
+  // ====== 수정 모달 상태 ======
   const [openEdit, setOpenEdit] = useState(false);
-  const [openDone, setOpenDone] = useState(false);
-  const [earnedPoints, setEarnedPoints] = useState(0); // 보통 0P
 
+  // ✅ 편집 성공 시: 포인트 모달(신규작성용) 열지 말고, 로컬 상태만 갱신
   const handleUpdated = (updated) => {
-    // 서버가 돌려준 필드로 병합
-    setSelf(prev => ({ ...prev, ...updated }));
-    setEarnedPoints(Number(updated?.awardedPoint ?? 0));
-    setOpenDone(true);
+    // 서버 응답 or 프론트 정규화 객체 반영
+    setSelf((prev) => ({ ...prev, ...updated }));
   };
 
   return (
-    <div className="border-t border-gray-200 py-6">
+    <div
+      className="border-t border-gray-200 py-6"
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
       <div className="flex items-start space-x-4">
         {/* 작성자 프로필 이미지 */}
         <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
           <img
-            src={feedback.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${feedback.authorNickname}&background=random`}
-            alt={feedback.authorNickname}
+            src={self?.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${self?.authorNickname}&background=random`}
+            alt={self?.authorNickname}
             className="w-full h-full object-cover"
           />
         </div>
@@ -88,7 +86,7 @@ const FeedbackItem = ({ feedback, onFeedbackDeleted }) => {
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-semibold text-gray-800">{feedback.authorNickname}</p>
+              <p className="font-semibold text-gray-800">{self?.authorNickname}</p>
               <div className="text-xs text-gray-500 mt-1 flex items-center space-x-2">
                 {optionsText && (
                   <>
@@ -96,26 +94,38 @@ const FeedbackItem = ({ feedback, onFeedbackDeleted }) => {
                     <span>·</span>
                   </>
                 )}
-                <span>{formatDate(feedback.createdAt)}</span>
+                <span>{formatDate(self?.createdAt)}</span>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               {isAuthor && (
                 <Button
-                  onClick={() => setOpenEdit(true)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.nativeEvent?.stopImmediatePropagation?.();
+                    requestAnimationFrame(() => setOpenEdit(true));
+                    console.log('EDIT CLICK');
+                  }}
                   className="text-xs text-gray-600 hover:text-gray-900"
-                  variant="singUp"
+                  variant="signUp"
                 >
                   수정
                 </Button>
               )}
               {isAdmin && (
                 <Button
-                  onClick={handleDelete}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDelete();
+                  }}
                   className="text-xs text-gray-400 hover:text-red-500"
                   disabled={deleting}
-                  variant="singUp"
+                  variant="signUp"
                 >
                   {deleting ? '삭제 중…' : '삭제'}
                 </Button>
@@ -124,12 +134,12 @@ const FeedbackItem = ({ feedback, onFeedbackDeleted }) => {
           </div>
 
           {/* 피드백 내용 */}
-          <p className="mt-3 text-gray-700 whitespace-pre-wrap">{feedback.content}</p>
+          <p className="mt-3 text-gray-700 whitespace-pre-wrap">{self?.content}</p>
 
-          {/* 피드백 이미지 (있을 경우) */}
-          {feedback.imagesJson && JSON.parse(feedback.imagesJson).length > 0 && (
+          {/* 피드백 이미지 */}
+          {images.length > 0 && (
             <div className="mt-3 flex space-x-2">
-              {JSON.parse(feedback.imagesJson).map((imgUrl, index) => (
+              {images.map((imgUrl, index) => (
                 <div key={index} className="w-24 h-24 rounded-md overflow-hidden">
                   <img src={imgUrl} alt={`feedback image ${index + 1}`} className="w-full h-full object-cover" />
                 </div>
@@ -138,6 +148,7 @@ const FeedbackItem = ({ feedback, onFeedbackDeleted }) => {
           )}
         </div>
       </div>
+
       {/* ✏️ 수정 모달 */}
       <FeedbackEditModal
         open={openEdit}
@@ -145,17 +156,6 @@ const FeedbackItem = ({ feedback, onFeedbackDeleted }) => {
         feedback={self}
         onUpdated={handleUpdated}
       />
-
-      {/* ✅ 수정 완료 모달 */}
-      <FeedbackSuccessModal
-        isOpen={openDone}
-        onClose={() => setOpenDone(false)}
-        earnedPoints={earnedPoints}                // 보통 0P
-        totalPoints={myPoint}
-        onGoToProduct={() => navigate(`/products/${self?.productId}`)}
-        onGoToMyPage={() => navigate('/mypage/feedbacks')}
-      />
-
     </div>
   );
 };

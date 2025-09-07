@@ -20,12 +20,13 @@ import TestImg from '../assets/images/ReSsol_TestImg.png';
 import FeedbackItem from '../components/product/FeedbackItem.jsx';
 import CategorySelect from '../components/common/CategorySelect.jsx';
 
+
 const ProductDetailPage = () => {
   const { productId: paramId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoggedIn, isAdmin } = useAuthStore();
-
+ 
   // --- 상태 관리 ---
   const [productData, setProductData] = useState(null);
   const [loading, setLoading] = useState(true);
