@@ -29,7 +29,7 @@ const MyFeedbackCard = ({ feedback }) => {
       className="cursor-pointer rounded-lg overflow-hidden group flex flex-col bg-white"
       onClick={handleClick}
     >
-      <div className="aspect-w-1 aspect-h-1 bg-gray-100">
+      <div className="aspect-square bg-gray-100">
         <img
           src={feedback.productImageUrl || TestImg} // [수정] productThumbnailUrl -> productImageUrl
           alt={feedback.productName}

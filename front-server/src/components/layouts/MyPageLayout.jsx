@@ -88,7 +88,7 @@ const MyPageLayout = () => {
           </div>
 
           {/* 포인트와 교환 버튼 */}
-          <div className="w-full flex items-center justify-between mt-4 md:mt-0 md:border-t md:pt-4">
+          <div className="w-full flex flex-col lg:flex-row items-center justify-between mt-4 md:mt-0 md:border-t md:pt-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">내 포인트</span>
               {loading ? (
