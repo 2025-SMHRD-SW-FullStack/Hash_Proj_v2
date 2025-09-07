@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: prod       # 기본 실행은 dev
+    active: dev       # 기본 실행은 dev
     group:
       dev:
         - secret-dev
