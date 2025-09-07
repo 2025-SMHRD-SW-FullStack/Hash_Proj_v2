@@ -3,7 +3,7 @@ import Icon from "./Icon";
 import DownIcon from '../../assets/icons/ic_arrow_down.svg'
 import CheckIcon from '../../assets/icons/ic_check.svg'
 
-const CategorySelect = ({ categories = [], selected = {}, onChange, className }) => {
+const CategorySelect = ({ categories = [], selected = {}, onChange, className,  placeholder, itemClassName }) => {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -24,7 +24,7 @@ const CategorySelect = ({ categories = [], selected = {}, onChange, className })
         onClick={() => setOpen((prev) => !prev)}
         className=" w-full bg-white border border-gray-300 rounded-md space-x-1 py-2.5 px-3 text-left text-sm shadow-md flex items-center justify-between hover:shadow-lg transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
       >
-        <span className="truncate text-gray-800 font-medium">{selected?.label || "선택"}</span>
+        <span className="truncate text-gray-800 font-medium">{placeholder || selected?.label || "선택"}</span>
         <Icon
           src={DownIcon}
           alt="아래 화살표"
@@ -51,7 +51,7 @@ const CategorySelect = ({ categories = [], selected = {}, onChange, className })
                 isSelected
                   ? "bg-primary text-white font-semibold shadow-sm"
                   : "text-gray-700 hover:bg-gray-100"
-              }`}
+              } ${itemClassName || ''}`}
             >
               <span className={`block truncate ${isSelected ? "font-semibold" : "font-normal"}`}>
                 {item.label}

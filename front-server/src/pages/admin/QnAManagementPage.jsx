@@ -129,22 +129,17 @@ const QnAManagementPage = () => {
       align: 'center',
     },
     {
-      header: 'Role',
-      key: 'role',
-      width: 100,
-      align: 'center',
-    },
-    {
       header: '제목',
       key: 'title',
       className: 'text-left',
       render: (row) => (
-        <button
+        <Button
+          variant='signUp'
           onClick={() => handleQnaDetailClick(row)}
-          className="hover:underline text-left"
+          className="text-sub hover:underline text-left"
         >
           {row.title}
-        </button>
+        </Button>
       ),
     },
     {
@@ -218,6 +213,7 @@ const QnAManagementPage = () => {
                 <div className="flex justify-end gap-2 mt-4">
                   <Button variant="unselected" onClick={handleCloseModal}>닫기</Button>
                   <Button 
+                    variant='admin'
                     onClick={handleSubmitAnswer}
                     disabled={submitting || !answerContent.trim()}
                   >

@@ -151,13 +151,14 @@ const SellerApprovalsPage = () => {
       align: 'center',
       className: 'max-w-[180px]',
       render: (row) => (
-        <button
-          className="underline-offset-2 hover:underline"
+        <Button
+          variant='signUp'
+          className="text-sub underline-offset-2 hover:underline"
           onClick={() => openDetail(row)}
           title="상세 보기"
         >
           {row.userNickname ?? row.userName ?? row.nickname ?? '-'}
-        </button>
+        </Button>
       ),
     },
     {
@@ -290,9 +291,6 @@ const SellerApprovalsPage = () => {
         maxWidth="max-w-xl"
         footer={
           <>
-            <Button variant="whiteBlack" onClick={() => setOpen(false)}>
-              닫기
-            </Button>
             <Button
               variant="danger"
               onClick={() => handleReject(target)}

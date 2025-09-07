@@ -220,13 +220,15 @@ const OrderCompletePage = () => {
             <div className="flex flex-col justify-center gap-1">
               <span className="font-semibold">{representativeItem?.productName}</span> {/* 👈 productName으로 수정 */}
               {/* 👇 옵션 표시를 위한 코드 추가 */}
-              {optionsText && (
-                <span className="text-sm text-gray-500 mt-1">{optionsText}</span>
-              )}
-              {order.items.length > 1 && (
-                <span className="text-sm text-gray-500">외 {order.items.length - 1}건</span>
-              )}
-              <span className="text-xs text-gray-500 mt-1">배송 소요일 3일 (예상)</span>
+              <div>
+                {optionsText && (
+                  <span className="text-sm text-gray-500 mt-1">{optionsText}</span>
+                )}
+                {order.items.length > 1 && (
+                  <span className="text-sm text-gray-500"> 외 {order.items.length - 1}건</span>
+                )}
+              </div>
+                <span className="text-xs text-gray-500">배송 소요일 3일 (예상)</span>
             </div>
           </div>
           <Button

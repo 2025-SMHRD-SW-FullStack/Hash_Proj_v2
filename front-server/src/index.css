@@ -1,6 +1,19 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+input,
+button,
+textarea,
+select {
+  font-family: inherit;
+}
 
 html,
 body,
@@ -21,6 +34,8 @@ body,
 body {
   font-family: 'Pretendard-Regular', sans-serif;
 }
+
+
 
 .prose img {
   width: 100%;

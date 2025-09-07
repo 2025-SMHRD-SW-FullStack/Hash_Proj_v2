@@ -3,11 +3,11 @@ import Logo from '../../assets/images/Meonjeo_Logo.png';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-800 text-gray-400 py-8 mt-auto text-sm">
+    <footer className="sm:h-[225px] bg-gray-800 text-gray-400 py-4 sm:py-8 mt-auto text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* 상단: 로고 + 주요 링크 */}
-        <div className="flex flex-col md:flex-row justify-between items-center border-b border-gray-700 pb-6 mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-center border-b border-gray-700 mb-6">
           {/* 로고 */}
           <div className="mb-4 md:mb-0 text-center md:text-left">
             <img src={Logo} alt="먼저써봄 로고" className="h-8 mx-auto md:mx-0" />

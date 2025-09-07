@@ -12,7 +12,13 @@ const QnAForm = ({ onSubmit, onCancel }) => {
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    setImages(files);
+    // 기존 이미지 배열(prevImages)에 새 파일(files)을 이어붙입니다.
+    setImages(prevImages => [...prevImages, ...files]);
+  };
+
+  // 이미지 삭제 핸들러
+  const handleRemoveImage = (indexToRemove) => {
+    setImages(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
   };
 
   const handleImageUpload = async (files) => {
@@ -132,12 +138,20 @@ const QnAForm = ({ onSubmit, onCancel }) => {
     {images.length > 0 && (
       <div className="mt-3 flex flex-wrap gap-2">
         {images.map((file, idx) => (
-          <img
-            key={idx}
-            src={URL.createObjectURL(file)}
-            alt="첨부 미리보기"
-            className="w-20 h-20 object-cover rounded-lg border"
-          />
+          <div key={idx} className="relative">
+            <img
+              src={URL.createObjectURL(file)}
+              alt="첨부 미리보기"
+              className="w-20 h-20 object-cover rounded-lg border"
+            />
+            <button
+              type="button"
+              onClick={() => handleRemoveImage(idx)}
+              className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 border-[1px] bg-white text-gray-700 rounded-full w-5 h-5 flex items-center justify-center text-xs"
+            >
+              X
+            </button>
+          </div>
         ))}
       </div>
     )}

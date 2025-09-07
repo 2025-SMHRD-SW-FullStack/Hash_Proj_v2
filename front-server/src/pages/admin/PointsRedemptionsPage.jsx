@@ -69,7 +69,15 @@ export default function PointsRedemptionsPage() {
               q,
               status: status === 'ALL' ? null : status, // 'ALL'이면 파라미터 제외
           })
-          setData(res)
+
+          const sortedContent = [...(res.content || [])].sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          )
+
+          setData({
+            ...res,
+            content: sortedContent,
+          })
           setPage((res.number ?? 0) + 1)
       } catch (e) {
           console.error(e)

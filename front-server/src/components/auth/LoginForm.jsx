@@ -36,7 +36,7 @@ const LoginForm = () => {
       */}
       <div className="mx-auto w-full max-w-sm"> 
         <div className="text-center mb-8">
-          <h2 className="mt-6 text-2xl font-bold tracking-tight text-gray-900">
+          <h2 className="mt-[120px] text-2xl font-bold tracking-tight text-gray-900">
             로그인
           </h2>
         </div>

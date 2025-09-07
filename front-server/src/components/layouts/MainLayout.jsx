@@ -10,10 +10,12 @@ const MainLayout = () => {
 
       {/* Main - 항상 화면 꽉 차고, 스크롤은 여기서만 */}
       <main className="flex-1 overflow-y-auto bg-white">
-        <Outlet />
-        
+        <div className='min-h-[750px]'>
+          <Outlet />
+        </div>
         {/* 고정 Footer */}
         <Footer />
+        
       </main>
 
     </div>

@@ -43,8 +43,9 @@ const SellerApplyForm = ({ onApplySuccess }) => {
     bizNo: '',
     shopName: '',
     ownerName: '',
-    addr: '',
-    phone: '',
+    zipcode: '', // 우편번호
+    addr1: '',   // 기본 주소
+    addr2: '',   // 상세 주소
     category: '',
   });
 
@@ -54,19 +55,23 @@ const SellerApplyForm = ({ onApplySuccess }) => {
   };
 
   const handleAddressSelect = ({ addr1, zipcode }) => {
-    setForm({ ...form, addr: addr1, zipcode });
+    setForm(prev => ({ ...prev, addr1, zipcode, addr2: '' }));
     setIsModalOpen(false);
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!Object.values(form).every(field => field.trim())) {
+    const { addr2, ...requiredFields } = form;
+    if (!Object.values(requiredFields).every(field => String(field).trim())) {
       alert('모든 필드를 입력해주세요.');
       return;
     }
     setLoading(true);
     try {
-      await applySeller(form);
+      const payload = {
+        ...form,
+        addr: `${form.addr1} ${form.addr2}`.trim()
+      };
+      await applySeller(payload);
       alert('셀러 신청이 완료되었습니다.');
       onApplySuccess(); // 성공 콜백 호출
     } catch (error) {
@@ -78,51 +83,69 @@ const SellerApplyForm = ({ onApplySuccess }) => {
   };
 
   return (
-    <div>
-      <h2 className="hidden md:block text-lg md:text-xl font-bold mb-4 text-gray-800">셀러 등록 신청</h2>
-      
-      
-      <div className="mx-auto p-6 bg-white rounded-xl shadow-md">
-        <p className="text-center text-gray-600 mb-8">
-        먼저써봄과 함께 피드백으로 빛나는 상품을 만들어보세요.
-      </p>
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-md">
+      <div className='flex items-center justify-center gap-2 mb-4'>
+        <h2 className="hidden md:block text-lg md:text-xl font-bold mb-4 text-gray-800">셀러 등록 신청</h2>
+        <div className="flex flex-col sm:flex-row sm:gap-1 text-center text-primary/80 ">
+          <span>먼저써봄과 함께</span>
+          <span>피드백으로 빛나는 상품을 만들어보세요.</span>
+        </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <TextField id="shopName" name="shopName" label="상호명" value={form.shopName} onChange={handleChange} required />
-          <TextField id="ownerName" name="ownerName" label="대표자명" value={form.ownerName} onChange={handleChange} required />
-          <TextField id="bizNo" name="bizNo" label="사업자 등록번호" value={form.bizNo} onChange={handleChange} required />
-          <div className="flex gap-2">
-            <TextField id="addr" name="addr" label="사업장 주소" value={form.addr} onChange={handleChange} readOnly required className="flex-grow" />
-            <Button type="button" onClick={() => setIsModalOpen(true)} className="mt-auto">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <TextField id="shopName" name="shopName" label="상호명" value={form.shopName} onChange={handleChange} required />
+        <TextField id="ownerName" name="ownerName" label="대표자명" value={form.ownerName} onChange={handleChange} required />
+        <TextField id="bizNo" name="bizNo" label="사업자 등록번호" value={form.bizNo} onChange={handleChange} required />
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-primary">사업장 주소 *</label>
+          <div className="grid grid-cols-[1fr_auto] items-center gap-2">
+            <TextField 
+              id="zipcode" 
+              name="zipcode" 
+              label="" 
+              value={form.zipcode} 
+              readOnly 
+              placeholder="우편번호"
+            />
+            <Button type="button" onClick={() => setIsModalOpen(true)}>
               주소 검색
             </Button>
           </div>
-          <TextField id="phone" name="phone" label="대표 번호" type="tel" value={form.phone} onChange={handleChange} required />
-          <div className="flex flex-col">
-            <label htmlFor="category" className="text-sm font-medium text-gray-700 mb-2">
-              주요 판매 카테고리
-            </label>
-            <select id="category" name="category" value={form.category} onChange={handleChange} required className="w-full h-11 border border-gray-300 rounded-lg px-3">
-              <option value="">선택</option>
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
+          <TextField id="addr1" name="addr1" label="" value={form.addr1} readOnly placeholder="주소"/>
+          <TextField 
+            id="addr2" 
+            name="addr2" 
+            label="" 
+            value={form.addr2} 
+            onChange={handleChange} 
+            placeholder="상세주소"
+          />
+        </div>
+        <TextField id="phone" name="phone" label="대표 번호" type="tel" value={form.phone} onChange={handleChange} required />
+        <div className="flex flex-col">
+          <label htmlFor="category" className="text-sm font-medium text-gray-700 mb-2">
+            주요 판매 카테고리
+          </label>
+          <select id="category" name="category" value={form.category} onChange={handleChange} required className="w-full h-11 border border-gray-300 rounded-lg px-3">
+            <option value="">선택</option>
+            {CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          <Button type="submit" disabled={loading} className="w-full mt-8">
-            {loading ? '신청 중...' : '셀러 등록하기'}
-          </Button>
-        </form>
+        <Button type="submit" disabled={loading} className="w-full mt-8">
+          {loading ? '신청 중...' : '셀러 등록하기'}
+        </Button>
+      </form>
 
-        <AddressSearchModal
-          open={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSelect={handleAddressSelect}
-        />
-      </div>
+      <AddressSearchModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSelect={handleAddressSelect}
+      />
     </div>
   );
 };

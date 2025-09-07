@@ -75,7 +75,6 @@ const QnAList = ({ refreshTrigger }) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-semibold mb-4">내 문의 목록</h3>
       {qnaList.map((qna) => (
         <div key={qna.id} className="bg-white p-4 rounded-lg border shadow-sm">
           <div className="flex justify-between items-start mb-2">
