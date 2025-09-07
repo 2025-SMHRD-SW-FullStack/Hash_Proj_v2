@@ -382,9 +382,9 @@ const OrderPage = () => {
   if (!isCartMode && (!productInfo || orderItems.length === 0)) return <div className="px-4 py-6">주문 상품 정보가 없습니다.</div>;
 
   return (
-    <div className='bg-gray-50'>
-      <div className="flex flex-col min-h-screen w-full max-w-4xl mx-auto ">
-        <div className="px-4 sm:px-0 flex-1 flex flex-col justify-stretch ">
+    <div className='bg-gray-50 overflow-y-auto w-full h-full flex flex-col'>
+      <div className="flex-1  w-full max-w-4xl mx-auto">
+        <div className="px-4 sm:px-0">
             <h1 className="pt-2 sm:pt-0 sm:my-8 text-2xl font-bold text-gray-900 ">주문/결제</h1>
           <section className='flex flex-col w-full max-w-5xl mx-auto gap-5  '>
 
@@ -512,8 +512,7 @@ const OrderPage = () => {
         <div className="sticky bottom-0 bg-white border-t shadow-[0_-4px_10px_rgba(0,0,0,0.1)] p-4 md:p-6 z-10">
           <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
             <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto sm:items-center ">
-              <div className="flex justify-between min-w-[120px]">
-                <span>상품 합계&ensp;</span>
+              <div className="flex justify-between min-w-[120px]">        <span>상품 합계&ensp;</span>
                 <b>{isCartMode ? (cartData.totalPrice ?? 0).toLocaleString() : (singleItemsSum ?? 0).toLocaleString()}원</b>
               </div>
               <div className="flex justify-between min-w-[100px]">

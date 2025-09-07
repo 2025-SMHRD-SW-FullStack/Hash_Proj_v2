@@ -270,13 +270,13 @@ export default function ChatRoom({ roomId, onClose, role }) {
   if (!validRoom) return <div className="p-4 text-red-500">유효하지 않은 채팅방입니다.</div>;
 
   return (
-    <div className="flex flex-col h-screen bg-white" onClick={e => e.stopPropagation()}>
+    <div className="flex flex-col h-full bg-white border rounded-lg overflow-hidden" onClick={e => e.stopPropagation()}>
       <PanelHeader roomInfo={roomInfo} onClose={onClose} />
       
       {/* 메시지 영역 */}
       <div
         ref={scrollRef}
-        className="flex-1 h-[400px] overflow-y-auto px-4 py-3 space-y-2 bg-blue-50/20"
+        className="flex-1 overflow-y-auto px-4 py-3 space-y-2 bg-blue-50/20"
         style={{ scrollBehavior: 'smooth' }}
       >
 

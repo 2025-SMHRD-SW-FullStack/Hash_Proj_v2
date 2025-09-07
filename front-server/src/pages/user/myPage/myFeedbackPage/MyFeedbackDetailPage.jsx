@@ -70,8 +70,8 @@ const MyFeedbackDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center pb-4 border-b">
-        <h2 className="text-2xl font-bold">피드백 상세 보기</h2>
+      <div className="flex justify-between items-center border-b">
+        <h1 className="hidden sm:block text-xl font-bold text-gray-800">피드백 상세 보기</h1>
          <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
           목록으로
         </Button>
@@ -79,10 +79,13 @@ const MyFeedbackDetailPage = () => {
 
       {/* --- 기본 정보 --- */}
        <div className="border rounded-lg p-6 bg-white shadow-sm">
-        <h3 className="font-bold text-lg mb-2">{feedback.productName}</h3>
-        <p className="text-sm text-gray-500 mb-4 whitespace-pre-wrap">{feedback.optionName}</p>
+        <div className='flex flex-col'>
+          <span className='font-bold text-lg mb-2'>구매 상품 정보</span>
+          <span className="font-bold text-lg mb-2 text-gray-700">{feedback.productName}</span>
+          {feedback.optionName ?? <span className="text-sm text-gray-700 mb-4 whitespace-pre-wrap">{feedback.optionName}</span>}
+        </div>
         <div className="flex items-center gap-2 mt-2 pb-2 border-b">
-            <span className='font-semibold'>총점</span>
+            <span className='text-gray-700 font-semibold'>총점</span>
             <StarRating score={feedback.overallScore} />
         </div>
       </div>
@@ -90,7 +93,7 @@ const MyFeedbackDetailPage = () => {
       {/* --- 상세 설문 결과 --- */}
       {surveyTemplate && Object.keys(surveyScores).length > 0 && (
         <div className="border rounded-lg p-6 bg-white shadow-sm">
-          <h3 className="font-bold text-lg mb-4 pb-2 border-b">상세 응답</h3>
+          <span className="font-bold text-lg mb-4 pb-2 border-b">상세 응답</span>
           <div className="space-y-4">
             {surveyTemplate.questions.map(q => {
               const userAnswer = surveyScores[q.code];
@@ -111,7 +114,7 @@ const MyFeedbackDetailPage = () => {
 
       {/* --- 작성 내용 및 사진 --- */}
       <div className="border rounded-lg p-6 bg-white shadow-sm">
-        <h1 className="hidden md:block text-xl font-semibold text-gray-800">작성한 피드백</h1>
+        <span className="hidden md:block text-xl font-semibold ">작성한 피드백</span>
         <p className="whitespace-pre-wrap p-4 bg-gray-50 rounded-md min-h-[100px]">{feedback.content}</p>
 
         {imageUrls.length > 0 && (

@@ -8,7 +8,7 @@ export default function SellerChatRoomPage() {
   const valid = Number.isFinite(rid) && rid > 0
 
   return (
-    <div className="mx-auto w-full max-w-3xl p-4">
+    <div className="mx-auto w-full max-w-3xl h-full p-4">
       <ChatRoom role="seller" roomId={valid ? rid : undefined} onClose={() => navigate(-1)} />
     </div>
   )

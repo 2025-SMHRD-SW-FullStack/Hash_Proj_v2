@@ -182,7 +182,15 @@ const FindAuthPage = () => {
         )}
         {step === 2 && (
         <>
-            <input type="text" value={otp} onChange={e => setOtp(e.target.value)} placeholder="인증번호 6자리" className="w-full h-12 border rounded-lg px-4 text-center tracking-[.5em]" maxLength="6"/>
+            <input
+              type="text"
+              value={otp}
+              onChange={e => setOtp(e.target.value)}
+              placeholder="인증번호 6자리"
+              className="w-full h-12 border rounded-lg px-4 text-center text-lg tracking-[.3em] focus:focus:ring focus:ring-blue-100"
+              maxLength={6}
+              inputMode="numeric"
+            />
             <p className="text-sm text-gray-500 text-center">남은 시간 {formatTime(timeLeft)}</p>
             <Button onClick={handleVerify} className="w-full" disabled={loading}>{loading ? "확인 중..." : "인증 확인"}</Button>
         </>
@@ -198,26 +206,39 @@ const FindAuthPage = () => {
   );
 
   return (
-    <div className="max-w-md mx-auto my-10 p-8 border rounded-lg shadow-lg bg-white">
+    <div className="max-w-md mx-auto my-10 p-8 border rounded-lg ">
+      <p className="text-center text-2xl font-semibold">회원 정보 찾기</p>
+      {/* 탭 */}
       <div className="flex border-b mb-6">
-        <button
-          onClick={() => setActiveTab("findId")}
-          className={`flex-1 py-3 text-center font-semibold transition-colors ${activeTab === "findId" ? "border-b-2 border-gray-800 text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
-        >
-          아이디 찾기
-        </button>
-        <button
-          onClick={() => setActiveTab("findPw")}
-          className={`flex-1 py-3 text-center font-semibold transition-colors ${activeTab === "findPw" ? "border-b-2 border-gray-800 text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
-        >
-          비밀번호 재설정
-        </button>
+        {["findId", "findPw"].map(tab => (
+          <Button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 py-3 text-center font-semibold transition-all duration-200
+              ${activeTab === tab 
+                ? "border-b-2 "
+                : "text-primary bg-blue-50 hover:text-gray-600 hover:bg-gray-50"}
+            `}
+          >
+            {tab === "findId" ? "아이디 찾기" : "비밀번호 재설정"}
+          </Button>
+        ))}
       </div>
-      
-      {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
-      
-      {activeTab === "findId" ? renderFindId() : renderFindPw()}
+
+      {/* 오류 메시지 */}
+      {error && <p className="text-red-500 text-sm text-left mb-2">{error}</p>}
+
+      {/* 단계 안내 */}
+      <p className="text-sm text-gray-500 mb-4 text-right">
+        단계 {step}/3
+      </p>
+
+      {/* 탭 내용 */}
+      <div className="space-y-4">
+        {activeTab === "findId" ? renderFindId() : renderFindPw()}
+      </div>
     </div>
+
   );
 };
 

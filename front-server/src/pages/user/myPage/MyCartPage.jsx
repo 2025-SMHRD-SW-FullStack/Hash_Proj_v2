@@ -193,7 +193,7 @@ const MyCartPage = () => {
           {items.length === 0 ? (
             <div className="rounded-lg p-4 h-60 flex items-center justify-center text-gray-400">장바구니가 비어 있습니다.</div>
           ) : (
-            <div className='bg-white'>
+            <div className='rounded-lg bg-white'>
               <div className="flex items-center justify-between p-4 border-b text-sm">
                 <div className='flex items-center'>
                   <input

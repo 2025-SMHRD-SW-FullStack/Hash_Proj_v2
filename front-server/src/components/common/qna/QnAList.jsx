@@ -76,9 +76,9 @@ const QnAList = ({ refreshTrigger }) => {
   return (
     <div className="space-y-4">
       {qnaList.map((qna) => (
-        <div key={qna.id} className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex justify-between items-start mb-2">
-            <h4 className="font-medium text-lg">{qna.title}</h4>
+        <div key={qna.id} className="bg-white py-4 px-6 rounded-lg border shadow-sm">
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-medium text-lg">{qna.title}</span>
             <span className={`px-2 py-1 rounded-full text-sm ${getStatusColor(qna.status)}`}>
               {getStatusText(qna.status)}
             </span>

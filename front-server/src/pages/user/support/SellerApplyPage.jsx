@@ -145,7 +145,7 @@ const SellerApplyForm = ({ onApplySuccess }) => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 px-10 ">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:px-10 ">
         <TextField id="shopName" name="shopName" label="상호명" value={form.shopName} onChange={handleChange} required />
         <TextField id="ownerName" name="ownerName" label="대표자명" value={form.ownerName} onChange={handleChange} required />
         <TextField id="bizNo" name="bizNo" label="사업자 등록번호" value={form.bizNo} onChange={handleChange} required />
@@ -160,7 +160,7 @@ const SellerApplyForm = ({ onApplySuccess }) => {
               readOnly 
               placeholder="우편번호"
             />
-            <Button type="button" onClick={() => setIsModalOpen(true)}>
+            <Button variant='signUp' type="button" onClick={() => setIsModalOpen(true)}>
               주소 검색
             </Button>
           </div>

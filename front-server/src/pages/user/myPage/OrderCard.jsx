@@ -209,10 +209,10 @@ const OrderCard = ({ order, onChanged }) => {
           <b>{totalPrice.toLocaleString()}원</b>
         </div>
         
-        <div className="flex flex-wrap gap-2 mt-2">
+        <div className="space-x-2">
           {order.status === "PENDING" && <Button className="flex-1">다시 주문하기</Button>}
-          {order.status === "READY" && <Button className="flex-1" variant="unselected" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
-          {order.status === "IN_TRANSIT" && <Button className="flex-1" variant="unselected" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
+          {order.status === "READY" && <Button className="flex-1" variant="signUp" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
+          {order.status === "IN_TRANSIT" && <Button className="flex-1" variant="signUp" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
           
           {/* 배송완료: 구매확정 유도 */}
           {order.status === "DELIVERED" && !feedbackDone && (
@@ -235,7 +235,7 @@ const OrderCard = ({ order, onChanged }) => {
           {feedbackDone && withinWindow && firstItem && (
             <Button
               className="flex-1"
-              variant="unselected"
+              variant="signUp"
               onClick={() =>
                 navi(`/user/feedback/editor?orderItemId=${firstItem.id}&productId=${firstItem.productId}&feedbackId=auto&type=MANUAL`)
               }

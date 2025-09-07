@@ -148,107 +148,109 @@ export default function SurveyPage() {
   if (!template) return <div className="p-6">설문지를 불러오는 중…</div>;
 
   return (
-    <div className="p-8 space-y-8 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-center mb-8">상품 피드백 설문</h1>
+    <div className="h-full overflow-y-auto ">
+      <div className="  p-8 space-y-8 max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold text-center mb-8">상품 피드백 설문</h1>
 
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">상품의 총점을 매겨주세요.</h2>
-          {!!orderIdQ && (
-            <select
-              className="border rounded-lg px-3 py-2 text-sm"
-              value={orderItemId || ""}
-              onChange={(e) => {
-                const v = e.target.value;
-                setOrderItemId(v);
-                const found = orderItems.find(i => i.value === v);
-                setProductId(found?.productId || "");
-              }}
-            >
-              <option value="" disabled>상품 선택</option>
-              {orderItems.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          )}
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">상품의 총점을 매겨주세요.</h2>
+            {!!orderIdQ && (
+              <select
+                className="border rounded-lg px-3 py-2 text-sm"
+                value={orderItemId || ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setOrderItemId(v);
+                  const found = orderItems.find(i => i.value === v);
+                  setProductId(found?.productId || "");
+                }}
+              >
+                <option value="" disabled>상품 선택</option>
+                {orderItems.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            )}
+          </div>
+
+          <div
+            className="flex justify-center"
+            onMouseLeave={() => setHoverScore(0)}
+          >
+            {[1, 2, 3, 4, 5].map((star) => (
+              <StarIcon
+                key={star}
+                filled={star <= (hoverScore || overallScore)}
+                onClick={() => setOverallScore(star)}
+                onMouseEnter={() => setHoverScore(star)}
+              />
+            ))}
+          </div>
         </div>
 
-        <div
-          className="flex justify-center"
-          onMouseLeave={() => setHoverScore(0)}
-        >
-          {[1, 2, 3, 4, 5].map((star) => (
-            <StarIcon
-              key={star}
-              filled={star <= (hoverScore || overallScore)}
-              onClick={() => setOverallScore(star)}
-              onMouseEnter={() => setHoverScore(star)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <h2 className="text-xl font-semibold mb-6">항목별 상세 평가</h2>
-        <div className="space-y-6">
-          {(template.questions ?? []).filter(q => q.code !== 'overall').map((q) => (
-            <div key={q.code}>
-              <h3 className="font-medium text-gray-800 mb-3">{q.label}</h3>
-              <div className="flex flex-wrap gap-2">
-                {q.type === "SCALE_1_5" &&
-                  [1, 2, 3, 4, 5].map((value) => (
-                    <Button
-                      key={value}
-                      variant={answers[q.code] === value ? "primary" : "unselected"}
-                      onClick={() => handleAnswerChange(q.code, value)}
-                      className="flex-grow sm:flex-grow-0"
-                    >
-                      {`${value} (${scaleLabels[value]})`}
-                    </Button>
-                  ))}
-                {q.type === "CHOICE_ONE" &&
-                  (q.options ?? []).map((opt) => (
-                    <Button
-                      key={opt.value}
-                      variant={answers[q.code] === opt.value ? "primary" : "unselected"}
-                      onClick={() => handleAnswerChange(q.code, opt.value)}
-                      className="flex-grow sm:flex-grow-0"
-                    >
-                      {opt.label}
-                    </Button>
-                  ))}
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h2 className="text-xl font-semibold mb-6">항목별 상세 평가</h2>
+          <div className="space-y-6">
+            {(template.questions ?? []).filter(q => q.code !== 'overall').map((q) => (
+              <div key={q.code}>
+                <h3 className="font-medium text-gray-800 mb-3">{q.label}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {q.type === "SCALE_1_5" &&
+                    [1, 2, 3, 4, 5].map((value) => (
+                      <Button
+                        key={value}
+                        variant={answers[q.code] === value ? "primary" : "unselected"}
+                        onClick={() => handleAnswerChange(q.code, value)}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        {`${value} (${scaleLabels[value]})`}
+                      </Button>
+                    ))}
+                  {q.type === "CHOICE_ONE" &&
+                    (q.options ?? []).map((opt) => (
+                      <Button
+                        key={opt.value}
+                        variant={answers[q.code] === opt.value ? "primary" : "unselected"}
+                        onClick={() => handleAnswerChange(q.code, opt.value)}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="flex justify-end pt-4">
-        <Button
-          size="lg"
-          onClick={handleSubmit}
-          className="w-full md:w-auto px-10 py-4 text-lg font-bold"
-        >
-          제출하고 피드백 작성하기
-        </Button>
-      </div>
+        <div className="flex justify-end pt-4">
+          <Button
+            size="lg"
+            onClick={handleSubmit}
+            className="w-full md:w-auto px-10 py-4 text-lg font-bold"
+          >
+            제출하고 피드백 작성하기
+          </Button>
+        </div>
 
-      <FeedbackChoiceModal
-        open={openChoice}
-        onClose={() => setOpenChoice(false)}
-        onPickManual={() =>
-          navigate(
-            `/user/feedback/editor?orderItemId=${orderItemId || orderItemIdQ}&productId=${productId || productIdQ}&type=MANUAL&overallScore=${overallScore}&scoresJson=${encodeURIComponent(
-              JSON.stringify(answers)
-            )}`
-          )
-        }
-        onPickAI={() =>
-          navigate(
-            `/user/feedback/editor?orderItemId=${orderItemId || orderItemIdQ}&productId=${productId || productIdQ}&type=AI&overallScore=${overallScore}&scoresJson=${encodeURIComponent(
-              JSON.stringify(answers)
-            )}`
-          )
-        }
-      />
+        <FeedbackChoiceModal
+          open={openChoice}
+          onClose={() => setOpenChoice(false)}
+          onPickManual={() =>
+            navigate(
+              `/user/feedback/editor?orderItemId=${orderItemId || orderItemIdQ}&productId=${productId || productIdQ}&type=MANUAL&overallScore=${overallScore}&scoresJson=${encodeURIComponent(
+                JSON.stringify(answers)
+              )}`
+            )
+          }
+          onPickAI={() =>
+            navigate(
+              `/user/feedback/editor?orderItemId=${orderItemId || orderItemIdQ}&productId=${productId || productIdQ}&type=AI&overallScore=${overallScore}&scoresJson=${encodeURIComponent(
+                JSON.stringify(answers)
+              )}`
+            )
+          }
+        />
+      </div>
     </div>
   );
 }
