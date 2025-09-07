@@ -1,13 +1,9 @@
 // /src/service/aiService.js
 import axiosAI from "../config/axiosAI"
 
-// 날짜 포맷 유틸
 const pad = (n) => (n < 10 ? `0${n}` : `${n}`)
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
-/**
- * 실시간 요약 생성
- */
 export async function computeAiSummaryNow({ stats, meta }) {
   if (!stats) throw new Error('stats가 필요합니다.')
   const today = ymd(new Date())
@@ -71,17 +67,34 @@ export async function computeAiSummaryNow({ stats, meta }) {
   }
 }
 
-/* ========= 챗봇 엔드포인트 ========= */
+/** ========= 챗봇 ========= **/
 
-export async function startSession(userId, orderItemId, productId) {
-  const { data } = await axiosAI.post('/api/ai/chat/session', {
+/**
+ * 세션 시작
+ * @param {number} userId
+ * @param {number} orderItemId
+ * @param {number|null} productId
+ * @param {{overallScore?: number, answers?: object}} [preSurvey]
+ */
+export async function startSession(userId, orderItemId, productId, preSurvey) {
+  const body = {
     user_id: Number(userId),
     order_item_id: Number(orderItemId),
     product_id: productId != null ? Number(productId) : null,
-  })
+  }
+  if (preSurvey && preSurvey.overallScore != null) {
+    body.overall_score = Number(preSurvey.overallScore)
+  }
+  if (preSurvey && preSurvey.answers) {
+    body.survey_answers = preSurvey.answers
+  }
+  const { data } = await axiosAI.post('/api/ai/chat/session', body)
   return data
 }
 
+/**
+ * 사용자 발화
+ */
 export async function sendReply(userId, text) {
   const { data } = await axiosAI.post('/api/ai/chat/reply', {
     user_id: Number(userId),
@@ -90,10 +103,17 @@ export async function sendReply(userId, text) {
   return data
 }
 
-// AI 게시 (이미지 URL 배열을 함께 전달)
-export async function acceptNow(userId, images = undefined) {
+/**
+ * 게시(이미지 + 선택적으로 preSurvey도 함께 넘길 수 있게)
+ * @param {number} userId
+ * @param {string[]|undefined} images
+ * @param {{overallScore?:number, answers?:object}|undefined} preSurvey
+ */
+export async function acceptNow(userId, images = undefined, preSurvey = undefined) {
   const payload = { user_id: Number(userId) }
   if (Array.isArray(images)) payload.images = images
+  if (preSurvey && preSurvey.answers) payload.survey_answers = preSurvey.answers
+  if (preSurvey && preSurvey.overallScore != null) payload.overall_score = Number(preSurvey.overallScore)
   const { data } = await axiosAI.post('/api/ai/chat/accept', payload)
   return data
 }

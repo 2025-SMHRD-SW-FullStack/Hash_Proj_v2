@@ -1,14 +1,12 @@
-// /src/components/seller/OrderDetailContent.jsx
 import React, { useMemo, useEffect, useState } from 'react'
 import { toOrderNo, fmtYmd, resolveFeedbackDue } from '../../util/orderUtils'
 import { carrierLabel, resolveCarrier as resolveCarrierByName } from '../../constants/carriers'
-import { getShipmentTracking } from '../../service/orderService'
+import { getShipmentTracking, getTracking } from '../../service/orderService'
 import { levelToKorean } from '../../util/shipping'
+import { normalizeTracking } from '../../adapters/tracking'
 
-// 공통 pick
 const pick = (...vals) => vals.find(v => v != null && v !== '')
 
-// ---- 상태 뱃지
 const pill = 'inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[12px] font-medium'
 const statusKind = (s) => {
   if (!s) return 'other'
@@ -33,55 +31,44 @@ const StatusPill = ({ status }) => {
   return <span className={cls}>{status || '-'}</span>
 }
 
-// ---- row 해석기(하드코딩 회피용)
 const resolveOrderedAt = (r) =>
   fmtYmd(pick(r?.orderedAt, r?.orderDate, r?.createdAt, r?.paidAt))
-
-const resolveStatusText = (r) =>
-  pick(r?.statusText, r?.status) || '-'
-
+const resolveStatusText = (r) => pick(r?.statusText, r?.status) || '-'
 const resolveCarrierName = (r) => {
   const code = pick(r?.carrierCode, r?.courierCode, resolveCarrierByName(r?.courierName || '')?.code)
   return pick(carrierLabel(code || ''), r?.courierName) || '-'
 }
-const resolveTrackingNo = (r) =>
-  pick(r?.trackingNo, r?.trackingNumber) || '-'
-
-const resolveProductName = (r) =>
-  pick(r?.productName, r?.product?.name, r?.product) || '-'
-
-const resolveBuyerName = (r) =>
-  pick(r?.buyer, r?.receiver, r?.buyerName, r?.buyer?.name) || '-'
-
-const resolvePhone = (r) =>
-  pick(r?.phone, r?.receiverPhone, r?.buyer?.phone) || '-'
-
-const resolveAddress = (r) =>
-  pick(r?.address, r?.deliveryAddress, r?.address1) || '-'
-
-const resolveRequest = (r) =>
-  pick(r?.requestMemo, r?.requestNote, r?.deliveryMemo) || '-'
-
+const resolveTrackingNo = (r) => pick(r?.trackingNo, r?.trackingNumber) || '-'
+const resolveProductName = (r) => pick(r?.productName, r?.product?.name, r?.product) || '-'
+const resolveBuyerName = (r) => pick(r?.buyer, r?.receiver, r?.buyerName, r?.buyer?.name) || '-'
+const resolvePhone = (r) => pick(r?.phone, r?.receiverPhone, r?.buyer?.phone) || '-'
+const resolveAddress = (r) => pick(r?.address, r?.deliveryAddress, r?.address1) || '-'
+const resolveRequest = (r) => pick(r?.requestMemo, r?.requestNote, r?.deliveryMemo) || '-'
 const resolveFeedbackWrittenAt = (r) => {
   const arr0 = Array.isArray(r?.feedbacks) && r.feedbacks.length > 0 ? r.feedbacks[0] : null
   const raw = pick(r?.feedbackAt, r?.feedbackWrittenAt, r?.feedback?.createdAt, r?.feedback?.created_at, arr0?.createdAt, arr0?.created_at)
   return fmtYmd(raw)
 }
-
-// ✅ 피드백 내용 해석기 (단일/배열/중첩 모두 커버)
 const resolveFeedbackText = (r) => {
   const arr0 = Array.isArray(r?.feedbacks) && r.feedbacks.length > 0 ? r.feedbacks[0] : null
-  // 우선순위: row.feedbackText → row.feedback.content → row.feedbacks[0].content → row.feedback(문자형)
   return pick(r?.feedbackText, r?.feedback?.content, arr0?.content, r?.feedback) || '-'
+}
+
+const fmtKST = (t) => {
+  if (!t) return '-'
+  let s = String(t).trim()
+  if (!s.includes('T')) s = s.replace(/[./]/g, '-').replace(' ', 'T')
+  const d = new Date(s)
+  return Number.isNaN(d.getTime()) ? String(t) : d.toLocaleString('ko-KR')
 }
 
 export default function OrderDetailContent({ row }) {
   if (!row) return null
 
-    // ── 트래킹(로직만 추가, CSS 변경 없음)
   const orderId = row?.id ?? row?.orderId
   const hasTracking = !!(row?.trackingNo || row?.trackingNumber) &&
                       !!(row?.carrierCode || row?.courierCode || row?.courierName)
+
   const [tracking, setTracking] = useState(row?._tracking || null)
   const [trkLoading, setTrkLoading] = useState(false)
 
@@ -91,10 +78,28 @@ export default function OrderDetailContent({ row }) {
     ;(async () => {
       try {
         setTrkLoading(true)
-        const tr = await getShipmentTracking(orderId)
-        if (alive) setTracking(tr)
-      } catch { /* ignore */ }
-      finally { if (alive) setTrkLoading(false) }
+
+        // 1차: /shipments/{orderId}/tracking
+        let t1 = null
+        try { t1 = await getShipmentTracking(orderId) } catch {}
+
+        // getShipmentTracking가 정규화해서 줄 수도 있고 아닐 수도 있어 보호
+        const n1 = t1 && t1.events ? t1 : normalizeTracking(t1 || {})
+
+        // 2차 폴백: /me/orders/{orderId}/tracking (권한 없으면 실패해도 무시)
+        let best = n1
+        if (!best.events || best.events.length === 0) {
+          try {
+            const t2 = await getTracking(orderId)
+            const n2 = normalizeTracking(t2 || {})
+            if (n2.events && n2.events.length > 0) best = n2
+          } catch {}
+        }
+
+        if (alive) setTracking(best)
+      } finally {
+        if (alive) setTrkLoading(false)
+      }
     })()
     return () => { alive = false }
   }, [orderId, hasTracking])
@@ -104,15 +109,12 @@ export default function OrderDetailContent({ row }) {
     return Number.isFinite(lv) ? levelToKorean(lv) : null
   }, [tracking])
 
-
-
-  // 표기 값들: 어떤 스키마가 와도 위 resolver가 알아서 처리
   const displayOrderNo      = useMemo(() => toOrderNo(row), [row])
   const displayOrderedAt    = useMemo(() => resolveOrderedAt(row), [row])
   const displayStatus = useMemo(() => {
-   const base = resolveStatusText(row);           // row.statusText / row.status 기반
-  return base === '구매확정' ? base : (trackingStatusText || base);
- }, [row, trackingStatusText]);
+    const base = resolveStatusText(row)
+    return base === '구매확정' ? base : (trackingStatusText || base)
+  }, [row, trackingStatusText])
   const displayFeedbackDue  = useMemo(() => resolveFeedbackDue(row), [row])
   const displayFeedbackAt   = useMemo(() => resolveFeedbackWrittenAt(row), [row])
   const displayCarrierName  = useMemo(() => resolveCarrierName(row), [row])
@@ -124,17 +126,19 @@ export default function OrderDetailContent({ row }) {
   const displayRequest      = useMemo(() => resolveRequest(row), [row])
   const displayFeedbackText = useMemo(() => resolveFeedbackText(row), [row])
 
-  // 타임라인을 "텍스트"로만 표 셀에 표시 (CSS 추가 없음)
   const trackingLines = useMemo(() => {
     if (!hasTracking) return '-'
     if (trkLoading) return '불러오는 중…'
+
     const evts = Array.isArray(tracking?.events) ? tracking.events : []
     if (evts.length === 0) return '이력이 없습니다.'
-    return evts.map(e => {
-      const t = e?.timeText || ''
-      const st = e?.statusText || ''
-      const loc = e?.location ? ` · ${e.location}` : ''
-      return [t, st].filter(Boolean).join(' ') + loc
+
+    return evts.map((e, i) => {
+      const t = fmtKST(e.time || e.timeText)
+      const st = e.label || e.status || ''
+      const loc = e.where || e.location ? ` · ${e.where || e.location}` : ''
+      const desc = e.description ? ` · ${e.description}` : ''
+      return `${i + 1}. ${t} · ${st}${loc}${desc}`
     }).join('\n')
   }, [hasTracking, trkLoading, tracking])
 

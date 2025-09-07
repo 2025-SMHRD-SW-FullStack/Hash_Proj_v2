@@ -1,4 +1,3 @@
-// /src/components/feedback/AIChatBox.jsx
 import React, { useEffect, useRef, useState } from 'react'
 import { startSession, sendReply, editSummary, acceptNow } from '../../service/aiService'
 import { uploadImages } from '../../service/uploadService'
@@ -13,7 +12,13 @@ function mapAssistantMessages(apiMsgs) {
   })
 }
 
-export default function AIChatBox({ userId, orderItemId, productId, onAccepted }) {
+/**
+ * props:
+ *  - userId, orderItemId, productId
+ *  - preSurvey?: { overallScore?: number, answers?: object }
+ *  - onAccepted?: (result) => void
+ */
+export default function AIChatBox({ userId, orderItemId, productId, preSurvey, onAccepted }) {
   const [step, setStep] = useState('INIT')
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -21,7 +26,6 @@ export default function AIChatBox({ userId, orderItemId, productId, onAccepted }
   const [loading, setLoading] = useState(false)
   const scroller = useRef(null)
 
-  // 이미지 첨부 상태
   const [files, setFiles] = useState([])
   const [previews, setPreviews] = useState([])
   const fileInputRef = useRef(null)
@@ -35,7 +39,8 @@ export default function AIChatBox({ userId, orderItemId, productId, onAccepted }
     ;(async () => {
       setLoading(true)
       try {
-        const s = await startSession(userId, orderItemId, productId)
+        // ★ 프리설문과 함께 세션 시작
+        const s = await startSession(userId, orderItemId, productId, preSurvey)
         setStep(s.step)
         setMessages([{ id: 'first', sender: 'you', text: s.first_question }])
       } catch (e) {
@@ -44,7 +49,7 @@ export default function AIChatBox({ userId, orderItemId, productId, onAccepted }
         setLoading(false)
       }
     })()
-  }, [userId, orderItemId, productId])
+  }, [userId, orderItemId, productId, preSurvey])
 
   const onSend = async () => {
     const t = input.trim()
@@ -84,11 +89,11 @@ export default function AIChatBox({ userId, orderItemId, productId, onAccepted }
     }
   }
 
-  // 파일 핸들러
+  // 파일
   const onPickFiles = (ev) => {
     const picked = Array.from(ev.target.files || [])
     if (!picked.length) return
-    const next = [...files, ...picked].slice(0, 5) // 최대 5장
+    const next = [...files, ...picked].slice(0, 5)
     setFiles(next)
     const newPreviews = picked.map((f) => URL.createObjectURL(f))
     setPreviews((p) => [...p, ...newPreviews].slice(0, 5))
@@ -102,18 +107,24 @@ export default function AIChatBox({ userId, orderItemId, productId, onAccepted }
 
   const onAccept = async () => {
     try {
-      // 1) 이미지가 있으면 업로드 → 퍼블릭 URL 확보
       let imageUrls
       if (files.length > 0) {
-        // ⚠️ 백엔드 업로드 타입 enum에 FEEDBACK이 없다면 'PRODUCT_CONTENT'로 바꿔서 호출
         const uploaded = await uploadImages('FEEDBACK', files)
         imageUrls = uploaded.map((x) => x.url).filter(Boolean)
       }
-      // 2) 게시(이미지 URL 함께 전달)
-      const r = await acceptNow(userId, imageUrls)
-      setMessages((p) => [...p, { id: `ok-${Date.now()}`, sender: 'you', text: `✅ ${r.message || '게시 완료'}` }])
+      // ★ 프리설문도 함께 전송
+      const r = await acceptNow(userId, imageUrls, preSurvey)
+
+      setMessages((p) => [
+        ...p,
+        {
+          id: `ok-${Date.now()}`,
+          sender: 'you',
+          text: `✅ ${typeof r?.message === 'string' ? r.message : (r?.message?.message || '게시 완료')}`,
+        },
+      ])
       setStep('DONE')
-      onAccepted?.()
+      onAccepted?.(r)
     } catch (e) {
       setMessages((p) => [...p, { id: `err-${Date.now()}`, sender: 'you', text: `❌ ${e.message}` }])
     }
@@ -150,7 +161,6 @@ export default function AIChatBox({ userId, orderItemId, productId, onAccepted }
             />
           </div>
 
-          {/* 이미지 첨부 UI */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <div className="font-semibold">사진 첨부 (선택, 최대 5장)</div>
@@ -202,9 +212,7 @@ export default function AIChatBox({ userId, orderItemId, productId, onAccepted }
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') (step === 'EDIT_OR_ACCEPT' ? onEdit() : onSend()) }}
         />
-        <Button
-          onClick={step === 'EDIT_OR_ACCEPT' ? onEdit : onSend}
-        >
+        <Button onClick={step === 'EDIT_OR_ACCEPT' ? onEdit : onSend}>
           {step === 'EDIT_OR_ACCEPT' ? '수정' : '전송'}
         </Button>
       </div>

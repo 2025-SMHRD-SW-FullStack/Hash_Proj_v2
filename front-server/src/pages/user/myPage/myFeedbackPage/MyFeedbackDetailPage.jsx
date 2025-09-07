@@ -1,10 +1,14 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getFeedbackDetail, getSurveyTemplate } from '../../../../service/feedbackService'; 
+import {
+  getFeedbackDetail,
+  getSurveyTemplate,
+  getPreSurveyByOrderItem, // ⬅ 추가
+} from '../../../../service/feedbackService';
 import Button from '../../../../components/common/Button';
 
 // 별점 표시 컴포넌트
-const StarRating = ({ score }) => (
+const StarRating = ({ score = 0 }) => (
   <div className="flex items-center gap-1">
     {[1, 2, 3, 4, 5].map((star) => (
       <svg
@@ -23,79 +27,122 @@ const StarRating = ({ score }) => (
 const MyFeedbackDetailPage = () => {
   const { feedbackId } = useParams();
   const navigate = useNavigate();
+
   const [feedback, setFeedback] = useState(null);
   const [surveyTemplate, setSurveyTemplate] = useState(null);
+  const [resolvedScores, setResolvedScores] = useState({});  // ⬅ 병합된 설문
+  const [resolvedOverall, setResolvedOverall] = useState(0); // ⬅ 병합된 총점
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const safeParse = (json, fallback) => {
+    try {
+      if (!json) return fallback;
+      const v = JSON.parse(json);
+      return typeof v === 'object' && v !== null ? v : fallback;
+    } catch { return fallback; }
+  };
+
   useEffect(() => {
-    const fetchDetails = async () => {
+    const run = async () => {
       try {
         setLoading(true);
-        const feedbackData = await getFeedbackDetail(feedbackId);
-        setFeedback(feedbackData);
+        setError(null);
 
-        if (feedbackData?.productId) {
-          const templateData = await getSurveyTemplate(feedbackData.productId);
-          setSurveyTemplate(templateData);
+        // 1) 상세
+        const fb = await getFeedbackDetail(feedbackId);
+        setFeedback(fb);
+
+        // 2) 템플릿
+        if (fb?.productId) {
+          const tpl = await getSurveyTemplate(fb.productId);
+          setSurveyTemplate(tpl);
         }
-      } catch (err) {
+
+        // 3) 설문/총점 병합
+        const scoresFromFb = safeParse(fb?.scoresJson, {});
+        let mergedScores = scoresFromFb;
+        let mergedOverall = Number(fb?.overallScore || 0) || 0;
+
+        if (Object.keys(scoresFromFb).length === 0 && fb?.orderItemId) {
+          // ⬇ 폴백: 프리설문 가져와 병합
+          try {
+            const pre = await getPreSurveyByOrderItem(fb.orderItemId);
+            const answers = safeParse(pre?.answersJson, {});
+            if (Object.keys(answers).length > 0) mergedScores = answers;
+            if (!mergedOverall && Number(pre?.overallScore || 0) > 0) {
+              mergedOverall = Number(pre.overallScore);
+            }
+          } catch (e) {
+            console.warn('pre-survey fetch failed', e);
+          }
+        }
+
+        setResolvedScores(mergedScores);
+        setResolvedOverall(mergedOverall);
+      } catch (e) {
+        console.error(e);
         setError('피드백 상세 정보를 불러오는 데 실패했습니다.');
-        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchDetails();
+    run();
   }, [feedbackId]);
-  
-  const surveyScores = useMemo(() => feedback?.scoresJson ? JSON.parse(feedback.scoresJson) : {}, [feedback]);
-  const imageUrls = useMemo(() => feedback?.imagesJson ? JSON.parse(feedback.imagesJson) : [], [feedback]);
+
+  const imageUrls = useMemo(
+    () => safeParse(feedback?.imagesJson, []),
+    [feedback]
+  );
 
   const getAnswerDisplayValue = (question, answerValue) => {
+    if (answerValue === undefined || answerValue === null) return '';
     if (question.type === 'SCALE_1_5') {
-        const labels = { 1: '매우 불만족', 2: '불만족', 3: '보통', 4: '만족', 5: '매우 만족' };
-        return `${answerValue} (${labels[answerValue] || ''})`;
+      const labels = { 1: '매우 불만족', 2: '불만족', 3: '보통', 4: '만족', 5: '매우 만족' };
+      const v = Number(answerValue);
+      return `${v} (${labels[v] || ''})`;
     }
     if (question.type === 'CHOICE_ONE') {
-        const option = question.options?.find(opt => opt.value === answerValue);
-        return option?.label || answerValue;
+      const val = String(answerValue);
+      const opt = (question.options || []).find(o => String(o.value) === val);
+      return opt?.label || val;
     }
-    return answerValue;
+    return String(answerValue);
   };
 
   if (loading) return <div>로딩 중...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
   if (!feedback) return <div>피드백 정보를 찾을 수 없습니다.</div>;
 
+  const hasAnswers = surveyTemplate && Object.keys(resolvedScores).length > 0;
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center pb-4 border-b">
         <h2 className="text-2xl font-bold">피드백 상세 보기</h2>
-         <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+        <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
           목록으로
         </Button>
       </div>
 
-      {/* --- 기본 정보 --- */}
-       <div className="border rounded-lg p-6 bg-white shadow-sm">
+      {/* 기본 정보 */}
+      <div className="border rounded-lg p-6 bg-white shadow-sm">
         <h3 className="font-bold text-lg mb-2">{feedback.productName}</h3>
         <p className="text-sm text-gray-500 mb-4 whitespace-pre-wrap">{feedback.optionName}</p>
         <div className="flex items-center gap-2 mt-2 pb-2 border-b">
-            <span className='font-semibold'>총점</span>
-            <StarRating score={feedback.overallScore} />
+          <span className="font-semibold">총점</span>
+          <StarRating score={resolvedOverall || 0} />
         </div>
       </div>
 
-      {/* --- 상세 설문 결과 --- */}
-      {surveyTemplate && Object.keys(surveyScores).length > 0 && (
+      {/* 상세 설문 */}
+      {hasAnswers && (
         <div className="border rounded-lg p-6 bg-white shadow-sm">
           <h3 className="font-bold text-lg mb-4 pb-2 border-b">상세 응답</h3>
           <div className="space-y-4">
-            {surveyTemplate.questions.map(q => {
-              const userAnswer = surveyScores[q.code];
+            {surveyTemplate.questions.map((q) => {
+              const userAnswer = resolvedScores[q.code];
               if (userAnswer === undefined || userAnswer === null) return null;
-
               return (
                 <div key={q.code} className="flex items-center flex-row gap-4 text-sm">
                   <strong className="w-32 text-left text-gray-700">{q.label}</strong>
@@ -109,18 +156,22 @@ const MyFeedbackDetailPage = () => {
         </div>
       )}
 
-      {/* --- 작성 내용 및 사진 --- */}
+      {/* 작성 본문/사진 */}
       <div className="border rounded-lg p-6 bg-white shadow-sm">
         <h1 className="hidden md:block text-xl font-semibold text-gray-800">작성한 피드백</h1>
-        <p className="whitespace-pre-wrap p-4 bg-gray-50 rounded-md min-h-[100px]">{feedback.content}</p>
+        <p className="whitespace-pre-wrap p-4 bg-gray-50 rounded-md min-h-[100px]">
+          {feedback.content}
+        </p>
 
         {imageUrls.length > 0 && (
           <div className="mt-6">
             <h4 className="font-semibold mb-2">등록한 사진</h4>
             <div className="flex flex-wrap gap-4">
-              {imageUrls.map((url, index) => (
+              {imageUrls.map((url, i) => (
                 <img
-                  key={index} src={url} alt={`피드백 이미지 ${index + 1}`}
+                  key={i}
+                  src={url}
+                  alt={`피드백 이미지 ${i + 1}`}
                   className="w-40 h-40 rounded-lg object-cover hover:scale-105 transition-transform shadow-sm"
                 />
               ))}

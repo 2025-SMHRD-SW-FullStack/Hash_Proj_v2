@@ -101,10 +101,7 @@ def _guess_slot_from_question(q: str) -> str | None:
     return None
 
 def _is_generic(text: str) -> bool:
-    """
-    '짧고 뭉뚱그린' 답만 generic 으로 간주하고,
-    길거나 구체적 표현이 섞인 답은 generic으로 보지 않도록 완화.
-    """
+    """짧고 뭉뚱그린 답만 generic 처리(완화)."""
     if not text or not text.strip():
         return True
     s = text.strip().lower()
@@ -155,7 +152,7 @@ def _pick_alternative_question(ctx: Dict[str, Any], plan_slot: str, missing_slot
 
 FRUSTRATION_HINTS = ["아까 대답", "이미 말했", "같은 질문", "중복", "또 물어"]
 
-# ====== 플래너 & 리뷰 생성 프롬프트 ======
+# ====== 프롬프트 ======
 PLANNER_PROMPT = """
 역할: 후기(200~350자)를 만들기 위한 인터뷰어.
 입력: 제품 정보 + 지금까지의 Q/A + [이미 물어본 질문 목록] + [이미 다룬 주제 슬롯].
@@ -168,9 +165,8 @@ PLANNER_PROMPT = """
 - 충분하면 need_more=false, next_question="", slot="".
 
 중복/반복 금지(엄수):
-- [이미 물어본 질문 목록]에 있는 문구는 절대 반복하지 말 것.
+- [이미 물어본 질문 목록]은 절대 반복 금지.
 - [이미 다룬 주제 슬롯]은 다시 묻지 말 것(같은 슬롯 연속 금지).
-- 불가피할 경우에도 다른 슬롯을 우선 선택하라.
 
 반환(JSON 한 줄):
 {"need_more": true|false, "next_question": "...", "slot": "reason|pros|cons|price|battery|fit|connectivity|sound|design|other", "missing_slots": ["...","..."]}
@@ -185,12 +181,11 @@ REVIEW_JSON_PROMPT = """
 
 작성 지침(엄수):
 - 1인칭 존댓말, 자연스러운 구어체. 과장/광고문구 금지.
-- 입력 Q/A에 등장한 사실만 사용(추정/창작 금지). 구체 수치·조건 그대로 반영.
-- 문장 길이와 리듬을 다양화: 짧은 문장 1개 이상 섞기(예: "그래서 만족했습니다.").
-- 접속어는 반복되지 않게(그래서/다만/한편/대신 등).
-- "전반적으로 무난하다" 같은 빈약한 결말 금지. 마지막은 개인적 총평 한 문장.
+- 입력 Q/A 사실만 사용(추정/창작 금지), 수치/조건 그대로.
+- 문장 리듬 다양화, 마지막은 개인적 총평 한 문장.
 
 반환은 반드시 JSON 한 줄만.
+사용자가 별점을 이미 지정했다면(overallScore 컨텍스트 존재) overall_score는 그 값을 그대로 사용.
 """
 
 def parse_review_json(raw: str):
@@ -264,11 +259,9 @@ class ChatbotService:
 
         msg_l = msg.lower()
 
-        # 중복 질문 짜증 감지 → 다음 슬롯으로
         if any(k in msg_l for k in FRUSTRATION_HINTS):
             return self._ack_and_next(db, user_id, "그 부분은 이미 답변으로 받았어요. 다음으로 넘어가 볼게요.")
 
-        # reset
         if any(k in msg_l for k in ["처음","처음부터","리셋","다시 시작"]):
             update_user_context(user_id, {"stage":"qna","answers":[],"summary":None,"reask_counts":{},"last_q":None,"asked_slots":[]})
             return self._ask_or_compose(db, user_id, force_new_question=True)
@@ -287,14 +280,11 @@ class ChatbotService:
                 inst = message.split("수정:", 1)[1].strip()
                 return self._edit_review(db, user_id, inst)
 
-            # 키워드/패턴 기반 자연어 수정
             if re.search(r"(수정|고쳐|바꿔|다듬|말투|톤|짧게|길게|줄여|늘려|빼줘|넣어줘|캐주얼|격식|맞춤법)", msg_l):
                 return self._edit_review(db, user_id, message)
 
-            # 네/예
             if any(x in msg_l for x in ["네","예","응","ㅇㅇ","ok","오케이","그래","yes","y"]):
                 return self._submit_feedback(db, user_id)
-            # 아니오
             if any(x in msg_l for x in ["아니오","아니요","ㄴㄴ","노","no","n"]):
                 return self._say(db, user_id, "알겠습니다. 바꾸고 싶은 점을 편하게 말씀해 주세요. 예: '더 캐주얼하게', '배터리 부분은 빼줘'")
 
@@ -313,7 +303,6 @@ class ChatbotService:
 
     # -------- helpers --------
     def _ack_and_next(self, db: Session, user_id: str, ack: str) -> dict:
-        ctx = get_user_context(user_id) or {}
         add = ack + "\n\n" + "다음 질문으로 넘어가겠습니다."
         save_chat_message(db, user_id, RoleEnum.assistant, add)
         return self._ask_or_compose(db, user_id, force_new_question=True)
@@ -432,6 +421,11 @@ class ChatbotService:
             temperature=0.7
         )
         review = parse_review_json(str(raw))
+        if ctx.get("overallScore") is not None:
+            try:
+                review["overall_score"] = int(ctx["overallScore"])
+            except Exception:
+                pass
 
         if not review.get("content"):
             update_user_context(user_id, {"stage": "qna"})
@@ -465,6 +459,12 @@ class ChatbotService:
 """
         raw = call_chatgpt(user_id=user_id, system_prompt="", user_prompt=edit_prompt, chat_history=[], temperature=0.55)
         review = parse_review_json(str(raw))
+        ctx2 = get_user_context(user_id) or {}
+        if ctx2.get("overallScore") is not None:
+            try:
+                review["overall_score"] = int(ctx2["overallScore"])
+            except Exception:
+                pass
         if not review.get("content"):
             return self._say(db, user_id, "수정 결과가 비어있어요. 다른 방식으로 지시해 주세요.")
         update_user_context(user_id, {"review": review})
@@ -495,20 +495,53 @@ class ChatbotService:
             update_user_context(user_id, {"stage": "qna"})
             return self._ask_or_compose(db, user_id, force_new_question=True)
 
+        # 프리 설문 → scoresJson, 별점 → review 우선/컨텍스트 보조
+        pre_scores = ctx.get("preSurveyAnswers")
+        if isinstance(pre_scores, (dict, list)):
+            scores_json = json.dumps(pre_scores, ensure_ascii=False)
+        elif isinstance(pre_scores, str) and pre_scores.strip():
+            scores_json = pre_scores.strip()
+        else:
+            scores_json = "{}"
+
+        overall = int(ctx.get("overallScore") or r.get("overall_score") or 0)
+        if overall:
+                overall = max(1, min(5, overall))
+
         payload = {
             "orderItemId": int(order_item_id),
-            "productId": int(product_id),                 # ✅ 추가: NOT NULL 컬럼
+            "productId": int(product_id),
             "type": "AI",
-            "overallScore": int(r.get("overall_score") or 0),
-            "scoresJson": "{}",
+            "overallScore": overall,
+            "scoresJson": scores_json,
             "content": r.get("content") or "",
             "imagesJson": ctx.get("imagesJson") or "[]",
         }
 
-        ok, api_msg = post_feedback_to_spring(payload, token=token)
+        ok, api_res = post_feedback_to_spring(payload, token=token)
+
+        # awardedPoint / feedbackId 추출
+        awarded = 0
+        feedback_id = None
+        if isinstance(api_res, dict):
+            awarded = int(api_res.get("awardedPoint") or api_res.get("awarded") or api_res.get("point") or 0)
+            feedback_id = api_res.get("id") or api_res.get("feedbackId")
+        else:
+            try:
+                _d = json.loads(str(api_res))
+                awarded = int(_d.get("awardedPoint") or 0)
+                feedback_id = _d.get("id") or _d.get("feedbackId")
+            except Exception:
+                pass
+
         update_user_context(user_id, {"stage": "done"})
-        done = "✅ 피드백 게시 완료! 감사합니다 😊" if ok else f"❌ 게시 실패: {api_msg}"
-        return self._say(db, user_id, done)
+        done = "✅ 피드백 게시 완료! 감사합니다 😊" if ok else f"❌ 게시 실패: {api_res}"
+
+        resp = self._say(db, user_id, done)
+        # 메타(포인트/ID)도 함께 반환
+        resp["awardedPoint"] = awarded
+        resp["feedbackId"] = feedback_id
+        return resp
 
     def _say(self, db: Session, user_id: str, text: str) -> dict:
         save_chat_message(db, user_id, RoleEnum.assistant, text)
@@ -553,16 +586,14 @@ def _sanitize_image_urls(urls: Optional[List[str]]) -> list[str]:
         u2 = u.strip()
         if not u2.startswith(("https://", "http://")):
             continue
-        # 확장자 체크
         lower = u2.lower()
-        if not any(lower.endswith(ext) for ext in (".jpg", ".jpeg", ".png", ".webp", ".gif")):
+        path = u2.split("?", 1)[0].lower()   # 쿼리스트링 제거 후 확장자 체크
+        if not any(path.endswith(ext) for ext in (".jpg", ".jpeg", ".png", ".webp", ".gif")):
             continue
-        # 한 URL 너무 길면 스킵(비정상 data-uri 방지)
         if len(u2) > 1024:
             continue
         safe.append(u2)
 
-    # 중복 제거 + 최대 5장
     dedup = []
     seen = set()
     for u in safe:
@@ -571,14 +602,12 @@ def _sanitize_image_urls(urls: Optional[List[str]]) -> list[str]:
             dedup.append(u)
     dedup = dedup[:5]
 
-    # JSON 직렬화 길이 상한(보수적으로 4000바이트)
     while True:
         s = json.dumps(dedup, ensure_ascii=False)
         if len(s.encode("utf-8")) <= 4000 or not dedup:
             break
-        dedup.pop()  # 뒤에서부터 하나씩 줄임
+        dedup.pop()
     return dedup
-
 
 @_with_db
 def accept_now(db: Session, user_id: str, bearer: str | None = None, images: Optional[List[str]] = None):
@@ -589,7 +618,7 @@ def accept_now(db: Session, user_id: str, bearer: str | None = None, images: Opt
         if b:
             update_user_context(user_id, {"access_token": b})
 
-    # ✅ 업로더에서 받은 퍼블릭 URL 배열을 컨텍스트에 기록
+    # 이미지 URL 컨텍스트 저장
     if images is not None:
         safe = _sanitize_image_urls(images)
         update_user_context(user_id, {"imagesJson": json.dumps(safe, ensure_ascii=False)})
@@ -598,9 +627,11 @@ def accept_now(db: Session, user_id: str, bearer: str | None = None, images: Opt
     try:
         msg = out["messages"][-1]["content"]
         ok = msg.startswith("✅")
-        return ok, msg
+        awarded = int(out.get("awardedPoint") or 0)
+        fid = out.get("feedbackId")
+        return ok, {"message": msg, "awardedPoint": awarded, "feedbackId": fid}
     except Exception:
-        return False, "알 수 없는 응답 형식입니다."
+        return False, {"message": "알 수 없는 응답 형식입니다.", "awardedPoint": 0}
 
 @_with_db
 def edit_summary(db: Session, user_id: str, instructions: str):
