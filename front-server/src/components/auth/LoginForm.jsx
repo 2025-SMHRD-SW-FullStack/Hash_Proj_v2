@@ -21,7 +21,7 @@ const LoginForm = () => {
     try {
       const loginData = await loginRequest({ email, password });
       login(loginData);
-      alert('로그인에 성공했습니다.');
+      // alert('로그인에 성공했습니다.');
       navigate('/');
     } catch (error) {
       alert('아이디 또는 비밀번호가 일치하지 않습니다.');
@@ -29,23 +29,21 @@ const LoginForm = () => {
     }
   };
 
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
-      <div className="mx-auto w-full max-w-sm">
-        {/* 로고 */}
+   return (
+    <div className="flex flex-col items-center justify-center bg-white px-4">
+      {/* 이 div가 전체 폼의 최대 너비를 'sm' (small)으로 제한하고 있습니다.
+        이 값을 'max-w-xs' (extra small) 등으로 바꾸면 더 좁아집니다.
+      */}
+      <div className="mx-auto w-full max-w-sm"> 
         <div className="text-center mb-8">
-            <img
-            className="mx-auto h-20 w-auto cursor-pointer"
-            src={Logo}
-            alt="먼저써봄 로고"
-            onClick={() => navigate('/')}
-            />
-            <h2 className="mt-6 text-2xl font-bold tracking-tight text-gray-900">
+          <h2 className="mt-[120px] text-2xl font-bold tracking-tight text-gray-900">
             로그인
-            </h2>
+          </h2>
         </div>
 
-        {/* 로그인 폼 */}
+        {/* 이 form 태그가 TextField들의 직접적인 부모이며,
+          너비를 100%로 채우고 있습니다. 
+        */}
         <form className="space-y-4" onSubmit={handleSubmit}>
           <TextField
             id="email"
@@ -72,13 +70,17 @@ const LoginForm = () => {
 
         {/* 아이디/비밀번호 찾기 */}
         <div className="mt-4 text-center text-sm">
-          <button onClick={() => navigate('/find-auth')} className="font-medium text-gray-600 hover:text-blue-500 bg-transparent border-none">
+          <button onClick={() => navigate('/find-auth')} className="font-medium text-gray-600 hover:text-primary bg-transparent border-none">
             아이디/비밀번호 찾기
           </button>
         </div>
 
         {/* SNS 계정으로 로그인 */}
-        <SocialLoginButtons title="SNS 계정으로 로그인" />
+        <div className='flex items-center my-4 justify-between
+        '>
+          <span>SNS으로 로그인</span>
+          <SocialLoginButtons />
+        </div>
 
         {/* 회원가입 버튼 */}
         <div className="mt-4 text-center">

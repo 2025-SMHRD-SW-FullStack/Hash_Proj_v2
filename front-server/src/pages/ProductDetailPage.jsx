@@ -19,6 +19,8 @@ import Close from '../assets/icons/ic_close.svg';
 import TestImg from '../assets/images/ReSsol_TestImg.png';
 import FeedbackItem from '../components/product/FeedbackItem.jsx';
 import CategorySelect from '../components/common/CategorySelect.jsx';
+import BasketIcon from '../assets/icons/ic_basket.svg'
+import MessageIcon from '../assets/icons/ic_message.svg'
 
 
 const ProductDetailPage = () => {
@@ -324,16 +326,14 @@ const ProductDetailPage = () => {
           ) : (
             <span className="text-2xl text-primary font-bold">{product.basePrice.toLocaleString()}원</span>
           )}
-          <div className="text-sm text-gray-600 space-y-1 mt-2">
-            <p>배송비: {deliverFee > 0 ? `${deliverFee.toLocaleString()}원` : '무료'}</p>
-            <p>지급 포인트: {product.feedbackPoint.toLocaleString()}P</p>
-            <p>모집 기간: ~{product.saleEndAt?.slice(0, 10)}</p>
+          <div className="flex flex-col text-sm text-gray-600 space-y-1 mt-2">
+            <span>배송비: {deliverFee > 0 ? `${deliverFee.toLocaleString()}원` : '무료'}</span>
+            <span>지급 포인트: {product.feedbackPoint.toLocaleString()}P</span>
+            <span>모집 기간: ~{product.saleEndAt?.slice(0, 10)}</span>
           </div>
         </div>
 
-        <hr className="my-4 border-t border-gray-200" />
-
-        <div className="pr-1 space-y-3">
+        <div className="mt-4 space-y-3">
           {useOptions && (
             <div className="mb-4">
               <CategorySelect
@@ -371,7 +371,7 @@ const ProductDetailPage = () => {
                       src={Minus}
                       alt="감소"
                       onClick={() => handleQuantityChange(item.variantId, -1)}
-                      className="h-full w-6 p-1 cursor-pointer"
+                      className="h-full !w-6 p-1 cursor-pointer"
                     />
                     <input
                       type="number"
@@ -393,7 +393,7 @@ const ProductDetailPage = () => {
                       src={Plus}
                       alt="증가"
                       onClick={() => handleQuantityChange(item.variantId, 1)}
-                      className="h-full w-6 p-1 cursor-pointer"
+                      className="h-full !w-6 p-1 cursor-pointer"
                     />
                   </div>
                   <span className="text-base font-bold">{totalItemPrice.toLocaleString()}원</span>
@@ -403,9 +403,9 @@ const ProductDetailPage = () => {
           })}
         </div>
 
-        <div className="pt-4 border-t border-gray-200 mt-auto">
+        <div className="border-t border-gray-200 mt-auto">
           {selectedItems.length > 0 && (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between py-3">
               <span className="text-lg font-bold">총 상품 금액</span>
               <span className="text-2xl font-bold text-primary">{totalPrice.toLocaleString()}원</span>
             </div>
@@ -422,16 +422,23 @@ const ProductDetailPage = () => {
           </Button>
           <div className="flex gap-2">
             <Button
-              variant="signUp"
+              variant="outline"
               className="flex-1"
               onClick={handleAddToCart}
               disabled={isSoldOut || hasAnySelectedSoldOut}
               aria-disabled={isSoldOut || hasAnySelectedSoldOut}
               title={(isSoldOut || hasAnySelectedSoldOut) ? '품절 상품은 장바구니에 담을 수 없습니다' : '장바구니'}
+              leftIcon={<img src={BasketIcon} className='!w-5 !h-5 mr-2 sm:mr-0'/>}
             >
               장바구니
             </Button>
-            <Button variant="signUp" className="flex-1" onClick={handleOpenChat} disabled={chatLoading}>
+            <Button 
+              variant="outline" 
+              className="hidden sm:flex flex-1" 
+              onClick={handleOpenChat} 
+              disabled={chatLoading}
+              leftIcon={<img src={MessageIcon} className='!w-5 !h-5'/>}
+            >
               {chatLoading ? '열고 있어요…' : '1:1 문의하기'}
             </Button>
           </div>
@@ -527,16 +534,25 @@ const ProductDetailPage = () => {
 
       {/* ✅ 모바일 하단바: 품절 시 라벨/비활성화 */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white p-3 border-t shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-40 flex items-center gap-2">
-        <Button
-          variant="outline"
-          className="flex-1"
-          onClick={handleAddToCart}
-          disabled={isSoldOut || hasAnySelectedSoldOut}
-          aria-disabled={isSoldOut || hasAnySelectedSoldOut}
-          title={(isSoldOut || hasAnySelectedSoldOut) ? '품절 상품은 장바구니에 담을 수 없습니다' : '장바구니'}
-        >
-          장바구니
-        </Button>
+        <div className='flex gap-1'>
+          {/* <Button
+            variant="outline"
+            className="flex-1"
+            onClick={handleAddToCart}
+            disabled={isSoldOut || hasAnySelectedSoldOut}
+            aria-disabled={isSoldOut || hasAnySelectedSoldOut}
+            title={(isSoldOut || hasAnySelectedSoldOut) ? '품절 상품은 장바구니에 담을 수 없습니다' : '장바구니'}
+            leftIcon={<img src={BasketIcon} className='!w-5 !h-5'/>}
+          /> */}
+          <Button 
+              variant="outline" 
+              className="flex-1" 
+              onClick={handleOpenChat} 
+              disabled={chatLoading}
+              leftIcon={<img src={MessageIcon} className='!w-5 !h-5'/>}
+          />
+        </div>
+        
         <Button
           className="flex-1"
           onClick={

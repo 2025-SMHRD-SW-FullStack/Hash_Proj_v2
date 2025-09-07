@@ -188,12 +188,12 @@ const ExchangeRequestModal = ({ open, onClose, orderItems, onComplete, existingE
       title="교환 신청"
       footer={
         <div className="flex justify-between w-full">
-          {step === 2 && <Button variant="unselected" onClick={() => setStep(1)}>뒤로</Button>}
+          {step === 2 && <Button variant="unselected" className='ml-4' onClick={() => setStep(1)}>뒤로</Button>}
           <div className="flex-grow" />
           {step === 1 ? (
              <Button onClick={handleNextStep} disabled={selectedIds.size === 0}>다음</Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
+            <Button className='mr-4' onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting ? '처리 중...' : '신청 완료'}
             </Button>
           )}

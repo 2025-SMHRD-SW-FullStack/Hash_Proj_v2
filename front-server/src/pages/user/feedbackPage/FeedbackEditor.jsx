@@ -235,7 +235,7 @@ const FeedbackEditor = () => {
     <>
       {type === "AI" ? (
         <div className="p-8 max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2">AI 피드백 작성</h1>
+          <h1 className="text-2xl font-bold mb-2">AI 피드백 작성</h1>
           <p className="text-gray-600 mb-8">AI와 대화하며 피드백을 완성하고 제출해주세요.</p>
 
           {!userId || !orderItemId ? (
@@ -253,12 +253,12 @@ const FeedbackEditor = () => {
         </div>
       ) : (
         <div className="p-8 max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2">{isEdit ? "수기 피드백 수정" : "수기 피드백 작성"}</h1>
+          <h1 className="text-2xl font-bold mb-2">{isEdit ? "수기 피드백 수정" : "수기 피드백 작성"}</h1>
           <p className="text-gray-600 mb-8">상품에 대한 솔직한 피드백을 남겨주세요. {isEdit ? "수정 후 저장됩니다." : "포인트가 지급됩니다."}</p>
 
           {guidelines.length > 0 && (
             <div className="mb-6">
-              <h2 className="font-semibold mb-2">작성 가이드</h2>
+              <h1 className="text-xl font-bold mb-2">작성 가이드</h1>
               <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm bg-gray-50 p-4 rounded-lg">
                 {guidelines.map((q, idx) => (
                   <li key={idx}>{q}</li>
@@ -281,7 +281,7 @@ const FeedbackEditor = () => {
           </div>
 
           <div className="mt-6">
-            <h2 className="font-semibold mb-2">사진 첨부 (선택, 최대 5장)</h2>
+            <h1 className="text-xl font-semibold mb-2">사진 첨부 (선택, 최대 5장)</h1>
             <div className="flex items-center gap-4">
               <Button
                 variant="blackWhite"
@@ -319,7 +319,7 @@ const FeedbackEditor = () => {
               size="lg"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="px-10 py-4 text-lg font-bold"
+              className="px-8 py-3 text-lg font-bold"
             >
               {isSubmitting ? (isEdit ? "수정 중..." : "제출 중...") : (isEdit ? "수정 완료" : "제출하고 포인트 받기")}
             </Button>

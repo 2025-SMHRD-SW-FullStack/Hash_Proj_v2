@@ -21,6 +21,21 @@ const ExclamationCircleIcon = () => (
   </svg>
 );
 
+// 옵션 JSON을 예쁘게 표시하기 위한 헬퍼 함수
+const formatOptions = (optionsJson) => {
+  if (!optionsJson) return null;
+  try {
+    const options = JSON.parse(optionsJson);
+    // 옵션 객체의 값들만 추출하여 ' / '로 연결합니다.
+    const values = Object.values(options).filter(Boolean); // null이나 빈 값은 제외
+    if (values.length === 0) return null;
+    return values.join(' / ');
+  } catch (e) {
+    console.error("옵션 파싱 오류:", e);
+    return null;
+  }
+};
+
 const OrderCompletePage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -140,6 +155,7 @@ const OrderCompletePage = () => {
   if (!order) return null;
 
   const representativeItem = order.items && order.items[0];
+  const optionsText = representativeItem ? formatOptions(representativeItem.optionSnapshotJson) : null;
 
   return (
     <div className="max-w-2xl mx-auto p-4 sm:p-8">
@@ -191,22 +207,28 @@ const OrderCompletePage = () => {
         {/* 상품 요약 */}
         <div>
           <h3 className="font-semibold text-lg mb-3">주문 상품</h3>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center ">
             <img
               src={representativeItem?.thumbnailUrl || TestImg}
-              alt={representativeItem?.productNameSnapshot}
+              alt={representativeItem?.productName}
               className="w-24 h-24 rounded-lg object-cover bg-gray-100"
               onError={(e) => {
                 e.target.onerror = null; // 무한 루프 방지
                 e.target.src = TestImg;
               }}
             />
-            <div className="flex flex-col justify-center">
-              <p className="font-semibold">{representativeItem?.productNameSnapshot}</p>
-              {order.items.length > 1 && (
-                <p className="text-sm text-gray-500">외 {order.items.length - 1}건</p>
-              )}
-              <p className="text-xs text-gray-500 mt-1">배송 소요일 3일 (예상)</p>
+            <div className="flex flex-col justify-center gap-1">
+              <span className="font-semibold">{representativeItem?.productName}</span> {/* 👈 productName으로 수정 */}
+              {/* 👇 옵션 표시를 위한 코드 추가 */}
+              <div>
+                {optionsText && (
+                  <span className="text-sm text-gray-500 mt-1">{optionsText}</span>
+                )}
+                {order.items.length > 1 && (
+                  <span className="text-sm text-gray-500"> 외 {order.items.length - 1}건</span>
+                )}
+              </div>
+                <span className="text-xs text-gray-500">배송 소요일 3일 (예상)</span>
             </div>
           </div>
           <Button

@@ -14,7 +14,7 @@ import 'react-day-picker/dist/style.css'
 const inputCls = 'w-full h-10 rounded-lg border px-3 text-sm box-border max-w-full'
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 const Field = ({ label, children, hint, required = false }) => (
-  <label className="mb-3 block">
+  <label className="relative mb-3 block">
     <div className="mb-1 text-sm font-medium text-gray-700">
       {label}
       {required && <span className="text-red-500 ml-1">*</span>}
@@ -312,8 +312,8 @@ export default function AdsPowerPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-4">
-      <h1 className="mb-4 text-xl font-semibold">파워광고 신청</h1>
+    <div>
+      <h1 className="mb-4 text-xl font-semibold">파워 광고 신청</h1>
 
       <form onSubmit={submit} className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
         {/* 좌측 – 입력 */}
@@ -412,7 +412,7 @@ export default function AdsPowerPage() {
                   type="file"
                   accept="image/*"
                   onChange={handleImageSelect}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sub/30 file:text-[#AC6FDB] hover:file:bg-sub hover:file:text-[#8950B4]"
                 />
                 
                 {imagePreview && (
@@ -472,10 +472,10 @@ export default function AdsPowerPage() {
             </label>
 
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="unselected" onClick={() => navigate('/seller')}>
+              <Button type="button" variant="unselected" onClick={() => navigate('/seller/ads/management')}>
                 취소
               </Button>
-              <Button type="submit" disabled={loading || !canSubmit}>신청하기</Button>
+              <Button variant='admin' type="submit" disabled={loading || !canSubmit}>신청하기</Button>
             </div>
           </div>
         </section>
@@ -483,7 +483,7 @@ export default function AdsPowerPage() {
         {/* 우측 – 요약 (데스크탑 우측, 모바일에서는 아래로) */}
         <aside className={`${box}`}>
           <h2 className="mb-2 text-base font-semibold">신청 요약</h2>
-          <ul className="space-y-1 text-sm">
+          <ul className="space-y-1 text-sm pl-0">
             {positionConf.requiresCategory && (
               <>
                 <li className="flex items-center justify-between"><span>카테고리</span><span>{category || '-'}</span></li>
@@ -503,7 +503,7 @@ export default function AdsPowerPage() {
           <hr className="my-4" />
 
           <h3 className="mb-1 text-sm font-medium text-gray-700">동시 노출 가능 개수</h3>
-          <ul className="space-y-1 text-sm">
+          <ul className="space-y-1 text-sm pl-0">
             {POSITIONS.map((p) => (
               <li key={p.key} className="flex items-center justify-between">
                 <span>{p.label}</span>

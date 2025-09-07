@@ -49,6 +49,7 @@ export default function SurveyPage() {
 
   const [hoverScore, setHoverScore] = useState(0);
   const [openChoice, setOpenChoice] = useState(false);
+  const scaleLabels = { 1: '매우 불만족', 2: '불만족', 3: '보통', 4: '만족', 5: '매우 만족' };
 
   // 다건 주문이면 주문 상세 로딩 후 선택옵션 구성
   useEffect(() => {
@@ -188,7 +189,7 @@ export default function SurveyPage() {
       <div className="bg-white p-6 rounded-xl shadow-md">
         <h2 className="text-xl font-semibold mb-6">항목별 상세 평가</h2>
         <div className="space-y-6">
-          {(template.questions ?? []).map((q) => (
+          {(template.questions ?? []).filter(q => q.code !== 'overall').map((q) => (
             <div key={q.code}>
               <h3 className="font-medium text-gray-800 mb-3">{q.label}</h3>
               <div className="flex flex-wrap gap-2">
@@ -200,7 +201,7 @@ export default function SurveyPage() {
                       onClick={() => handleAnswerChange(q.code, value)}
                       className="flex-grow sm:flex-grow-0"
                     >
-                      {value}
+                      {`${value} (${scaleLabels[value]})`}
                     </Button>
                   ))}
                 {q.type === "CHOICE_ONE" &&
@@ -214,15 +215,6 @@ export default function SurveyPage() {
                       {opt.label}
                     </Button>
                   ))}
-                {q.allowNa && (
-                  <Button
-                    variant={answers[q.code] === "NA" ? "primary" : "unselected"}
-                    onClick={() => handleAnswerChange(q.code, "NA")}
-                    className="flex-grow sm:flex-grow-0"
-                  >
-                    해당 없음
-                  </Button>
-                )}
               </div>
             </div>
           ))}

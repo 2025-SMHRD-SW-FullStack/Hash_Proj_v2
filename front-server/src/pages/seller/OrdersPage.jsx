@@ -7,7 +7,7 @@ import Button from '../../components/common/Button'
 import Modal from '../../components/common/Modal'
 import OrderDetailContent from '../../components/seller/OrderDetailContent'
 import { carrierOptions, carrierLabel, resolveCarrier } from '../../constants/carriers'
-import { fetchSellerOrders, registerShipment, ORDER_STATUS_MAP, mapStatusForDisplay } from '../../service/orderService'
+import { fetchSellerOrders, registerShipment, ORDER_STATUS_MAP, mapStatusForDisplay, getShipmentTracking } from '../../service/orderService'
 import { toOrderNo, getAmount, truncate10, makeAndDownloadCSV, resolveFeedbackDue } from '../../util/orderUtils'
 import { fetchPendingExchanges, approveExchange, rejectExchange, shipExchange } from '../../service/exchangeService'
 import ExchangeShipDialog from '../../components/seller/ExchangeShipDialog'
@@ -16,6 +16,7 @@ import TableToolbar from '../../components/common/table/TableToolbar'
 import { useOrderStore } from '../../stores/orderStore'
 import { getExchangeStatusLabel } from '../../constants/exchange'
 import CategorySelect from '../../components/common/CategorySelect'
+import { levelToOrderStatus, levelToKorean } from '../../util/shipping'
 
 // ⬇️ 추가: 상세 API 호출을 위해 axios 인스턴스
 import api from '../../config/axiosInstance'
@@ -344,13 +345,30 @@ const openExchangeDetail = (row) => {
         trackingNo: f.trackingNo,
       })
 
-      const updatedOrder = {
-        ...row,
-        status: 'READY',
-        statusText: '배송준비중',
-        courierName: carrierLabel(f.carrierCode),
-        courierCode: f.carrierCode,
-        trackingNo: f.trackingNo
+      // ⬇️ 즉시 트래킹하여 실제 배송 단계 반영
+      let updatedOrder = { ...row }
+      try {
+        const tr = await getShipmentTracking(id)
+        const lv = Number(tr?.currentLevel ?? 3)
+        updatedOrder = {
+          ...updatedOrder,
+          status: levelToOrderStatus(lv),
+          statusText: levelToKorean(lv),
+          courierName: carrierLabel(f.carrierCode),
+          courierCode: f.carrierCode,
+          trackingNo: f.trackingNo,
+          _tracking: tr   // 상세 모달에서 즉시 재사용 가능
+        }
+      } catch (e) {
+        // 트래킹 실패 시 READY로 폴백
+        updatedOrder = {
+          ...updatedOrder,
+          status: 'READY',
+          statusText: '배송준비중',
+          courierName: carrierLabel(f.carrierCode),
+          courierCode: f.carrierCode,
+          trackingNo: f.trackingNo,
+        }
       }
 
       setRows((prev) => prev.map(r =>

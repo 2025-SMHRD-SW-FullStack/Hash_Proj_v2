@@ -26,7 +26,8 @@ export default function DiscountRow({ form, setField }) {
                     <Button
                         type="button"
                         size="sm"
-                        variant={form.discountEnabled ? 'signUp' : 'primary'}
+                        variant={form.discountEnabled ? 'outline' : 'admin'}
+
                         onClick={() => setField('discountEnabled', false)}
                     >
                         설정안함
@@ -34,7 +35,7 @@ export default function DiscountRow({ form, setField }) {
                     <Button
                         type="button"
                         size="sm"
-                        variant={form.discountEnabled ? 'primary' : 'signUp'}
+                        variant={form.discountEnabled ? 'admin' : 'outline'}
                         onClick={() => setField('discountEnabled', true)}
                     >
                         설정함
@@ -64,8 +65,8 @@ export default function DiscountRow({ form, setField }) {
 
                     <FieldRow label="할인가">
                         <div className="flex items-baseline gap-3">
-                            <div className="rounded-md border border-[#C3C3C3] bg-white px-3 py-2">
-                                <span className="text-lg font-bold text-[#4CBDE6]">
+                            <div className="rounded-md border border-[#C3C3C3] bg-white pr-3 py-2">
+                                <span className="text-lg font-bold text-sub">
                                     {final.toLocaleString('ko-KR')}원
                                 </span>
                             </div>

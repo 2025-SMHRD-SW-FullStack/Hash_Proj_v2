@@ -33,10 +33,10 @@ const statusBadge = (status) => {
 }
 
 const STATUS_CHIPS = [
-    { value: 'PENDING', label: '승인중' },
-    { value: 'APPROVED', label: '승인 완료' },
-    { value: 'REJECTED', label: '반려' },
-    { value: 'ALL', label: '전체' },
+  { value: 'ALL', label: '전체' },
+  { value: 'PENDING', label: '승인중' },
+  { value: 'APPROVED', label: '승인 완료' },
+  { value: 'REJECTED', label: '반려' },
 ];
 
 const PAGE_SIZE_OPTIONS = [
@@ -50,7 +50,7 @@ const SellerApprovalsPage = () => {
   const [loading, setLoading] = useState(true)
 
   // 검색/필터/페이지
-  const [status, setStatus] = useState('PENDING') // 기본 대기중
+  const [status, setStatus] = useState('ALL') // 기본 대기중
   const [q, setQ] = useState('')
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(10)
@@ -132,13 +132,6 @@ const SellerApprovalsPage = () => {
   // ------ 테이블 컬럼 정의 ------
   const columns = [
     {
-      header: '번호',
-      key: 'no',
-      width: 70,
-      align: 'center',
-      render: (_row, idx) => page * size + idx + 1,
-    },
-    {
       header: '상태',
       key: 'status',
       width: 110,
@@ -151,13 +144,14 @@ const SellerApprovalsPage = () => {
       align: 'center',
       className: 'max-w-[180px]',
       render: (row) => (
-        <button
-          className="underline-offset-2 hover:underline"
+        <Button
+          variant='signUp'
+          className="text-sub underline-offset-2 hover:underline"
           onClick={() => openDetail(row)}
           title="상세 보기"
         >
           {row.userNickname ?? row.userName ?? row.nickname ?? '-'}
-        </button>
+        </Button>
       ),
     },
     {
@@ -290,9 +284,6 @@ const SellerApprovalsPage = () => {
         maxWidth="max-w-xl"
         footer={
           <>
-            <Button variant="whiteBlack" onClick={() => setOpen(false)}>
-              닫기
-            </Button>
             <Button
               variant="danger"
               onClick={() => handleReject(target)}

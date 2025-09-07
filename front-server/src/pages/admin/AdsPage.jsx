@@ -152,7 +152,6 @@ export default function AdsPage() {
   }
 
   const columns = [
-    { header: '번호', key: 'no', width: 70, align: 'center', render: (_row, idx) => idx + 1 },
     {
       header: '상태',
       key: 'status',

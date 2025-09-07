@@ -87,7 +87,7 @@ export default function AdsManagementPage() {
             <div className="mb-4 text-6xl">📢</div>
             <h3 className="mb-2 text-lg font-medium text-gray-900">등록된 광고가 없습니다</h3>
             <p className="mb-4 text-gray-500">새로운 광고를 신청하여 상품을 홍보해보세요!</p>
-            <Button onClick={() => navigate('/seller/ads/power')}>
+            <Button variant='admin' onClick={() => navigate('/seller/ads/power')}>
               광고 신청하기
             </Button>
           </div>

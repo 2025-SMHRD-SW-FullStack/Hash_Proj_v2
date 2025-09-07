@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { startSession, sendReply, editSummary, acceptNow } from '../../service/aiService'
 import { uploadImages } from '../../service/uploadService'
+import Button from '../common/Button'
 
 function mapAssistantMessages(apiMsgs) {
   return (apiMsgs || []).map((m, i) => {
@@ -195,18 +196,17 @@ export default function AIChatBox({ userId, orderItemId, productId, onAccepted }
 
       <div className="border-t bg-white p-3 flex gap-2">
         <input
-          className="flex-1 border rounded-lg px-3 py-2"
+          className="flex-1 border-[#CCC] rounded-lg px-3 py-2"
           placeholder={step === 'EDIT_OR_ACCEPT' ? '수정 요청 사항을 입력하세요' : '메시지를 입력하세요'}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') (step === 'EDIT_OR_ACCEPT' ? onEdit() : onSend()) }}
         />
-        <button
+        <Button
           onClick={step === 'EDIT_OR_ACCEPT' ? onEdit : onSend}
-          className="px-4 py-2 rounded-lg bg-black text-white"
         >
           {step === 'EDIT_OR_ACCEPT' ? '수정' : '전송'}
-        </button>
+        </Button>
       </div>
     </div>
   )

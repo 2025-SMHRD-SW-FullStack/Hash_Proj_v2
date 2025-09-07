@@ -6,7 +6,7 @@ import lockIcon from '../../assets/images/lockIcon.png';
 import checkIcon from '../../assets/images/checkIcon.png';
 import errorIcon from '../../assets/images/error.png';
 import successIcon from '../../assets/images/success.png';
-import PersonIcon from '../../assets/icons/ic_person.svg';
+import PersonIcon from '../../assets/icons/ic_person.png';
 import {
   loginRequest,
   signupRequest,
@@ -18,6 +18,7 @@ import { useSignUpForm } from '../../hooks/useSignupForm';
 import { useNavigate } from 'react-router-dom';
 import Button from '../common/Button';
 import useAuthStore from '../../stores/authStore';
+import CategorySelect from '../common/CategorySelect';
 
 // ✅ 이미지 리사이징 헬퍼 함수 추가
 const resizeImage = (file, maxWidth, maxHeight, quality) => {
@@ -113,25 +114,40 @@ const EmailSignUpForm = () => {
   const [profilePreview, setProfilePreview] = useState(PersonIcon);
   const fileInputRef = useRef(null);
 
+  const placeholderOption = { value: '', label: '선택' };
+
   const DOMAIN_OPTIONS = [
-    { value: '', label: '직접 입력' },
     { value: 'naver.com', label: 'naver.com' },
     { value: 'gmail.com', label: 'gmail.com' },
     { value: 'daum.net', label: 'daum.net' },
     { value: 'nate.com', label: 'nate.com' },
     { value: 'kakao.com', label: 'kakao.com' },
+    { value: '', label: '직접 입력' },
+  ];
+
+  const PHONE_PREFIX_OPTIONS = [
+    { value: '010', label: '010' },
+    { value: '011', label: '011' },
+    { value: '016', label: '016' },
+    { value: '017', label: '017' },
+    { value: '018', label: '018' },
+    { value: '019', label: '019' },
   ];
 
   // --- 유틸 및 핸들러 ---
   const onlyDigits = (v) => v.replace(/\D/g, '');
 
-  const domainSelected = (e) => {
-    const v = e.target.value;
+  const domainSelected = (selectedOption) => {
+    const v = selectedOption.value;
     setSelectedDomain(v);
     setEmailDomain(v);
     if (v === '') {
       requestAnimationFrame(() => domainInputRef.current?.focus());
     }
+  };
+
+  const phonePrefixSelected = (selectedOption) => {
+    setPhone1(selectedOption.value);
   };
 
   useEffect(() => {
@@ -147,8 +163,8 @@ const EmailSignUpForm = () => {
   const onPhone2 = (e) => {
     const value = onlyDigits(e.target.value).slice(0, 4);
     setPhone2(value);
-    if (value.length === 4) {
-      phone3Ref.current?.focus();
+    if (value.length === 4 && phone3Ref.current) {
+      phone3Ref.current.focus();
     }
   };
 
@@ -391,18 +407,31 @@ const EmailSignUpForm = () => {
 
           {/* 이메일 */}
           <div>
-            <label className="text-sm font-medium text-gray-700">이메일 *</label>
-            <div className="mt-1 flex flex-col sm:flex-row gap-2">
-              <TextField id="emailId" label="이메일" value={emailId} onChange={(e) => setEmailId(e.target.value.trim())} className="w-full" />
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">@</span>
-                <TextField id="email_domain" label="직접입력" value={emailDomain} onChange={(e) => setEmailDomain(e.target.value.trim())} inputRef={domainInputRef} className="w-full" />
-                <select className="h-14 rounded-lg border border-gray-300 px-3" value={selectedDomain} onChange={domainSelected}>
-                  {DOMAIN_OPTIONS.map(({ value, label }) => (
-                    <option key={label} value={value}>{label}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="mt-1 grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2">
+              <TextField 
+                id="emailId" 
+                label="이메일" 
+                value={emailId} 
+                onChange={(e) => setEmailId(e.target.value.trim())} 
+              />
+              <span className="text-gray-500">@</span>
+              <TextField 
+                id="email_domain" 
+                label="도메인" 
+                value={emailDomain} 
+                onChange={(e) => {
+                  setEmailDomain(e.target.value.trim());
+                  if (selectedDomain !== '') setSelectedDomain('');
+                }} 
+                inputRef={domainInputRef}
+              />
+              <CategorySelect
+                categories={DOMAIN_OPTIONS}
+                sselected={DOMAIN_OPTIONS.find(opt => opt.value === selectedDomain)}
+                onChange={domainSelected}
+                placeholder="도메인 선택"
+                itemClassName="text-sm"
+              />
             </div>
             {emailError && <p className="mt-2 text-sm text-red-600">{emailError}</p>}
           </div>
@@ -421,14 +450,30 @@ const EmailSignUpForm = () => {
           {/* 전화번호 */}
           <div>
             <label className="text-sm font-medium text-gray-700">전화번호 *</label>
-            <div className="mt-1 grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-2 items-center">
-              <select className="h-14 rounded-lg border border-gray-300 px-2" value={phone1} onChange={(e) => setPhone1(e.target.value)}>
-                {['010', '011', '016', '017', '018', '019'].map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-              <TextField id="phone2" label="1234" value={phone2} onChange={onPhone2} />
-              <TextField id="phone3" label="5678" value={phone3} onChange={onPhone3} inputRef={phone3Ref} />
+            <div className="mt-1 grid grid-cols-[auto_auto_1fr_auto_1fr] items-center gap-2">
+              <CategorySelect
+                categories={PHONE_PREFIX_OPTIONS}
+                selected={PHONE_PREFIX_OPTIONS.find(opt => opt.value === phone1)}
+                onChange={phonePrefixSelected}
+                className="w-24"
+              />
+              <span className="text-gray-500 text-center">-</span>
+              <TextField 
+                id="phone2" 
+                label="" 
+                value={phone2} 
+                onChange={onPhone2} 
+                maxLength={4}
+              />
+              <span className="text-gray-500 text-center">-</span>
+              <TextField 
+                id="phone3" 
+                label="" 
+                value={phone3} 
+                onChange={onPhone3} 
+                inputRef={phone3Ref}
+                maxLength={4}
+              />
             </div>
             <Button type="button" onClick={onSendCode} disabled={!canSend || phoneVerified || !phone2 || !phone3} className="mt-2 w-full">
               {phoneVerified ? '인증완료' : leftSec > 0 ? `재전송(${mmss})` : isSending ? '발송중...' : '인증번호 발송'}
@@ -464,7 +509,6 @@ const EmailSignUpForm = () => {
                 value={birthDate}
                 readOnly
                 onClick={() => setIsDatePickerOpen(prev => !prev)}
-                placeholder="YYYY-MM-DD"
                 required
               />
               {isDatePickerOpen && (

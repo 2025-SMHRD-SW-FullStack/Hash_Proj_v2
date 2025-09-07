@@ -62,6 +62,12 @@ export const getTracking = async (orderId) => {
   }
 }
 
+export const getShipmentTracking = async (orderId) => {
+  const { data } = await api.get(`/api/shipments/${orderId}/tracking`)
+  // 예상 스키마: { currentLevel, trackingNo, events:[{timeText, location, statusText, extra}], lastSyncedAt }
+  return data
+}
+
 /** 피드백 완료 여부(있으면 true) */
 export const checkFeedbackDone = async (orderItemId) => {
   // orderId가 아닌 orderItemId를 사용하도록 수정합니다.

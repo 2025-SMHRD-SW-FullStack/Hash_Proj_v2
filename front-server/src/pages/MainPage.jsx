@@ -11,6 +11,7 @@ import { getMyPointBalance } from '../service/pointService';
 import { getActiveAds } from '../service/adsService';
 import { AD_SLOT_TYPES } from '../constants/ads';
 import PointIcon from '../assets/icons/ic_point.svg'
+import PersonIcon from '../assets/icons/ic_person.png'
 
 const MainPage = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -177,7 +178,7 @@ const MainPage = () => {
         </div>
 
         {/* 전체 상품 CTA */}
-        <div className="mb-12 text-center">
+        <div className="mb-6 text-center">
           <Button
             size="lg"
             className="px-4 py-2 sm:px-8 sm:py-3 text-sm sm:text-base bg-black text-white rounded-xl"
@@ -198,14 +199,18 @@ const MainPage = () => {
 
       {/* 사이드 영역 */}
       <aside className="top-8 hidden w-1/5 flex-shrink-0 sm:block space-y-4">
-        <div className="border-[#CCC] border-solid border-[1px] mb-12 flex flex-col items-center justify-center rounded-lg p-4 text-center space-y-3 sm:space-y-4">
+        <div className="h-[250px] border-[#CCC] border-solid border-[1px] mb-12 flex flex-col items-center justify-center rounded-lg p-4 text-center space-y-3 sm:space-y-4">
         {isLoggedIn ? (
           <>
             {/* 프로필 사진 */}
             <img
-              src={user?.profileImageUrl || '/default-profile.png'}
+              src={user?.profileImageUrl || PersonIcon }
               alt="프로필 사진"
               className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover mb-2"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = PersonIcon;
+              }}
             />
             
             <p className="font-bold text-sm sm:text-base">
@@ -238,7 +243,7 @@ const MainPage = () => {
             </div>
 
             {/* 로그아웃 버튼 */}
-            <Button size="lg" className="w-full" onClick={logout}>
+            <Button variant='signUp' size="lg" className="w-full" onClick={logout}>
               로그아웃
             </Button>
           </>

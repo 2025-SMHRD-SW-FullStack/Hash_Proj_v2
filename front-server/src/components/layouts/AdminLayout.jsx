@@ -100,7 +100,9 @@ export default function AdminLayout() {
 
         {/* 본문: Outlet */}
         <main className="w-full flex-1 min-h-[calc(100vh-64px)] max-w-[1600px] bg-gray-50 p-4 sm:p-6">
-          <Outlet />
+          <div className='mx-auto w-full max-w-7xl lg:px-8'>
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
