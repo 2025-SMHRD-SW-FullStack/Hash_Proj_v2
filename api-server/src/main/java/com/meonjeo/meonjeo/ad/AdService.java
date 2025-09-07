@@ -48,15 +48,13 @@ public class AdService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<SlotAvailability> inventory(AdSlotType type, String category, LocalDate start, LocalDate end){
         if (type == AdSlotType.CATEGORY_TOP && (category == null || category.isBlank())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CATEGORY_TOP은 category가 필요합니다.");
         }
 
-        List<AdSlot> slots = (type == AdSlotType.CATEGORY_TOP)
-                ? slotRepo.findByTypeAndCategoryOrderByPositionAsc(type, category)
-                : slotRepo.findByTypeOrderByPositionAsc(type);
+        List<AdSlot> slots = slotsOrProvision(type, category);
 
         List<SlotAvailability> out = new ArrayList<>();
         for (AdSlot s : slots) {
@@ -162,12 +160,10 @@ public class AdService {
         return cnt;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public Set<LocalDate> disabledDatesForRange(AdSlotType type, String category,
                                                 LocalDate from, LocalDate to) {
-        List<AdSlot> slots = (type == AdSlotType.CATEGORY_TOP)
-                ? slotRepo.findByTypeAndCategoryOrderByPositionAsc(type, category)
-                : slotRepo.findByTypeOrderByPositionAsc(type);
+        List<AdSlot> slots = slotsOrProvision(type, category);
 
         Set<LocalDate> disabled = new HashSet<>();
         for (var d = from; !d.isAfter(to); d = d.plusDays(1)) {
@@ -296,11 +292,9 @@ public class AdService {
         return out;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<ServeItemFilled> serveFilled(AdSlotType type, String category, LocalDate date) {
-        var slots = (type == AdSlotType.CATEGORY_TOP)
-                ? slotRepo.findByTypeAndCategoryOrderByPositionAsc(type, category)
-                : slotRepo.findByTypeOrderByPositionAsc(type);
+        var slots = slotsOrProvision(type, category);
 
         var actives = bookingRepo.findActiveFor(type, category, date);
         var bySlotId = new HashMap<Long, AdBooking>();
@@ -383,4 +377,30 @@ public class AdService {
         // 3) 검색 없으면 기존 total 유지
         return new PageImpl<>(filtered, sort, page.getTotalElements());
     }
+
+    /** 타입(+카테고리)별 슬롯 조회; 없으면 기본 용량만큼 자동 생성(멱등) */
+    private List<AdSlot> slotsOrProvision(AdSlotType type, String category) {
+        List<AdSlot> slots = (type == AdSlotType.CATEGORY_TOP)
+                ? slotRepo.findByTypeAndCategoryOrderByPositionAsc(type, category)
+                : slotRepo.findByTypeOrderByPositionAsc(type);
+        if (!slots.isEmpty()) return slots;
+
+        final int capacity = switch (type) {
+            case MAIN_ROLLING   -> 10;
+            case MAIN_SIDE      -> 3;
+            case CATEGORY_TOP   -> 5;
+            case ORDER_COMPLETE -> 5;
+        };
+        for (int pos = 1; pos <= capacity; pos++) {
+            slotRepo.save(AdSlot.builder()
+                    .type(type)
+                    .position(pos)
+                    .category(type == AdSlotType.CATEGORY_TOP ? category : null)
+                    .build());
+        }
+        return (type == AdSlotType.CATEGORY_TOP)
+                ? slotRepo.findByTypeAndCategoryOrderByPositionAsc(type, category)
+                : slotRepo.findByTypeOrderByPositionAsc(type);
+    }
+
 }

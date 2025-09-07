@@ -26,3 +26,8 @@ application-secret-dev.yml
 *.env
 api-server/bin/
 api-server/build/
+
+# build outputs
+api-server/bin/
+api-server/build/
+api-server/.gradle/

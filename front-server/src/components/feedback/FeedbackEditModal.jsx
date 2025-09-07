@@ -1,18 +1,23 @@
+// /src/components/feedback/FeedbackEditModal.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { updateFeedback } from '../../service/feedbackService';
 import { uploadImages } from '../../service/uploadService';
-import { canEditFeedback } from '../../util/FeedbacksStatus';
+// util 경로/케이스: feedbacksStatus (소문자)
+import { canEditFeedback } from '../../util/feedbacksStatus';
 
-export default function FeedbackEditModal({ 
-    open, 
-    onClose, 
-    feedback, 
-    orderItem, 
-    onUpdated 
-  }) {
-    
+export default function FeedbackEditModal({
+  open,
+  onClose,
+  feedback,
+  orderItem,           // 주문 상세에서만 전달
+  onUpdated,
+  enforceGuard = false // 상품 상세 등에서는 false 유지
+}) {
+  console.log('[EditModal] open =', open, 'enforceGuard =', enforceGuard);
+
+  // 초기 이미지(URL 배열) 파싱
   const initialImages = useMemo(() => {
     try {
       if (!feedback?.imagesJson) return [];
@@ -24,30 +29,54 @@ export default function FeedbackEditModal({
   }, [feedback]);
 
   const [content, setContent] = useState(feedback?.content ?? '');
-  const [images, setImages] = useState(initialImages);
+  const [images, setImages] = useState(initialImages); // 항상 URL 배열 유지
   const [submitting, setSubmitting] = useState(false);
 
-// 🔒 7일 제한: 모달 열릴 때 편집 가능 여부 재검사(2차 방어)
+  // 🔒 가드: 주문 문맥 + enforceGuard=true 인 화면에서만 적용
   useEffect(() => {
-    if (open && !canEditFeedback(orderItem, feedback)) {
-      // 필요하면 안내를 띄워도 됨
-      // alert('수정 가능 기간(배송완료 후 7일)이 지났습니다.');
-      onClose?.();
+    if (!open) return;
+
+    if (!enforceGuard) {
+      console.log('[EditModal] guard skipped (enforceGuard=false)');
+      return;
     }
-  }, [open, orderItem, feedback, onClose]);
 
+    if (orderItem && typeof canEditFeedback === 'function') {
+      let allowed = true;
+      try {
+        allowed = !!canEditFeedback(orderItem, feedback);
+      } catch (e) {
+        console.error('[EditModal] canEditFeedback error:', e);
+      }
+      console.log('[EditModal] guard result =', allowed);
+      if (!allowed) onClose?.();
+    } else {
+      console.log('[EditModal] no orderItem → guard not applied');
+    }
+  }, [open, enforceGuard, orderItem, feedback, onClose]);
 
+  // 피드백 변경 시 폼 초기화
   useEffect(() => {
     setContent(feedback?.content ?? '');
     setImages(initialImages);
   }, [feedback, initialImages]);
 
+  // 이미지 선택 → 업로드 → URL 배열 추가
   const onPickFiles = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    const urls = await uploadImages(files); // 배열(URL) 반환 가정
-    setImages(prev => [...prev, ...urls]);
-    e.target.value = '';
+    try {
+      const list = Array.from(e?.target?.files || []);
+      if (!list.length) return;
+
+      // ✅ 업로드 서비스 시그니처: uploadImages('FEEDBACK', files)
+      const metas = await uploadImages('FEEDBACK', list); // [{url,...}]
+      const urls = Array.isArray(metas) ? metas.map(m => m?.url).filter(Boolean) : [];
+      if (urls.length) setImages(prev => [...prev, ...urls]);
+    } catch (err) {
+      console.error('upload failed:', err);
+      alert('이미지 업로드에 실패했습니다.');
+    } finally {
+      if (e?.target) e.target.value = '';
+    }
   };
 
   const removeImage = (idx) => setImages(prev => prev.filter((_, i) => i !== idx));
@@ -56,11 +85,26 @@ export default function FeedbackEditModal({
     if (!feedback?.id) return;
     setSubmitting(true);
     try {
-      const updated = await updateFeedback(feedback.id, { content, images });
-      onUpdated?.(feedback.id, updated);   // ← 여기!
+      // ✅ 서버 구현 차이에 안전하게: images(URL배열) + imagesJson 동시 전송
+      const payload = { content };
+      if (Array.isArray(images)) payload.images = images;
+      try { payload.imagesJson = JSON.stringify(images ?? []); } catch {}
+
+      const updated = await updateFeedback(feedback.id, payload);
+
+      // 응답이 비어도 즉시 로컬 반영
+      const next = updated ?? {
+        ...feedback,
+        content,
+        imagesJson: Array.isArray(images) ? JSON.stringify(images) : feedback.imagesJson,
+        updatedAt: new Date().toISOString(),
+      };
+
+      onUpdated?.(next);
       onClose?.();
     } catch (err) {
-      alert(err.message || '수정에 실패했습니다.');
+      console.error(err);
+      alert(err?.message || '수정에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -68,7 +112,7 @@ export default function FeedbackEditModal({
 
   return (
     <Modal isOpen={open} onClose={onClose} title="피드백 수정">
-      <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-4 p-4" onClick={(e) => e.stopPropagation()}>
         <label className="form-label">내용</label>
         <textarea
           value={content}
@@ -94,7 +138,13 @@ export default function FeedbackEditModal({
               </div>
             ))}
             <label className="w-24 h-24 flex items-center justify-center rounded-lg border cursor-pointer">
-              <input type="file" accept="image/*" multiple className="hidden" onChange={onPickFiles} />
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={onPickFiles}
+              />
               <span className="text-sm">추가</span>
             </label>
           </div>

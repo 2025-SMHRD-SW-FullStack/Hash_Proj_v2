@@ -4,8 +4,8 @@ import Button from "../../../components/common/Button";
 import { confirmTossPayment } from "../../../service/paymentService"
 import { getMyOrderDetail } from "../../../service/orderService";
 import TestImg from '../../../assets/images/ReSsol_TestImg.png'; // 임시 상품 이미지
-// import { getOverallAdSamples } from '../../../service/adsService'; // [광고] 1. 광고 서비스 import
-// import { getProducts } from "../../../service/productService"; // [광고] 2. 상품 서비스 import
+import  { getActiveAds } from "../../../service/adsService"; // [광고] 1. 광고 서비스 import
+import { AD_SLOT_TYPES  } from "../../../constants/ads"; // [광고] 2. 상품 서비스 import
 
 // 체크 아이콘 SVG
 const CheckCircleIcon = () => (
@@ -44,7 +44,7 @@ const OrderCompletePage = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  // const [adProducts, setAdProducts] = useState([]); // [광고] 3. 광고 상품 상태
+  const [adProducts, setAdProducts] = useState([]); // [광고] 3. 광고 상품 상태
 
   useEffect(() => {
     const isSuccess = searchParams.get('status') === 'success';
@@ -133,6 +133,16 @@ const OrderCompletePage = () => {
     }
   }, [searchParams]);
 
+    useEffect(() => {
+    if (status !== 'success') return;
+    (async () => {
+      try {
+        // 주문완료 전용 슬롯에서 광고 불러오기 (하우스 제외)
+        const ads = await getActiveAds(AD_SLOT_TYPES.ORDER_COMPLETE);
+        setAdProducts((ads || []).filter(a => !a.house));
+      } catch (e) { console.error(e); }
+    })();
+  }, [status]);
 
   if (loading) {
     return <div className="text-center p-10">주문 처리 중입니다...</div>;
@@ -248,19 +258,33 @@ const OrderCompletePage = () => {
       </div>
 
       {/* [광고] 5. 추천 상품 섹션 (주석 해제하여 사용) */}
-      {/* <div className="mt-12">
+      <div className="mt-12">
         <h2 className="text-xl font-semibold mb-4">이 상품도 살펴보세요!</h2>
-        {adProducts.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            {adProducts.map(product => (
-              <Product key={product.id} product={product} onClick={() => navigate(`/product/${product.id}`)} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-500 py-4">추천 상품을 불러오는 중입니다.</p>
-        )}
+         {adProducts.length > 0 ? (
+           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+             {adProducts.map((ad, i) => (
+               <div
+                 key={ad.slotId ?? ad.productId ?? i}
+                 className="cursor-pointer"
+                 onClick={() => ad.productId && navigate(`/product/${ad.productId}`)}
+               >
+                 <div className="aspect-square rounded-lg overflow-hidden border">
+                   <img
+                     src={ad.bannerImageUrl || 'https://via.placeholder.com/192'}
+                     alt={ad.productName || '광고 상품'}
+                     className="w-full h-full object-cover"
+                     onError={(e)=>{e.currentTarget.src='https://via.placeholder.com/192'}}
+                   />
+                 </div>
+                 <div className="mt-2 text-sm">{ad.productName || '특별한 상품을 만나보세요!'}</div>
+               </div>
+             ))}
+           </div>
+         ) : (
+           <p className="text-center text-gray-500 py-4">추천 상품이 준비 중이에요.</p>
+         )}
       </div>
-      */}
+     
     </div>
   );
 };

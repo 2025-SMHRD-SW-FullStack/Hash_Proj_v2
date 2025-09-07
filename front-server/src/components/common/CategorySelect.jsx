@@ -3,7 +3,7 @@ import Icon from "./Icon";
 import DownIcon from '../../assets/icons/ic_arrow_down.svg'
 import CheckIcon from '../../assets/icons/ic_check.svg'
 
-const CategorySelect = ({ categories = [], selected = {}, onChange, className,  placeholder, itemClassName }) => {
+const CategorySelect = ({ categories = [], selected = {}, onChange, className, placeholder, itemClassName }) => {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -34,24 +34,27 @@ const CategorySelect = ({ categories = [], selected = {}, onChange, className,  
 
       {/* 옵션 드롭다운 */}
       <div
-        className={`w-full mx-auto absolute mt-1 bg-white border border-gray-300 rounded-md shadow-md max-h-64 overflow-auto z-20 transition-all duration-200 ${
-          open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
-        }`}
+        className={`w-full mx-auto absolute mt-1 bg-white border border-gray-300 rounded-md shadow-md max-h-64 overflow-auto z-20 transition-all duration-200 ${open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
+          }`}
       >
         {categories.map((item) => {
           const isSelected = item.value === selected?.value;
+          const isDisabled = !!item.disabled; // ← 품절 여부
           return (
             <div
               key={item.value}
+              role="option"
+              aria-disabled={isDisabled}
               onClick={() => {
+                if (isDisabled) return;       // ← 품절이면 선택 차단
                 onChange(item);
                 setOpen(false);
               }}
-              className={`cursor-pointer select-none relative py-2 pl-5 pr-10 mb-1 rounded-md transition-colors ${
-                isSelected
+              className={`cursor-pointer select-none relative py-2 pl-5 pr-10 mb-1 rounded-md transition-colors ${isSelected
                   ? "bg-primary text-white font-semibold shadow-sm"
                   : "text-gray-700 hover:bg-gray-100"
-              } ${itemClassName || ''}`}
+                } ${itemClassName || ''}`}
+              title={isDisabled ? "품절 옵션" : undefined}
             >
               <span className={`block truncate ${isSelected ? "font-semibold" : "font-normal"}`}>
                 {item.label}

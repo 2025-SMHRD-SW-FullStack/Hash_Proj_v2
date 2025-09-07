@@ -76,11 +76,21 @@ const ProductPage = () => {
         setLoading(true);
         const productData = await getProducts();
         setProducts(productData);
+        const byId = new Map(productData.map(p => [p.id, p]));
 
         if (selectedCategory.value !== '전체') {
           setLoadingAds(true);
           const adData = await getActiveAds(AD_SLOT_TYPES.CATEGORY_TOP, selectedCategory.value);
-          setPowerAds(adData);
+          // ▽ 상품형 광고는 bannerImageUrl이 비어있을 수 있으니, productId로 보강
+          const hydrated = (adData || []).map(ad => {
+            const p = ad.productId ? byId.get(ad.productId) : null;
+            return {
+              ...ad,
+              productName: ad.productName ?? p?.name ?? '특별한 상품을 만나보세요!',
+              bannerImageUrl: ad.bannerImageUrl ?? p?.thumbnailUrl ?? '',
+            };
+          });
+          setPowerAds(hydrated);
           setLoadingAds(false);
         } else {
           setPowerAds([]);
@@ -219,7 +229,7 @@ const ProductPage = () => {
       {loadingAds ? (
         <p className="w-full text-center py-4">광고를 불러오는 중입니다...</p>
       ) : (
-        powerAds.length > 0 && selectedCategory !== '전체' && (
+        powerAds.length > 0 && selectedCategory.value !== '전체' && (
           <div className="w-full mb-8">
             <h2 className="text-lg font-bold mb-4 border-b pb-2">🔥 추천 상품</h2>
             <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
