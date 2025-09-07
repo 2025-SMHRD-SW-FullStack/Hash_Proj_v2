@@ -5,16 +5,41 @@ import api from '../config/axiosInstance'
 //    서버가 '/api/ad' 라우트를 쓰면 아래를 '/api/ad' 로 바꿔주세요.
 const ADS_BASE = '/api/ads'
 
+const toSlotCategoryKey = (c) => {
+  const map = {
+    '밀키트': 'meal-kit',
+    '전자제품': 'electronics',
+    '화장품': 'beauty',
+    '무형자산': 'platform',
+  };
+  return map[c] || c; // 이미 슬러그면 그대로
+};
+
 /**
  * 현재 활성화된 광고 목록을 가져옵니다. (빈 슬롯은 하우스 광고로 채워짐)
  * @param {('MAIN_ROLLING'|'MAIN_SIDE'|'CATEGORY_TOP'|'ORDER_COMPLETE')} type - 가져올 광고 슬롯 타입
  * @returns {Promise<Array<{productId: number, bannerImageUrl: string, house: boolean}>>}
  */
-export const getActiveAds = async (type) => {
+export const getActiveAds = async (type, category) => {
   if (!type) return [];
   try {
-    const { data } = await api.get(`${ADS_BASE}/active/filled`, { params: { type } });
-    return Array.isArray(data) ? data : [];
+    const params = { type };
+    // CATEGORY_TOP이면 카테고리도 같이 전달(한글 → 슬롯 키 변환)
+    if (type === 'CATEGORY_TOP' && category && category !== '전체') {
+      params.category = toSlotCategoryKey(category);
+    }
+    const { data } = await api.get(`${ADS_BASE}/active/filled`, { params });
+
+    // 하우스 배너가 '/static/...'이면 절대 URL로 바꿔주기
+    const API_STATIC_ORIGIN =
+      (import.meta.env.VITE_API_STATIC_ORIGIN || '').replace(/\/$/, '') || window.location.origin;
+    const absolutize = (url) =>
+      !url ? url : /^https?:\/\//.test(url) ? url : url.startsWith('/') ? `${API_STATIC_ORIGIN}${url}` : url;
+
+    const arr = Array.isArray(data) ? data : [];
+    return arr.map(it => (it?.house && it?.bannerImageUrl
+      ? { ...it, bannerImageUrl: absolutize(it.bannerImageUrl) }
+      : it));
   } catch (error) {
     console.error(`Error fetching active ads for type ${type}:`, error);
     return []; // 에러 발생 시 빈 배열 반환
@@ -30,7 +55,7 @@ export const fetchAdUnavailableDates = async ({ type, category, startDate, endDa
     endDate,   // 'YYYY-MM-DD'
   }
   // CATEGORY_TOP일 때만 category 필수
-  if (type === 'CATEGORY_TOP' && category) params.category = category
+  if (type === 'CATEGORY_TOP' && category) params.category = toSlotCategoryKey(category);
 
   const { data } = await api.get(`${ADS_BASE}/availability/calendar`, { params })
   // 서버가 Set을 내려도 JSON에선 배열로 직렬화될 가능성이 높음 → 배열로 정규화
@@ -41,7 +66,7 @@ export const fetchAdUnavailableDates = async ({ type, category, startDate, endDa
 /** 인벤토리 조회: 기간 동안 가용 슬롯 탐색 */
 export const fetchAdInventory = async ({ type, category, startDate, endDate }) => {
   const params = { type, startDate, endDate }
-  if (type === 'CATEGORY_TOP' && category) params.category = category
+  if (type === 'CATEGORY_TOP' && category) params.category =  toSlotCategoryKey(category);
   const res = await api.get(`${ADS_BASE}/inventory`, { params })
   return res.data // [{ slotId, position, available }]
 }

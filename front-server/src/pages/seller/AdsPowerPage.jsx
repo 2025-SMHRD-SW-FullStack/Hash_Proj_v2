@@ -29,7 +29,7 @@ const POSITIONS = [
   { key: 'mainBanner',    label: '메인 롤링 배너',     type: AD_SLOT_TYPES.MAIN_ROLLING,  capacity: 10, price: { 7: 15000, 14: 25000, 30: 45000 }, requiresImage: true, requiresCategory: true },
   { key: 'mainRight',     label: '메인 오른쪽 구좌',   type: AD_SLOT_TYPES.MAIN_SIDE,     capacity: 3,  price: { 7: 12000, 14: 20000, 30: 40000 }, requiresImage: true, requiresCategory: true },
   { key: 'productList',   label: '상품목록 (파워광고)', type: AD_SLOT_TYPES.CATEGORY_TOP,  capacity: 5,  price: { 7: 8000,  14: 15000, 30: 30000 }, requiresImage: false, requiresCategory: true },
-  { key: 'orderComplete', label: '주문완료',           type: AD_SLOT_TYPES.ORDER_COMPLETE, capacity: 5,  price: { 7: 5000,  14: 10000, 30: 20000 }, requiresImage: true, requiresCategory: true },
+  { key: 'orderComplete', label: '주문완료',           type: AD_SLOT_TYPES.ORDER_COMPLETE, capacity: 5,  price: { 7: 5000,  14: 10000, 30: 20000 }, requiresImage: true, requiresCategory: false },
 ]
 
 const PERIODS = [7, 14, 30]
