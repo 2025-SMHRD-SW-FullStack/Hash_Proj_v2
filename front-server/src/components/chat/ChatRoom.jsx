@@ -9,13 +9,14 @@ import useAuthStore from '../../stores/authStore';
 import TestImg from '../../assets/images/ReSsol_TestImg.png';
 import ClipIcon from '../../assets/icons/ic_clip.svg';
 import ArrowLeftIcon from '../../assets/icons/ic_arrow_left.svg';
+import Button from '../common/Button';
 
 /** 채팅방 헤더 */
 const PanelHeader = ({ roomInfo, onClose }) => (
   <div className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-white px-3 shrink-0">
     <div className="flex items-center gap-3 min-w-0">
       {onClose && (
-        <button className="p-2 hover:bg-gray-100 rounded-full" onClick={onClose}>
+        <button className="bg-transparent border-none p-2 hover:bg-gray-100 rounded-full" onClick={onClose}>
           <img src={ArrowLeftIcon} alt="뒤로가기" className="w-6 h-6" />
         </button>
       )}
@@ -40,7 +41,7 @@ const MessageBubble = ({ msg, isGroupStart, otherLastReadId }) => {
   const bubbleTint =
     msg.type === 'IMAGE'
       ? ''
-      : (msg.isMine ? 'bg-blue-500 text-white' : 'bg-white border');
+      : (msg.isMine ? 'bg-primary text-white' : 'bg-white border');
 
   return (
     <div className={`flex items-end gap-2 ${msg.isMine ? 'flex-row-reverse' : 'justify-start'}`}>
@@ -78,7 +79,7 @@ const MessageBubble = ({ msg, isGroupStart, otherLastReadId }) => {
 };
 
 /** 입력창 */
-const ChatInput = ({ onSendMessage }) => {
+const ChatInput = ({ onSendMessage, className }) => {
   const [input, setInput] = useState('');
   const [imageFiles, setImageFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
@@ -118,7 +119,7 @@ const ChatInput = ({ onSendMessage }) => {
         </div>
       )}
       <div className="flex items-center gap-2">
-        <button onClick={() => fileInputRef.current?.click()} className="rounded-full p-2 hover:bg-gray-100">
+        <button onClick={() => fileInputRef.current?.click()} className="bg-transparent border-[#CCC] border-[1px] rounded-full p-2 hover:bg-gray-100">
           <img src={ClipIcon} alt="첨부" className="h-6 w-6 text-gray-500"/>
         </button>
         <input type="file" ref={fileInputRef} multiple accept="image/*" onChange={handleFileChange} className="hidden"/>
@@ -128,15 +129,15 @@ const ChatInput = ({ onSendMessage }) => {
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
           placeholder="메시지를 입력하세요"
           rows="1"
-          className="flex-1 resize-none rounded-lg border bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="flex-1 resize-none rounded-lg border bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
         />
-        <button
-          className="h-10 rounded-lg bg-blue-500 px-4 text-sm font-semibold text-white hover:bg-blue-600 disabled:bg-gray-300"
+        <Button
+          className="h-10 rounded-lg px-4 text-sm font-semibold text-white hover:bg-primary disabled:bg-gray-300"
           onClick={handleSend}
           disabled={!input.trim() && imageFiles.length === 0}
         >
           전송
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -269,15 +270,30 @@ export default function ChatRoom({ roomId, onClose, role }) {
   if (!validRoom) return <div className="p-4 text-red-500">유효하지 않은 채팅방입니다.</div>;
 
   return (
-    <div className="flex h-full flex-col bg-white" onClick={e => e.stopPropagation()}>
+    <div className="flex flex-col h-screen bg-white" onClick={e => e.stopPropagation()}>
       <PanelHeader roomInfo={roomInfo} onClose={onClose} />
-      <div ref={scrollRef} className="flex-1 min-h-0 space-y-4 overflow-y-auto bg-blue-50/20 p-4">
+      
+      {/* 메시지 영역 */}
+      <div
+        ref={scrollRef}
+        className="flex-1 h-[400px] overflow-y-auto px-4 py-3 space-y-2 bg-blue-50/20"
+        style={{ scrollBehavior: 'smooth' }}
+      >
+
         {groupedMessages.map(m => (
-          <MessageBubble key={m.id || m.clientMsgId} msg={m} isGroupStart={m.isGroupStart} otherLastReadId={otherLastReadId} />
+          <MessageBubble
+            key={m.id || m.clientMsgId}
+            msg={m}
+            isGroupStart={m.isGroupStart}
+            otherLastReadId={otherLastReadId}
+          />
         ))}
         <div ref={bottomRef} />
       </div>
+
+      {/* 입력창 고정 */}
       <ChatInput
+        shrink-0
         onSendMessage={async (text, files) => {
           let imageUrls = [];
           if (files.length > 0) {
@@ -302,5 +318,6 @@ export default function ChatRoom({ roomId, onClose, role }) {
         }}
       />
     </div>
+
   );
 }

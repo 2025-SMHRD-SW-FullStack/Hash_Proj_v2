@@ -1,11 +1,10 @@
-// src/pages/admin/QnAManagementPage.jsx
-
 import React, { useState, useEffect, useMemo } from 'react';
 import BaseTable from '../../components/common/table/BaseTable';
 import TableToolbar from '../../components/common/table/TableToolbar';
 import { qnaService } from '../../service/qnaService';
 import Button from '../../components/common/Button';
 import QnAImageGallery from '../../components/common/qna/QnAImageGallery';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /** 상태 표시 뱃지 */
 const StatusBadge = ({ status }) => {
@@ -182,53 +181,67 @@ const QnAManagementPage = () => {
       />
 
       {/* QnA 상세보기 모달 */}
-      {qnaDetail && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => handleCloseModal()}>
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4">{qnaDetail.title}</h3>
-            <div className="text-sm text-gray-500 mb-4">
-              <span>작성자: {qnaDetail.userNickname} ({qnaDetail.role})</span> | <span>작성일: {new Date(qnaDetail.createdAt).toLocaleDateString('ko-KR')}</span>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-md min-h-[150px] mb-4">
-              {qnaDetail.content}
-            </div>
-            {/* 첨부 이미지 */}
-            <QnAImageGallery imagesJson={qnaDetail.imagesJson} title="첨부 이미지" />
-            <div className="mt-4" />
-            {qnaDetail.status === 'WAITING' ? (
-              <>
-                <h4 className="font-semibold mb-2">답변</h4>
-                <textarea 
-                  className="w-full h-32 border rounded-md p-2" 
-                  placeholder="답변을 입력하세요..."
-                  value={answerContent}
-                  onChange={(e) => setAnswerContent(e.target.value)}
-                />
-                <div className="flex justify-end gap-2 mt-4">
-                  <Button variant="unselected" onClick={handleCloseModal}>닫기</Button>
-                  <Button 
-                    variant='admin'
-                    onClick={handleSubmitAnswer}
-                    disabled={submitting || !answerContent.trim()}
-                  >
-                    {submitting ? '답변 등록 중...' : '답변 등록'}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h4 className="font-semibold mb-2">답변</h4>
-                <div className="bg-blue-50 p-4 rounded-md min-h-[100px] mb-4">
-                  {qnaDetail.answerContent || '답변이 없습니다.'}
-                </div>
-                <div className="flex justify-end gap-2 mt-4">
-                  <Button variant="unselected" onClick={handleCloseModal}>닫기</Button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {qnaDetail && (
+          <motion.div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            onClick={() => handleCloseModal()}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6"
+              onClick={e => e.stopPropagation()}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+            >
+              <h3 className="text-lg font-bold mb-4">{qnaDetail.title}</h3>
+              <div className="text-sm text-gray-500 mb-4">
+                <span>작성자: {qnaDetail.userNickname} ({qnaDetail.role})</span> | <span>작성일: {new Date(qnaDetail.createdAt).toLocaleDateString('ko-KR')}</span>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-md min-h-[150px] mb-4">
+                {qnaDetail.content}
+              </div>
+              {/* 첨부 이미지 */}
+              <QnAImageGallery imagesJson={qnaDetail.imagesJson} title="첨부 이미지" />
+              <div className="mt-4" />
+              {qnaDetail.status === 'WAITING' ? (
+                <>
+                  <h4 className="font-semibold mb-2">답변</h4>
+                  <textarea 
+                    className="w-full h-32 border rounded-md p-2" 
+                    placeholder="답변을 입력하세요..."
+                    value={answerContent}
+                    onChange={(e) => setAnswerContent(e.target.value)}
+                  />
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button variant="unselected" onClick={handleCloseModal}>닫기</Button>
+                    <Button 
+                      variant='admin'
+                      onClick={handleSubmitAnswer}
+                      disabled={submitting || !answerContent.trim()}
+                    >
+                      {submitting ? '답변 등록 중...' : '답변 등록'}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h4 className="font-semibold mb-2">답변</h4>
+                  <div className="bg-blue-50 p-4 rounded-md min-h-[100px] mb-4">
+                    {qnaDetail.answerContent || '답변이 없습니다.'}
+                  </div>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button variant="unselected" onClick={handleCloseModal}>닫기</Button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

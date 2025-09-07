@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import AddressSearchModal from "./AddressSearchModal";
 import { createAddress, updateAddress } from "../../service/addressService";
+import Button from "../common/Button";
 
 const inputCls = "h-10 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900";
 
@@ -88,7 +89,7 @@ export default function AddressForm({
   };
 
   return (
-    <div className="rounded-2xl border p-4 shadow-sm bg-white">
+    <div className="p-4">
       <h3 className="text-base font-semibold mb-3">{addressId ? "배송지 수정" : "배송지 추가"}</h3>
 
       {!!error && <div className="mb-3 rounded-lg bg-red-50 text-red-700 px-3 py-2 text-sm">{error}</div>}
@@ -110,9 +111,9 @@ export default function AddressForm({
             <span className="text-sm text-gray-600">우편번호</span>
             <input name="zipcode" value={form.zipcode} onChange={onChange} className={inputCls} placeholder="우편번호" readOnly />
           </label>
-          <button type="button" onClick={() => setOpen(true)} className="self-end h-10 px-4 rounded-lg bg-gray-900 text-white text-sm hover:opacity-90">
+          <Button variant='signUp' onClick={() => setOpen(true)} className="self-end h-10 px-4 rounded-lg text-sm hover:opacity-90">
             주소 검색
-          </button>
+          </Button>
         </div>
 
         <label className="flex flex-col gap-1">
@@ -141,9 +142,9 @@ export default function AddressForm({
         )}
 
         <div className="pt-1">
-          <button type="submit" disabled={loading} className="h-10 px-5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:opacity-90 disabled:opacity-50">
+          <Button type="submit" disabled={loading} className="h-10 px-5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
             {loading ? "저장 중..." : (addressId ? "수정 완료" : "배송지 추가")}
-          </button>
+          </Button>
         </div>
       </form>
 

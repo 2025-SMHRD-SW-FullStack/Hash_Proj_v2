@@ -17,22 +17,75 @@ const SellerPending = () => (
 );
 
 // 승인된 셀러 정보를 표시하는 컴포넌트
-const SellerProfileView = ({ profile, onEdit }) => (
-    <div className="max-w-3xl mx-auto px-8 bg-white rounded-xl shadow-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">셀러 프로필</h2>
-        <div className="space-y-4 px-10 ">
-            <TextField id="shopName" name="shopName" label="상호명" value={profile.shopName} readOnly />
-            <TextField id="ownerName" name="ownerName" label="대표자명" value={profile.ownerName} readOnly />
-            <TextField id="bizNo" name="bizNo" label="사업자 등록번호" value={profile.bizNo} readOnly />
-            <TextField id="addr" name="addr" label="사업장 주소" value={profile.addr} readOnly />
-            <TextField id="phone" name="phone" label="대표 번호" type="tel" value={profile.phone} readOnly />
-            <TextField id="category" name="category" label="주요 판매 카테고리" value={profile.category} readOnly />
-        </div>
-        {/* <div className="mt-8 text-center">
-            <Button onClick={onEdit}>수정하기</Button>
-        </div> */}
+// 승인된 셀러 정보를 표시하는 개선된 컴포넌트
+const SellerProfileView = ({ profile }) => (
+  // 전체 컨테이너를 더 넓게 만들고, 그림자와 패딩을 조정하여 입체감을 줍니다.
+  <div className="w-full max-w-5xl mx-auto min-h-[500px] bg-white rounded-2xl shadow-lg p-8 md:p-12 flex flex-col">
+    <div className="text-center mb-8">
+      <h2 className="text-3xl font-bold text-gray-800 mb-2">셀러 프로필</h2>
     </div>
+    
+    <hr className="mb-10" />
+
+    {/* 프로필 정보를 2단 그리드로 표시하여 가독성을 높입니다. */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 text-lg">
+      
+      {/* 각 정보 항목에 아이콘을 추가하여 시각적 구분을 줍니다. */}
+      <div className="flex items-start gap-4">
+        <span className="mt-1">🛍️</span>
+        <div>
+          <p className="text-sm font-semibold text-primary">상호명</p>
+          <p className="text-gray-800 font-medium">{profile.shopName}</p>
+        </div>
+      </div>
+      
+      <div className="flex items-start gap-4">
+        <span className="mt-1">👤</span>
+        <div>
+          <p className="text-sm font-semibold text-primary">대표자명</p>
+          <p className="text-gray-800 font-medium">{profile.ownerName}</p>
+        </div>
+      </div>
+      
+      <div className="flex items-start gap-4">
+        <span className="mt-1">📄</span>
+        <div>
+          <p className="text-sm font-semibold text-primary">사업자 등록번호</p>
+          <p className="text-gray-800 font-medium">{profile.bizNo}</p>
+        </div>
+      </div>
+      
+      <div className="flex items-start gap-4">
+        <span className="mt-1">📞</span>
+        <div>
+          <p className="text-sm font-semibold text-primary">대표 번호</p>
+          <p className="text-gray-800 font-medium">{profile.phone}</p>
+        </div>
+      </div>
+      
+       {/* 주소처럼 긴 텍스트는 한 줄을 모두 사용하도록 설정 (md:col-span-2) */}
+      <div className="flex items-start gap-4 md:col-span-2">
+        <span className="mt-1">📍</span>
+        <div>
+          <p className="text-sm font-semibold text-primary">사업장 주소</p>
+          <p className="text-gray-800 font-medium">{profile.addr}</p>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-4 md:col-span-2">
+        <span className="mt-1">🛒</span>
+        <div>
+          <p className="text-sm font-semibold text-primary">주요 판매 카테고리</p>
+          <p className="text-gray-800 font-medium">{profile.category}</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
 );
+{/* <div className="mt-8 text-center">
+    <Button onClick={onEdit}>수정하기</Button>
+</div> */}
 
 
 // 셀러 등록 신청 폼 컴포넌트

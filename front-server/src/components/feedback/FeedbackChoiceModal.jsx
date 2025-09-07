@@ -1,6 +1,6 @@
 import React from "react";
-import ReactDOM from "react-dom";
-import Button from "../common/Button";
+import Modal from "../common/Modal.jsx"; // 1. 공용 Modal 컴포넌트를 import합니다.
+import Button from "../common/Button.jsx";
 import RobotIcon from "../../assets/icons/ic_robot.svg";
 
 const PencilIcon = () => (
@@ -26,17 +26,16 @@ export default function FeedbackChoiceModal({
   onPickAI,
   onClose,
 }) {
-  if (!open) return null;
-
-  return ReactDOM.createPortal(
-    <div className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center px-4">
-      <div
-        className="bg-white w-full max-w-sm sm:max-w-md md:max-w-lg rounded-2xl p-6 sm:p-8 text-center max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-lg sm:text-xl font-bold mb-2">
-          피드백 작성 방법을 골라주세요!
-        </h2>
+  // 2. 기존의 ReactDOM.createPortal과 div 구조 대신 Modal 컴포넌트를 사용합니다.
+  return (
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title="피드백 작성 방법을 골라주세요!"
+      maxWidth="max-w-lg" // 기존 스타일과 유사하게 너비를 설정합니다.
+    >
+      {/* 3. 모달의 본문 내용을 children으로 전달합니다. */}
+      <div className="text-center p-4">
         <p className="flex flex-col text-sm sm:text-base text-gray-600 mb-6">
           <span>설문이 제출되었습니다.</span>
           <span>아래 방법 중 하나로 피드백을 작성하세요.</span>
@@ -70,7 +69,7 @@ export default function FeedbackChoiceModal({
           </Button>
         </div>
       </div>
-    </div>,
-    document.body
+    </Modal>
   );
 }
+

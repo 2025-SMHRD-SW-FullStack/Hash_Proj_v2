@@ -1,35 +1,30 @@
-import { useEffect } from "react";
+import React from "react";
 import DaumPostcode from "react-daum-postcode";
+import Modal from "../common/Modal.jsx"; // 1. 공용 Modal 컴포넌트를 import합니다.
 
 export default function AddressSearchModal({ open, onClose, onSelect }) {
-  useEffect(() => {
-    const onEsc = (e) => e.key === "Escape" && onClose?.();
-    document.addEventListener("keydown", onEsc);
-    return () => document.removeEventListener("keydown", onEsc);
-  }, [onClose]);
-
-  if (!open) return null;
+  // 2. 불필요해진 useEffect와 조건부 렌더링을 제거합니다.
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white w-[520px] max-w-[94vw] rounded-2xl shadow-xl p-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-semibold">주소 검색</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 px-2" aria-label="close">✕</button>
-        </div>
-        <div className="border rounded-lg overflow-hidden">
-          <DaumPostcode
-            onComplete={(data) => {
-              const addr1 = data.roadAddress || data.jibunAddress;
-              const zipcode = data.zonecode;
-              onSelect?.({ addr1, zipcode });
-              onClose?.();
-            }}
-            autoClose
-            animation
-          />
-        </div>
+    // 3. 기존 div 구조 대신 Modal 컴포넌트를 사용합니다.
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title="주소 검색"
+      maxWidth="max-w-lg" // 기존 너비(520px)와 유사하게 설정
+    >
+      <div className="border rounded-lg overflow-hidden mt-4">
+        <DaumPostcode
+          onComplete={(data) => {
+            const addr1 = data.roadAddress || data.jibunAddress;
+            const zipcode = data.zonecode;
+            onSelect?.({ addr1, zipcode });
+            onClose?.(); // 주소 선택 시 모달이 닫히도록 onClose 호출
+          }}
+          autoClose
+          animation
+        />
       </div>
-    </div>
+    </Modal>
   );
 }

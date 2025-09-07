@@ -1,5 +1,3 @@
-// /src/components/seller/ExchangeShipDialog
-
 import React, { useState } from 'react'
 import Button from '../common/Button'
 

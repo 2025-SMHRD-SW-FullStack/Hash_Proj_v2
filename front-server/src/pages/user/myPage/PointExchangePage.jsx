@@ -79,21 +79,21 @@ const PointExchangePage = () => {
 
       <div className="bg-gray-50 p-6 rounded-lg text-center">
         <p className="text-gray-500 text-sm">나의 포인트</p>
-        <p className="text-3xl font-bold text-blue-600 mt-1">
+        <p className="text-3xl font-bold text-primary mt-1">
           {loading ? '조회 중...' : `${balance.toLocaleString()} P`}
         </p>
       </div>
 
       <div>
         <p className="font-semibold mb-3">교환할 금액 선택</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {EXCHANGE_OPTIONS.map((amount) => (
             <button
               key={amount}
               onClick={() => setSelectedAmount(amount)}
               disabled={balance < amount}
               className={`p-4 border rounded-lg text-center transition-all disabled:opacity-50 disabled:cursor-not-allowed
-                ${selectedAmount === amount ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300' : 'bg-white hover:border-blue-500'}`}
+                ${selectedAmount === amount ? 'bg-primary text-white border-primary ring-2 ring-blue-300' : 'bg-white hover:border-primary focus:border-primary'}`}
             >
               <span className="text-xs">giftshow</span>
               <p className="font-bold text-lg">{amount.toLocaleString()}원</p>

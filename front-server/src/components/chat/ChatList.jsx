@@ -86,25 +86,21 @@ const ChatList = ({ onOpenRoom, selectedRoomId }) => {
             key={r.roomId}
             type="button"
             onClick={() => open(r.roomId)}
-            className={`w-full flex items-center p-3 rounded-xl transition-colors duration-200 ${
-              isActive ? 'bg-blue-100' : 'bg-white hover:bg-gray-50'
-            }`}
+            className={`w-full flex items-center p-3 rounded-2xl border border-gray-200 transition-all duration-200
+              ${isActive ? 'bg-blue-50 shadow-md' : 'bg-white hover:shadow-md hover:border-gray-300'}
+            `}
           >
             <img
               src={thumb}
               alt={productName || r?.other?.nickname || '이미지'}
-              className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+              className="w-14 h-14 rounded-full object-cover flex-shrink-0 shadow-sm"
             />
             <div className="ml-3 flex-1 min-w-0 text-left">
               <div className="flex items-center justify-between">
                 <div className="truncate text-sm">
-                  <span className="font-semibold text-gray-800">
-                    {r.other?.nickname || '상대방'}
-                  </span>
+                  <span className="font-semibold text-gray-800">{r.other?.nickname || '상대방'}</span>
                   {productName && <span className="text-gray-400 mx-1.5">·</span>}
-                  {productName && (
-                    <span className="text-gray-600 truncate">{productName}</span>
-                  )}
+                  {productName && <span className="text-gray-600 truncate">{productName}</span>}
                 </div>
                 <span className="ml-2 flex-shrink-0 text-xs text-gray-400">
                   {r.lastMessageTime ? formatTimestamp(r.lastMessageTime) : ''}
@@ -122,6 +118,7 @@ const ChatList = ({ onOpenRoom, selectedRoomId }) => {
               </div>
             </div>
           </button>
+
         );
       })}
     </div>

@@ -202,31 +202,35 @@ const MainPage = () => {
         <div className="h-[250px] border-[#CCC] border-solid border-[1px] mb-12 flex flex-col items-center justify-center rounded-lg p-4 text-center space-y-3 sm:space-y-4">
         {isLoggedIn ? (
           <>
-            {/* 프로필 사진 */}
-            <img
-              src={user?.profileImageUrl || PersonIcon }
-              alt="프로필 사진"
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover mb-2"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = PersonIcon;
-              }}
-            />
-            
-            <p className="font-bold text-sm sm:text-base">
-              {user?.nickname}님, 오늘도 소중한 피드백 부탁드릴게요!
-            </p>
+            <div className='flex space-x-4 items-center'>
+              {/* 프로필 사진 */}
+              <img
+                src={user?.profileImageUrl || PersonIcon }
+                alt="프로필 사진"
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover mb-2"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = PersonIcon;
+                }}
+              />
+              
+              <p className="flex flex-col items-start font-bold text-sm sm:text-base">
+                <span>{user?.nickname}님</span>
+                <span>오늘도 소중한 피드백 부탁드릴게요!</span>
+              </p>
+
+            </div>
 
             {/* 포인트 */}
             <div className="w-full flex items-center justify-between border-t">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">내 포인트</span>
+                <span className="text-base text-gray-600">내 포인트</span>
                 {loadingPoints ? (
                   <span className="text-sm">...</span>
                 ) : errorPoints ? (
                   <span className="text-sm text-red-500">오류</span>
                 ) : (
-                  <span className="font-bold text-lg">
+                  <span className="font-bold text-xl">
                     {points.toLocaleString()}
                     <span className="text-primary font-bold ml-1">P</span>
                   </span>

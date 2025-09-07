@@ -1,4 +1,3 @@
-// src/pages/user/myPage/MyInfoPage.jsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../stores/authStore';
@@ -11,6 +10,7 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import AccountDeletionModal from '../../../components/modals/AccountDeletionModal';
 import PersonIcon from '../../../assets/icons/ic_person.png';
+import { AiOutlineCalendar } from "react-icons/ai";
 
 // 소셜 아이콘
 import GoogleIcon from '../../../assets/images/google.png';
@@ -19,11 +19,11 @@ import KakaoIcon from '../../../assets/images/kakao.png';
 
 /** 각 정보 섹션을 감싸는 컨테이너 스타일 (버튼 로직 제거) */
 export const SectionContainer = ({ title, children }) => (
-  <div className="border rounded-lg p-6 shadow-sm bg-white">
+  <div className="border rounded-lg py-6 px-10 shadow-sm bg-white">
     <div className="flex justify-between items-center border-b">
         <span className="text-lg font-semibold mb-3">{title}</span>
     </div>
-    <div className="space-y-6">{children}</div>
+    <div className="space-y-4">{children}</div>
   </div>
 );
 
@@ -317,28 +317,54 @@ const MyInfoPage = () => {
                   )}
               </FormRow>
               <FormRow label="전화번호">
-              <div className="flex items-center gap-2">
-                  <input type="tel" maxLength="3" value={phoneParts.part1}
+                {isEditing ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="tel"
+                      maxLength="3"
+                      value={phoneParts.part1}
                       onChange={handlePhonePartChange('part1', 3, phoneInput2)}
-                      readOnly={!isPhoneEditable || !isEditing}
-                      className={`${inputStyle} text-center ${!isPhoneEditable || !isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`} />
-                  <span>-</span>
-                  <input type="tel" maxLength="4" ref={phoneInput2} value={phoneParts.part2}
+                      readOnly={!isPhoneEditable}
+                      className={`${inputStyle} text-center ${!isPhoneEditable ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    />
+                    <span>-</span>
+                    <input
+                      type="tel"
+                      maxLength="4"
+                      ref={phoneInput2}
+                      value={phoneParts.part2}
                       onChange={handlePhonePartChange('part2', 4, phoneInput3)}
-                      readOnly={!isPhoneEditable || !isEditing}
-                      className={`${inputStyle} text-center ${!isPhoneEditable || !isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`} />
-                  <span>-</span>
-                  <input type="tel" maxLength="4" ref={phoneInput3} value={phoneParts.part3}
+                      readOnly={!isPhoneEditable}
+                      className={`${inputStyle} text-center ${!isPhoneEditable ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    />
+                    <span>-</span>
+                    <input
+                      type="tel"
+                      maxLength="4"
+                      ref={phoneInput3}
+                      value={phoneParts.part3}
                       onChange={handlePhonePartChange('part3', 4, null)}
-                      readOnly={!isPhoneEditable || !isEditing}
-                      className={`${inputStyle} text-center ${!isPhoneEditable || !isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`} />
-                  {isEditing && !phoneVerifyToken && (
-                  <Button variant="blackWhite" onClick={() => setIsPhoneEditable(true)} disabled={isPhoneEditable} className="flex-shrink-0">
-                      변경
-                  </Button>
-                  )}
-              </div>
+                      readOnly={!isPhoneEditable}
+                      className={`${inputStyle} text-center ${!isPhoneEditable ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    />
+                    {!phoneVerifyToken && (
+                      <Button
+                        variant="blackWhite"
+                        onClick={() => setIsPhoneEditable(true)}
+                        disabled={isPhoneEditable}
+                        className="flex-shrink-0"
+                      >
+                        변경
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-11 flex items-center px-3">
+                    {`${phoneParts.part1}-${phoneParts.part2}-${phoneParts.part3}`}
+                  </div>
+                )}
               </FormRow>
+
               {isEditing && isPhoneEditable && (
               <FormRow label="인증번호">
                   <div className="space-y-3">
@@ -368,69 +394,93 @@ const MyInfoPage = () => {
               </FormRow>
               )}
               <FormRow label="성별">
-              {isEditing && isProfileEditable ? (
+                {isEditing && isProfileEditable ? (
                   <div className="flex items-center gap-6 h-11">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                              type="radio"
-                              name="gender"
-                              value="M"
-                              checked={gender === 'M'}
-                              onChange={(e) => setGender(e.target.value)}
-                              className="w-5 h-5"
-                          />
-                          남성
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                              type="radio"
-                              name="gender"
-                              value="F"
-                              checked={gender === 'F'}
-                              onChange={(e) => setGender(e.target.value)}
-                              className="w-5 h-5"
-                          />
-                          여성
-                      </label>
+                    <label className="flex items-center gap-2 text-gray-400 cursor-not-allowed">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="M"
+                        checked={gender === 'M'}
+                        onChange={(e) => setGender(e.target.value)}
+                        disabled={!!user?.gender} // 이미 선택된 경우 비활성화
+                        className="w-5 h-5 accent-gray-400 cursor-not-allowed"
+                      />
+                      남성
+                    </label>
+
+                    <label className="flex items-center gap-2 text-gray-400 cursor-not-allowed">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="F"
+                        checked={gender === 'F'}
+                        onChange={(e) => setGender(e.target.value)}
+                        disabled={!!user?.gender} // 이미 선택된 경우 비활성화
+                        className="w-5 h-5 accent-gray-400 cursor-not-allowed"
+                      />
+                      여성
+                    </label>
                   </div>
-              ) : (
-                  <div className="h-11 flex items-center px-3">{user?.gender === 'M' ? '남성' : user?.gender === 'F' ? '여성' : '선택 안함'}</div>
-              )}
+                ) : (
+                  <div className="h-11 flex items-center px-3">
+                    {user?.gender === 'M'
+                      ? '남성'
+                      : user?.gender === 'F'
+                      ? '여성'
+                      : '선택 안함'}
+                  </div>
+                )}
               </FormRow>
+
+
+
               <FormRow label="생년월일">
-              {isEditing && isProfileEditable ? (
+                {isEditing && isProfileEditable ? (
                   <div className="relative" ref={datePickerRef}>
-                  <input 
-                      type="text" 
-                      value={birthDate} 
-                      readOnly 
-                      onClick={() => setIsDatePickerOpen(prev => !prev)}
-                      className={`${inputStyle} cursor-pointer`}
-                      placeholder="YYYY-MM-DD"
-                  />
-                  {isDatePickerOpen && (
+                    <div 
+                      className="flex items-center cursor-pointer"
+                      onClick={() => setIsDatePickerOpen(prev => !prev)} // 입력칸 + 아이콘 모두 열기
+                    >
+                      <input
+                        type="text"
+                        value={birthDate}
+                        readOnly
+                        className={`${inputStyle} cursor-pointer pr-10`} // 오른쪽 padding 확보
+                        placeholder="YYYY-MM-DD"
+                      />
+                      <AiOutlineCalendar
+                        className="absolute right-3 text-gray-500"
+                        size={20}
+                      />
+                    </div>
+                    {isDatePickerOpen && (
                       <div className="absolute top-full mt-2 z-10 bg-white border rounded-lg shadow-lg">
-                          <DayPicker
-                              mode="single"
-                              selected={birthDate ? new Date(birthDate) : undefined}
-                              onSelect={(date) => {
-                                  if (date) {
-                                      setBirthDate(ymd(date));
-                                  }
-                                  setIsDatePickerOpen(false);
-                              }}
-                              captionLayout="dropdown"
-                              fromYear={1950}
-                              toYear={new Date().getFullYear()}
-                          />
+                        <DayPicker
+                          mode="single"
+                          selected={birthDate ? new Date(birthDate) : undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              setBirthDate(ymd(date));
+                            }
+                            setIsDatePickerOpen(false);
+                          }}
+                          captionLayout="dropdown"
+                          fromYear={1950}
+                          toYear={new Date().getFullYear()}
+                        />
                       </div>
-                  )}
-              </div>
-              ) : (
-                  <div className="h-11 flex items-center px-3">{user?.birthDate || '입력 안함'}</div>
-              )}
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-11 flex items-center px-3">
+                    {user?.birthDate || '입력 안함'}
+                  </div>
+                )}
               </FormRow>
-              <div className="flex justify-end gap-2 pt-4 border-t mt-6">
+
+
+              <div className="flex justify-end gap-2 border-t mt-6">
                   {!isEditing ? (
                       <Button onClick={() => setIsEditing(true)}>수정하기</Button>
                   ) : (
