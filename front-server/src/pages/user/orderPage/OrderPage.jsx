@@ -472,6 +472,39 @@ const OrderPage = () => {
               )}
               
             </section>
+
+            {/* 포인트 UI 섹션 */}
+            <section className="w-full bg-white rounded-2xl border p-5 shadow-md mb-10">
+                <h2 className="text-xl font-semibold mb-4">포인트 사용</h2>
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-600 text-sm">보유 {pointBalance.toLocaleString()} P</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      disabled={useAllPoint}
+                      className="h-10 flex-grow rounded-lg border px-3"
+                      value={useAllPoint ? finalUsePoint : pointInput}
+                      onChange={(e) => setPointInput(e.target.value)}
+                      placeholder="사용할 포인트 입력"
+                    />
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4"
+                        checked={useAllPoint}
+                        onChange={(e) => setUseAllPoint(e.target.checked)}
+                      />
+                      모두 사용
+                    </label>
+                </div>
+                <div className="text-right mt-2 text-sm text-primary font-semibold">
+                    사용될 포인트: {finalUsePoint.toLocaleString()} P
+                </div>
+            </section>
+
           </section>
         </div>
 

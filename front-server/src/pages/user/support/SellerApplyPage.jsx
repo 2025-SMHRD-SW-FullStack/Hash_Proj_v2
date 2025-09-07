@@ -8,19 +8,19 @@ import { CATEGORIES } from '../../../constants/products';
 
 // 승인 대기 상태를 표시하는 컴포넌트
 const SellerPending = () => (
-  <div className="max-w-xl mx-auto px-8 bg-white rounded-xl shadow-md text-center">
-    <h2 className="text-2xl font-bold mb-4">신청 완료</h2>
-    <p className="text-gray-600">셀러 등록 신청이 정상적으로 접수되었습니다.</p>
-    <p className="text-gray-600 mt-2">관리자 승인을 기다려주세요.</p>
+  <div className="flex flex-col items-center justify-center min-h-[750px] max-w-3xl mx-auto px-8 bg-white rounded-xl shadow-md text-center">
+    <span className="text-2xl font-bold mb-4 text-primary">신청 완료</span>
+    <span className="text-gray-600">셀러 등록 신청이 정상적으로 접수되었습니다.</span>
+    <span className="text-gray-600 mt-2">관리자 승인을 기다려주세요.</span>
     {/* <Button onClick={() => window.location.reload()} className="mt-6">새로고침</Button> */}
   </div>
 );
 
 // 승인된 셀러 정보를 표시하는 컴포넌트
 const SellerProfileView = ({ profile, onEdit }) => (
-    <div className="max-w-xl mx-auto px-8 bg-white rounded-xl shadow-md">
+    <div className="max-w-3xl mx-auto px-8 bg-white rounded-xl shadow-md">
         <h2 className="text-2xl font-bold mb-6 text-center">셀러 프로필</h2>
-        <div className="space-y-4">
+        <div className="space-y-4 px-10 ">
             <TextField id="shopName" name="shopName" label="상호명" value={profile.shopName} readOnly />
             <TextField id="ownerName" name="ownerName" label="대표자명" value={profile.ownerName} readOnly />
             <TextField id="bizNo" name="bizNo" label="사업자 등록번호" value={profile.bizNo} readOnly />
@@ -83,7 +83,7 @@ const SellerApplyForm = ({ onApplySuccess }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-md">
+    <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-md">
       <div className='flex sm:flex-col items-center justify-center gap-2 mb-4'>
         <h2 className="hidden md:block text-lg md:text-xl font-bold text-gray-800">셀러 등록 신청</h2>
         <div className="flex flex-col sm:flex-row sm:gap-1 mb-4 text-center text-primary/80 ">

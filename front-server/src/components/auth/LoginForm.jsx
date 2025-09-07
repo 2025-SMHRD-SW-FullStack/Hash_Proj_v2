@@ -21,7 +21,7 @@ const LoginForm = () => {
     try {
       const loginData = await loginRequest({ email, password });
       login(loginData);
-      alert('로그인에 성공했습니다.');
+      // alert('로그인에 성공했습니다.');
       navigate('/');
     } catch (error) {
       alert('아이디 또는 비밀번호가 일치하지 않습니다.');
