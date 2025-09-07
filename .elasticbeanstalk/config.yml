@@ -11,7 +11,7 @@ environment-defaults:
 global:
   application_name: hash-proj-v2
   branch: null
-  default_ec2_keyname: aws-eb
+  default_ec2_keyname: meonjeo
   default_platform: Docker running on 64bit Amazon Linux 2023
   default_region: ap-northeast-2
   include_git_submodules: true

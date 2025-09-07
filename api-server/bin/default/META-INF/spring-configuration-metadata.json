@@ -1,0 +1,113 @@
+{
+  "groups": [
+    {
+      "name": "ai",
+      "type": "com.meonjeo.meonjeo.config.AiProperties",
+      "sourceType": "com.meonjeo.meonjeo.config.AiProperties"
+    },
+    {
+      "name": "ai.timeout",
+      "type": "com.meonjeo.meonjeo.config.AiProperties$Timeout",
+      "sourceType": "com.meonjeo.meonjeo.config.AiProperties",
+      "sourceMethod": "public com.meonjeo.meonjeo.config.AiProperties.Timeout getTimeout() "
+    },
+    {
+      "name": "app.cors",
+      "type": "com.meonjeo.meonjeo.config.AppCorsProperties",
+      "sourceType": "com.meonjeo.meonjeo.config.AppCorsProperties"
+    },
+    {
+      "name": "sweettracker",
+      "type": "com.meonjeo.meonjeo.shipment.SweetTrackerProperties",
+      "sourceType": "com.meonjeo.meonjeo.shipment.SweetTrackerProperties"
+    },
+    {
+      "name": "toss",
+      "type": "com.meonjeo.meonjeo.payment.toss.TossPaymentsProperties",
+      "sourceType": "com.meonjeo.meonjeo.payment.toss.TossPaymentsProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "ai.base-url",
+      "type": "java.lang.String",
+      "sourceType": "com.meonjeo.meonjeo.config.AiProperties"
+    },
+    {
+      "name": "ai.timeout.connect-ms",
+      "type": "java.lang.Integer",
+      "sourceType": "com.meonjeo.meonjeo.config.AiProperties$Timeout"
+    },
+    {
+      "name": "ai.timeout.read-ms",
+      "type": "java.lang.Integer",
+      "sourceType": "com.meonjeo.meonjeo.config.AiProperties$Timeout"
+    },
+    {
+      "name": "app.cors.allow-credentials",
+      "type": "java.lang.Boolean",
+      "description": "크리덴셜 허용 여부",
+      "sourceType": "com.meonjeo.meonjeo.config.AppCorsProperties"
+    },
+    {
+      "name": "app.cors.allowed-headers",
+      "type": "java.util.List<java.lang.String>",
+      "description": "허용 헤더",
+      "sourceType": "com.meonjeo.meonjeo.config.AppCorsProperties"
+    },
+    {
+      "name": "app.cors.allowed-methods",
+      "type": "java.util.List<java.lang.String>",
+      "description": "허용 메서드",
+      "sourceType": "com.meonjeo.meonjeo.config.AppCorsProperties"
+    },
+    {
+      "name": "app.cors.allowed-origins",
+      "type": "java.util.List<java.lang.String>",
+      "description": "허용 도메인(정확한 Origin만; 와일드카드 금지) 예) https:\/\/meonjeo.com, https:\/\/dev.meonjeo.com, http:\/\/localhost:5173",
+      "sourceType": "com.meonjeo.meonjeo.config.AppCorsProperties"
+    },
+    {
+      "name": "app.cors.exposed-headers",
+      "type": "java.util.List<java.lang.String>",
+      "description": "노출 헤더",
+      "sourceType": "com.meonjeo.meonjeo.config.AppCorsProperties"
+    },
+    {
+      "name": "sweettracker.api-key",
+      "type": "java.lang.String",
+      "sourceType": "com.meonjeo.meonjeo.shipment.SweetTrackerProperties"
+    },
+    {
+      "name": "sweettracker.base-url",
+      "type": "java.lang.String",
+      "sourceType": "com.meonjeo.meonjeo.shipment.SweetTrackerProperties"
+    },
+    {
+      "name": "sweettracker.timeout-ms",
+      "type": "java.lang.Integer",
+      "sourceType": "com.meonjeo.meonjeo.shipment.SweetTrackerProperties"
+    },
+    {
+      "name": "toss.client-key",
+      "type": "java.lang.String",
+      "sourceType": "com.meonjeo.meonjeo.payment.toss.TossPaymentsProperties"
+    },
+    {
+      "name": "toss.fail-url",
+      "type": "java.lang.String",
+      "sourceType": "com.meonjeo.meonjeo.payment.toss.TossPaymentsProperties"
+    },
+    {
+      "name": "toss.secret-key",
+      "type": "java.lang.String",
+      "sourceType": "com.meonjeo.meonjeo.payment.toss.TossPaymentsProperties"
+    },
+    {
+      "name": "toss.success-url",
+      "type": "java.lang.String",
+      "sourceType": "com.meonjeo.meonjeo.payment.toss.TossPaymentsProperties"
+    }
+  ],
+  "hints": []
+}

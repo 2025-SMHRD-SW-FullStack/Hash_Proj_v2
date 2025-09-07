@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { submitFeedback, getMyFeedbacks, getFeedbackDetail, updateFeedback } from "../../../service/feedbackService";
 import { uploadImages } from "../../../service/uploadService";
@@ -12,7 +12,6 @@ import useAuthStore from "../../../stores/authStore";
 import feedbackGuidelines from "../../../data/feedbackGuidelines.json";
 import { getMyProductDetail } from "../../../service/productService";
 
-// ★ ai-server 연동 컴포넌트
 import AIChatBox from "../../../components/feedback/AIChatBox";
 
 const MAX_LENGTH = 1000;
@@ -51,7 +50,7 @@ const FeedbackEditor = () => {
   const type = searchParams.get("type") || "MANUAL";
   const overallScore = searchParams.get("overallScore");
   const scoresJson = searchParams.get("scoresJson");
-  const feedbackIdQ = searchParams.get("feedbackId"); // 'auto' or id
+  const feedbackIdQ = searchParams.get("feedbackId");
   const isEdit = Boolean(feedbackIdQ);
 
   const addFeedback = useFeedbackStore((state) => state.addFeedback);
@@ -60,33 +59,42 @@ const FeedbackEditor = () => {
 
   const [resolvedFeedbackId, setResolvedFeedbackId] = useState(null);
 
-  // 상품/가이드
   const [product, setProduct] = useState(null);
   const normalized = normalizeCategory(product?.category);
   const guidelines = (normalized && feedbackGuidelines.categories[normalized]) || [];
 
-  // 수기 작성 상태
   const [manualContent, setManualContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const manualFileInputRef = useRef(null);
 
-  // 공통 모달
   const [isSuccessModalOpen, setSuccessModalOpen] = useState(false);
   const [feedbackResult, setFeedbackResult] = useState({ awarded: 0, total: 0 });
 
-  // 상품 상세(카테고리) 로딩
+  // ★ URL의 프리설문 파싱 → AI 경로로 전달
+  const preSurvey = useMemo(() => {
+    let answers = undefined;
+    try {
+      if (scoresJson) {
+        const parsed = JSON.parse(decodeURIComponent(scoresJson));
+        if (parsed && typeof parsed === 'object') answers = parsed;
+      }
+    } catch { /* noop */ }
+    const overall = overallScore != null ? Number(overallScore) : undefined;
+    if (overall == null && !answers) return undefined;
+    return { overallScore: overall, answers };
+  }, [overallScore, scoresJson]);
+
   useEffect(() => {
     if (!productId) return;
     getMyProductDetail(productId)
       .then((data) => {
         if (data?.product) setProduct(data.product);
       })
-      .catch(() => { });
+      .catch(() => {});
   }, [productId]);
 
-  // 수정 모드: 내 피드백 자동 로딩
   useEffect(() => {
     (async () => {
       if (!isEdit) return;
@@ -96,7 +104,7 @@ const FeedbackEditor = () => {
         try {
           const page = await getMyFeedbacks();
           const list = page?.content ?? page?.items ?? [];
-          const mine = list.find(f => String(f?.orderItemId) === String(orderItemId));
+          const mine = list.find((f) => String(f?.orderItemId) === String(orderItemId));
           fid = mine?.id;
         } catch (e) {
           console.error(e);
@@ -123,7 +131,6 @@ const FeedbackEditor = () => {
     })();
   }, [isEdit, feedbackIdQ, orderItemId]);
 
-  // 이미지 프리뷰
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files).slice(0, 5 - selectedFiles.length);
     if (files.length === 0) return;
@@ -139,15 +146,12 @@ const FeedbackEditor = () => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
-  // 수기 제출 / 수정
   const handleSubmit = async () => {
     const finalContent = manualContent;
     if (!finalContent.trim()) {
       alert("피드백 내용을 입력해주세요.");
       return;
     }
-
-    // 작성 모드일 때만 필수 파라미터 체크
     if (!isEdit && (!orderItemId || !productId || !overallScore || !scoresJson)) {
       alert("필수 정보가 누락되었습니다. (orderItemId, productId, score 등)");
       return;
@@ -155,7 +159,6 @@ const FeedbackEditor = () => {
 
     setIsSubmitting(true);
     try {
-      // 이미지 업로드
       let uploadedImageUrls = [];
       if (selectedFiles.length > 0) {
         const uploadResults = await uploadImages("FEEDBACK", selectedFiles);
@@ -163,7 +166,6 @@ const FeedbackEditor = () => {
       }
 
       if (isEdit) {
-        // 새 파일 없으면 기존 프리뷰(기존 이미지 URL들) 유지
         const imgs = uploadedImageUrls.length ? uploadedImageUrls : imagePreviews;
         await updateFeedback(Number(resolvedFeedbackId), { content: finalContent, images: imgs });
         const newTotalBalance = await getMyPointBalance();
@@ -173,7 +175,6 @@ const FeedbackEditor = () => {
         return;
       }
 
-      // 작성 모드
       const payload = {
         orderItemId: Number(orderItemId),
         type: "MANUAL",
@@ -193,7 +194,7 @@ const FeedbackEditor = () => {
         });
       }
 
-      const awardedPoint = feedbackResponse.awardedPoint || 500;
+      const awardedPoint = Number(feedbackResponse?.awardedPoint ?? 0);
       const newTotalBalance = await getMyPointBalance();
       setPoints(newTotalBalance);
 
@@ -206,10 +207,10 @@ const FeedbackEditor = () => {
     } catch (e) {
       console.error("피드백 제출/수정 실패:", e);
       const status = e?.response?.status;
-      const code = e?.response?.data?.code || e?.response?.data?.error || '';
+      const code = e?.response?.data?.code || e?.response?.data?.error || "";
       if (!isEdit && status === 409 && /ALREADY_WRITTEN_FOR_PRODUCT/i.test(code)) {
-        alert('이미 작성한 피드백이 있어 수정 화면으로 이동합니다.');
-        navigate('/user/mypage/orders');
+        alert("이미 작성한 피드백이 있어 수정 화면으로 이동합니다.");
+        navigate("/user/mypage/orders");
         return;
       }
       const errorMessage = e?.response?.data?.message || e.message || "알 수 없는 오류가 발생했습니다.";
@@ -219,13 +220,22 @@ const FeedbackEditor = () => {
     }
   };
 
-  const handleAIAccepted = async () => {
+  // ★ AI 게시 완료 콜백: 서버 응답의 awardedPoint 반영
+  const handleAIAccepted = async (result) => {
     try {
       const newTotal = await getMyPointBalance();
       setPoints(newTotal);
-      setFeedbackResult({ awarded: 500, total: newTotal });
+      const awarded =
+        Number(
+          result?.awardedPoint ??
+          result?.message?.awardedPoint ??
+          0
+        ) || 0;
+      setFeedbackResult({ awarded, total: newTotal });
     } catch {
-      setFeedbackResult((s) => ({ ...s, awarded: s.awarded || 500 }));
+      const fallback =
+        Number(result?.awardedPoint ?? result?.message?.awardedPoint ?? 0) || 0;
+      setFeedbackResult((s) => ({ awarded: fallback || s.awarded || 0, total: s.total || 0 }));
     } finally {
       setSuccessModalOpen(true);
     }
@@ -246,6 +256,7 @@ const FeedbackEditor = () => {
                 userId={userId}
                 orderItemId={Number(orderItemId)}
                 productId={productId ? Number(productId) : undefined}
+                preSurvey={preSurvey}              /* ★ 전달 */
                 onAccepted={handleAIAccepted}
               />
             </div>

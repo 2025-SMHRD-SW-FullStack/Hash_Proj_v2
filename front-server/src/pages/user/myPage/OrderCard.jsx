@@ -1,3 +1,4 @@
+// OrderCard.jsx (네가 쓰는 경로 그대로에 붙여넣어)
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -14,6 +15,7 @@ import Button from "../../../components/common/Button";
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
 import { getMyExchanges } from "../../../service/exchangeService";
 import Modal from "../../../components/common/Modal";
+import { normalizeTracking } from "../../../adapters/tracking";
 
 const statusLabel = (s) => ({
   READY: "배송 준비중",
@@ -120,16 +122,23 @@ const OrderCard = ({ order, onChanged }) => {
     }
   }, [order.status, firstItem]);
 
+  // 배송 조회 데이터
   useEffect(() => {
     if (["IN_TRANSIT", "DELIVERED", "CONFIRMED"].includes(order.status)) {
-      (async () => { try { setTrack(await getTracking(order.id)); } catch (e) { console.error(e); }})();
+      (async () => {
+        try {
+          const raw = await getTracking(order.id);
+          setTrack(normalizeTracking(raw || {}));
+        } catch (e) { console.error(e); }
+      })();
     } else setTrack(null);
   }, [order.id, order.status]);
 
+  // 헤더 왼쪽 표기
   const headerLeft = useMemo(() => {
     if (["IN_TRANSIT", "DELIVERED", "CONFIRMED"].includes(order.status)) {
       const inv = track?.invoiceNo ?? "-";
-      const carr = track?.carrierName ?? "";
+      const carr = track?.carrier?.name ?? "";
       return `운송장 번호 ${inv}${carr ? ` · ${carr}` : ""}`;
     }
     return `주문 번호 ${order.orderUid ?? order.id}`;
@@ -211,7 +220,7 @@ const OrderCard = ({ order, onChanged }) => {
         
         <div className="space-x-2">
           {order.status === "PENDING" && <Button className="flex-1">다시 주문하기</Button>}
-          {order.status === "READY" && <Button className="flex-1" variant="signUp" onClick={() => setOpenReadyInfo(true)}>배송 조회</Button>}
+          {order.status === "READY" && <Button className="flex-1" variant="signUp" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
           {order.status === "IN_TRANSIT" && <Button className="flex-1" variant="signUp" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
           
           {/* 배송완료: 구매확정 유도 */}
@@ -226,7 +235,7 @@ const OrderCard = ({ order, onChanged }) => {
           {order.status === "CONFIRMED" && !feedbackDone && withinWindow && firstItem && (
             <Button
               className="flex-1"
-              onClick={() => navi(`/user/survey?orderId=${order.id}`)} // ✅ 다건 주문 대응 (설문에서 선택)
+              onClick={() => navi(`/user/survey?orderId=${order.id}`)} // ✅ 다건 주문 대응
             >
               피드백 작성
             </Button>
@@ -278,7 +287,6 @@ const OrderCard = ({ order, onChanged }) => {
             setOpenConfirm(false);
             onChanged?.();
             if (firstItem) {
-              // 구매확정 후 설문 진입은 다건 대응 위해 orderId만 전달
               navi(`/user/survey?orderId=${order.id}`);
             }
           } catch (e) {

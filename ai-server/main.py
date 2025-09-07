@@ -1,4 +1,3 @@
-# main.py
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,24 +10,15 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.services.state import init_session, get_user_context, update_user_context
 from app.services.chatbot import reply_once, accept_now, edit_summary
-from app.core.gpt_client import call_chatgpt  # LLM 호출
+from app.core.gpt_client import call_chatgpt
 
-# ===== timeout + 폴백 유틸 =====
 import json
 import concurrent.futures
 from typing import Any, Dict, Optional, List
 
-LLM_TIMEOUT_SEC = 20  # LLM 최대 대기 시간(초)
+LLM_TIMEOUT_SEC = 20
 
-
-def _call_llm_with_timeout(
-    product_id: int,
-    system_prompt: str,
-    user_prompt: str,
-    *,
-    timeout_sec: int = LLM_TIMEOUT_SEC,
-) -> str:
-    """call_chatgpt를 별도 스레드에서 실행해 timeout_sec 내 결과만 받음."""
+def _call_llm_with_timeout(product_id: int, system_prompt: str, user_prompt: str, *, timeout_sec: int = LLM_TIMEOUT_SEC) -> str:
     def _run():
         return call_chatgpt(
             user_id=product_id,
@@ -37,7 +27,6 @@ def _call_llm_with_timeout(
             temperature=0.3,
             max_tokens=800,
         )
-
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
         fut = ex.submit(_run)
         try:
@@ -45,9 +34,7 @@ def _call_llm_with_timeout(
         except concurrent.futures.TimeoutError:
             raise TimeoutError(f"LLM timeout>{timeout_sec}s")
 
-
 def _as_json_or_wrap(txt: str) -> Dict[str, Any]:
-    """LLM이 JSON이 아니어도 안전하게 JSON으로 감쌈."""
     try:
         obj = json.loads((txt or "").strip())
         if isinstance(obj, dict):
@@ -62,9 +49,7 @@ def _as_json_or_wrap(txt: str) -> Dict[str, Any]:
         "model": "fallback",
     }
 
-
 def _fallback_from_daily(p) -> Dict[str, Any]:
-    """LLM 없이 숫자 지표로 빠르게 요약 생성(전일/누적용)."""
     avg = p.overallAvg or 0
     stars = p.stars or {}
     try:
@@ -122,9 +107,7 @@ def _fallback_from_daily(p) -> Dict[str, Any]:
         "model": "fallback",
     }
 
-
 def _fallback_from_realtime(p) -> Dict[str, Any]:
-    """LLM 없이 숫자 지표로 빠르게 요약 생성(실시간 스냅샷용)."""
     stars = p.stars or {}
     avg = stars.get("avg")
     if avg is None:
@@ -148,8 +131,6 @@ def _fallback_from_realtime(p) -> Dict[str, Any]:
         "model": "fallback",
     }
 
-
-# ===== 기본 앱 구성 =====
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
@@ -169,43 +150,36 @@ async def lifespan(app: FastAPI):
         print(f"❌ lifespan 초기화 실패: {e}")
         raise
 
-
-app = FastAPI(title="Meonjeo Interview Chatbot", version="0.3.6", lifespan=lifespan)
-
-# ALLOWED_ORIGINS = [
-#     "http://localhost:5173",
-#     "http://127.0.0.1:5173",
-#     "*"
-# ]
+app = FastAPI(title="Meonjeo Interview Chatbot", version="0.3.8", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 임시. 추후 수정
+    allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],  # 요청을 허용할 HTTP 메소드
-    allow_headers=["*"],  # 임시. 추후 수정
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allow_headers=["*"],
 )
 
-
+# === 요청 모델 ===
 class CreateSession(BaseModel):
     user_id: int
     order_item_id: int
     product_id: Optional[int] = None
-
+    overall_score: Optional[int] = None
+    survey_answers: Optional[Dict[str, Any]] = None
 
 class ReplyReq(BaseModel):
     user_id: int
     text: str
 
-
 class AcceptReq(BaseModel):
     user_id: int
-    images: Optional[List[str]] = None  # 업로드된 이미지의 퍼블릭 URL 배열
-
+    images: Optional[List[str]] = None
+    survey_answers: Optional[Dict[str, Any]] = None
+    overall_score: Optional[int] = None
 
 class EditReq(BaseModel):
     user_id: int
     instructions: str
-
 
 def _strip_bearer(auth: Optional[str]) -> Optional[str]:
     if not auth:
@@ -215,12 +189,10 @@ def _strip_bearer(auth: Optional[str]) -> Optional[str]:
         s = s[7:].strip()
     return s or None
 
-
-# ===== 라우팅 =====
+# === 라우팅 ===
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
-
 
 @app.post("/api/ai/chat/session")
 def create_session(req: CreateSession, authorization: Optional[str] = Header(default=None)):
@@ -232,12 +204,20 @@ def create_session(req: CreateSession, authorization: Optional[str] = Header(def
     )
     if not ok:
         raise HTTPException(status_code=400, detail=first_question or "피드백 작성이 불가합니다.")
+
+    updates: Dict[str, Any] = {}
+    if req.overall_score is not None:
+        updates["overallScore"] = int(req.overall_score)
+    if req.survey_answers is not None:
+        updates["preSurveyAnswers"] = req.survey_answers
+    if updates:
+        update_user_context(str(req.user_id), updates)
+
     return {
         "session_id": str(req.user_id),
         "first_question": first_question,
         "step": (get_user_context(str(req.user_id)) or {}).get("stage"),
     }
-
 
 @app.post("/api/ai/chat/reply")
 def chat_reply(req: ReplyReq, authorization: Optional[str] = Header(default=None)):
@@ -246,45 +226,52 @@ def chat_reply(req: ReplyReq, authorization: Optional[str] = Header(default=None
         update_user_context(str(req.user_id), {"access_token": tok})
     return reply_once(user_id=str(req.user_id), user_text=req.text, bearer=authorization)
 
-
 @app.post("/api/ai/chat/accept")
 def accept(req: AcceptReq, authorization: Optional[str] = Header(default=None)):
-    # FE가 업로드해 받은 이미지 URL 배열을 images로 전달하면, 컨텍스트에 기록 후 게시
     tok = _strip_bearer(authorization)
     if tok:
         update_user_context(str(req.user_id), {"access_token": tok})
-    ok, msg = accept_now(user_id=str(req.user_id), bearer=authorization, images=req.images)
-    if not ok:
-        raise HTTPException(status_code=400, detail=msg or "게시 실패")
-    return {"ok": True, "message": msg}
 
+    add = {}
+    if req.survey_answers is not None:
+        add["preSurveyAnswers"] = req.survey_answers
+    if req.overall_score is not None:
+        add["overallScore"] = int(req.overall_score)
+    if add:
+        update_user_context(str(req.user_id), add)
+
+    ok, info = accept_now(user_id=str(req.user_id), bearer=authorization, images=req.images)
+    if not ok:
+        msg = info.get("message") if isinstance(info, dict) else (info or "게시 실패")
+        raise HTTPException(status_code=400, detail=msg)
+
+    # 평탄화 반환(awardedPoint/feedbackId 포함)
+    if isinstance(info, dict):
+        return {"ok": True, **info}
+    else:
+        return {"ok": True, "message": str(info), "awardedPoint": 0}
 
 @app.post("/api/ai/chat/edit")
 def edit_summary_api(req: EditReq):
     return edit_summary(user_id=str(req.user_id), instructions=req.instructions)
 
-
-# ======================
-# ✅ 전날 데이터 AI 요약
-# ======================
+# === 요약 API (기존) ===
 class DailyPayload(BaseModel):
     date: str
     productId: int
     productName: Optional[str] = None
     category: Optional[str] = None
     overallAvg: Optional[float] = None
-    stars: Optional[dict] = None               # { "1": n, "2": n, ... }
-    demographics: Optional[dict] = None        # { "20대": n, ... }
+    stars: Optional[dict] = None
+    demographics: Optional[dict] = None
     buyerSample: Optional[int] = None
-    byQuestionAvg: Optional[list] = None       # [{questionId,label,average}]
-    byQuestionChoice: Optional[list] = None    # [{questionId,label,buckets}]
-    feedbackTexts: Optional[List[str]] = None  # 전날 텍스트 n개
-    previousSummary: Optional[str] = None      # 전전일 요약 전문
-
+    byQuestionAvg: Optional[list] = None
+    byQuestionChoice: Optional[list] = None
+    feedbackTexts: Optional[List[str]] = None
+    previousSummary: Optional[str] = None
 
 @app.post("/api/ai/summary/daily")
 def ai_daily_summary(p: DailyPayload):
-    """전일 집계 JSON을 받아 LLM 요약을 생성. 타임아웃 시 즉시 폴백."""
     system_prompt = """너는 전일 데이터를 바탕으로 전자상거래 셀러에게
 핵심 인사이트를 간결하게 전달하는 분석가다.
 출력은 JSON 한 줄 ONLY:
@@ -300,41 +287,32 @@ def ai_daily_summary(p: DailyPayload):
 [전날 요약] {p.previousSummary or '(없음)'}
 [피드백 샘플 일부] {(p.feedbackTexts or [])[:8]}
 """.strip()
-
     try:
-        txt = _call_llm_with_timeout(
-            product_id=p.productId,
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            timeout_sec=LLM_TIMEOUT_SEC,
-        )
+        txt = _call_llm_with_timeout(p.productId, system_prompt, user_prompt, timeout_sec=LLM_TIMEOUT_SEC)
         obj = _as_json_or_wrap(txt)
         obj.setdefault("model", "gpt-4.1")
         return obj
     except Exception:
-        # LLM 타임아웃/오류 → 즉시 폴백 반환
-        return _fallback_from_daily(p)
+        # 간단한 폴백
+        avg = p.overallAvg or 0
+        buyer = int(p.buyerSample or 0)
+        headline = f"{p.date} 평균 {avg:.1f}점 · 표본 {buyer}건"
+        return {"headline": headline, "keyPoints": [], "actions": [], "fullSummary": headline, "model": "fallback"}
 
-
-# ======================
-# ✅ 실시간 스냅샷 AI 요약 (금일/최근)
-# ======================
 class RealtimePayload(BaseModel):
     productId: int
     productName: Optional[str] = None
     category: Optional[str] = None
-    buyerSample: Optional[int] = None           # 금일 구매건수
-    stars: Optional[dict] = None                # {"1":n, ... , "avg": 4.3}
-    demographics: Optional[dict] = None         # {"20대":n, ...} (선택)
-    byQuestionAvg: Optional[list] = None        # [{label, average}]
-    byQuestionChoice: Optional[list] = None     # [{label, slices:[{label, ratio}]}]
-    feedbackTexts: Optional[List[str]] = None   # 최신 텍스트 N개(선택)
-    period: Optional[str] = "TODAY"             # 표시용
-
+    buyerSample: Optional[int] = None
+    stars: Optional[dict] = None
+    demographics: Optional[dict] = None
+    byQuestionAvg: Optional[list] = None
+    byQuestionChoice: Optional[list] = None
+    feedbackTexts: Optional[List[str]] = None
+    period: Optional[str] = "TODAY"
 
 @app.post("/api/ai/summary/realtime")
 def ai_realtime_summary(p: RealtimePayload):
-    """실시간 스냅샷 JSON을 받아 LLM 요약을 생성. 타임아웃 시 즉시 폴백."""
     system_prompt = """너는 '금일/최근' 실시간 데이터를 바탕으로
 전자상거래 셀러에게 핵심 인사이트를 간결하게 전달하는 분석가다.
 출력은 JSON 한 줄 ONLY:
@@ -349,16 +327,12 @@ def ai_realtime_summary(p: RealtimePayload):
 [인구 분포] {p.demographics or {}}
 [최근 텍스트 샘플] {(p.feedbackTexts or [])[:8]}
 """.strip()
-
     try:
-        txt = _call_llm_with_timeout(
-            product_id=p.productId,
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            timeout_sec=LLM_TIMEOUT_SEC,
-        )
+        txt = _call_llm_with_timeout(p.productId, system_prompt, user_prompt, timeout_sec=LLM_TIMEOUT_SEC)
         obj = _as_json_or_wrap(txt)
         obj.setdefault("model", "gpt-4.1")
         return obj
     except Exception:
-        return _fallback_from_realtime(p)
+        buyer = int((p.buyerSample or 0))
+        headline = f"금일 스냅샷: 표본 {buyer}건"
+        return {"headline": headline, "keyPoints": [], "actions": [], "fullSummary": headline, "model": "fallback"}

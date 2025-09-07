@@ -1,32 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import Modal from "../common/Modal"; // ← modals/ 에서 common/ 으로 한 단계
 import { getTracking, getShipmentTracking, getMyOrderDetail } from "../../service/orderService";
+import { normalizeTracking } from "../../adapters/tracking";
 
-// 배송 응답 정규화(모달 내부 전용)
-function normalizeTracking(raw) {
-  if (!raw || typeof raw !== "object") return { carrierName: null, invoiceNo: null, events: [] };
-
-  const carrierName =
-    raw.carrierName ?? raw.courierName ?? raw.companyName ?? raw.carrier ?? null;
-  const invoiceNo =
-    raw.invoiceNo ?? raw.trackingNo ?? raw.invoice ?? raw.trackingNumber ?? null;
-
-  const src = raw.events ?? raw.trackingDetails ?? raw.scanDetails ?? raw.timeline ?? [];
-  const events = Array.isArray(src)
-    ? src.map((e) => ({
-        time:
-          e.time ?? e.timeText ?? e.timeString ?? e.occurredAt ?? e.datetime ?? e.dateTime ?? null,
-        status: e.status ?? e.statusText ?? e.kind ?? e.message ?? e.description ?? "",
-        location: e.location ?? e.where ?? e.area ?? e.branch ?? "",
-        description: e.description ?? e.detail ?? e.msg ?? "",
-      }))
-    : [];
-
-  return { carrierName, invoiceNo, events };
-}
+// 브라우저 호환 날짜 포맷 ("YYYY-MM-DD HH:mm" 등)
+const formatKST = (t) => {
+  if (!t) return "-";
+  let s = String(t).trim();
+  if (!s.includes("T")) s = s.replace(/[./]/g, "-").replace(" ", "T");
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? String(t) : d.toLocaleString("ko-KR");
+};
 
 export default function TrackingModal({ open, onClose, orderId }) {
-  const [track, setTrack] = useState(null);   // 배송 데이터
+  const [track, setTrack] = useState(null);   // 배송 데이터(정규화)
   const [detail, setDetail] = useState(null); // 주문 상세
   const [loading, setLoading] = useState(false);
 
@@ -37,14 +24,14 @@ export default function TrackingModal({ open, onClose, orderId }) {
     (async () => {
       setLoading(true);
       try {
-        // 1) 배송 조회 (기존 getTracking 유지, 실패 시 getShipmentTracking 폴백)
+        // 1) 배송 조회 (getTracking → 실패 시 /shipments/{id}/tracking)
         let t;
         try { t = await getTracking(orderId); }
         catch { t = await getShipmentTracking(orderId).catch(() => null); }
         if (!alive) return;
-        setTrack(normalizeTracking(t));
+        setTrack(normalizeTracking(t || {}));
 
-        // 2) 주문 상세 조회 (상품/받는이/주소/요청사항/주문일 표시용)
+        // 2) 주문 상세 조회
         const d = await getMyOrderDetail(orderId).catch(() => null);
         if (!alive) return;
         setDetail(d);
@@ -57,30 +44,32 @@ export default function TrackingModal({ open, onClose, orderId }) {
   }, [open, orderId]);
 
   // 표시에 쓰는 값들(주문 상세 기준)
-  const orderedAt = useMemo(() =>
-    detail?.createdAt ? new Date(detail.createdAt).toLocaleString('ko-KR') : '-', [detail]);
+  const orderedAt = useMemo(
+    () => (detail?.createdAt ? new Date(detail.createdAt).toLocaleString("ko-KR") : "-"),
+    [detail]
+  );
 
   const productSummary = useMemo(() => {
     const items = detail?.items || detail?.orderItems || detail?.orderItemList || [];
-    if (!Array.isArray(items) || items.length === 0) return '-';
+    if (!Array.isArray(items) || items.length === 0) return "-";
     const first = items[0];
-    const name = first?.productName || first?.product?.name || first?.productNameSnapshot || '상품';
+    const name = first?.productName || first?.product?.name || first?.productNameSnapshot || "상품";
     return items.length > 1 ? `${name} 외 ${items.length - 1}건` : name;
   }, [detail]);
 
-  const receiver  = detail?.receiver || '-';
-  const phone     = detail?.phone || detail?.receiverPhone || '-';
+  const receiver  = detail?.receiver || "-";
+  const phone     = detail?.phone || detail?.receiverPhone || "-";
   const address   = useMemo(() => {
-    const a1 = detail?.addr1 || detail?.address1 || '';
-    const a2 = detail?.addr2 || detail?.address2 || '';
-    const zip = detail?.zipcode ? `(${detail.zipcode})` : '';
-    return [a1, a2, zip].filter(Boolean).join(' ') || '-';
+    const a1 = detail?.addr1 || detail?.address1 || "";
+    const a2 = detail?.addr2 || detail?.address2 || "";
+    const zip = detail?.zipcode ? `(${detail.zipcode})` : "";
+    return [a1, a2, zip].filter(Boolean).join(" ") || "-";
   }, [detail]);
-  const request   = detail?.requestMemo || detail?.deliveryMemo || '-';
+  const request   = detail?.requestMemo || detail?.deliveryMemo || "-";
 
   // 배송 요약
-  const carrierName = track?.carrierName ?? '-';
-  const invoiceNo   = track?.invoiceNo ?? '-';
+  const carrierName = track?.carrierName || track?.carrier?.name || "-";
+  const invoiceNo   = track?.invoiceNo ?? "-";
 
   return (
     <Modal isOpen={open} onClose={onClose} title="배송 조회">
@@ -88,7 +77,6 @@ export default function TrackingModal({ open, onClose, orderId }) {
         <div className="p-4">불러오는 중…</div>
       ) : (
         <div className="px-4">
-          {/* 두 번째 이미지와 동일한 표 레이아웃, 기존 클래스 그대로 */}
           <table className="w-full table-fixed text-sm border-separate [border-spacing:0]">
             <tbody className="divide-y divide-gray-200">
               <tr>
@@ -164,8 +152,8 @@ export default function TrackingModal({ open, onClose, orderId }) {
                     <div style={{ whiteSpace: "pre-wrap" }}>
                       {track.events
                         .map((e, idx) => {
-                          const t = e.time ? new Date(e.time).toLocaleString() : "-";
-                          const line = `${idx + 1}. ${t} · ${e.status || ""}${e.location ? ` · ${e.location}` : ""}${e.description ? ` · ${e.description}` : ""}`;
+                          const t = formatKST(e.time);
+                          const line = `${idx + 1}. ${t} · ${(e.label || e.status || "")}${e.where ? ` · ${e.where}` : ""}${e.description ? ` · ${e.description}` : ""}`;
                           return line;
                         })
                         .join("\n")}
