@@ -145,7 +145,6 @@ const Header = () => {
                   로그아웃
                 </Button>
                 <Icon src={User} alt="마이 페이지" onClick={() => navigate('/user/mypage')} />
-                <Icon src={Notification} alt="알림" />
                 <Icon src={Message} alt="채팅" onClick={() => navigate('/user/chat')} />
                 <Icon src={BasketIcon} alt="장바구니" onClick={() => navigate('/user/mypage/cart')} />
                 <div className="relative">
@@ -209,7 +208,6 @@ const Header = () => {
                 <Button variant='signUp' onClick={() => { navigate('/user/mypage'); setIsMobileMenuOpen(false) }}>마이페이지</Button>
                 <Button variant='signUp' onClick={() => { navigate('/user/chat'); setIsMobileMenuOpen(false) }}>채팅</Button>
                 <Button variant='signUp' onClick={() => { navigate('/user/mypage/cart'); setIsMobileMenuOpen(false) }}>장바구니</Button>
-                <Button variant='signUp' onClick={() => { /* 알림 */ setIsMobileMenuOpen(false) }}>알림</Button>
               </div>
             </motion.div>
           </>

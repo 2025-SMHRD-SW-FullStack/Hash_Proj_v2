@@ -48,6 +48,7 @@ public class SecurityConfig {
             "https://meonjeo.com",
             "https://www.meonjeo.com",
             "https://dev.meonjeo.com",
+            "https://firsttry.smhrd.com",
             "http://3.36.134.163:5173",
             "http://hash-proj-v2.eba-ijnehrgn.ap-northeast-2.elasticbeanstalk.com/"
     );

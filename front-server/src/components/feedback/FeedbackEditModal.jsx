@@ -4,8 +4,8 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import { updateFeedback } from '../../service/feedbackService';
 import { uploadImages } from '../../service/uploadService';
-// util 경로/케이스: feedbacksStatus (소문자)
-import { canEditFeedback } from '../../util/feedbacksStatus';
+// util 경로/케이스: FeedbacksStatus (대문자)
+import { canEditFeedback } from '../../util/FeedbacksStatus';
 
 export default function FeedbackEditModal({
   open,

@@ -1,6 +1,8 @@
 // OrderCard.jsx (네가 쓰는 경로 그대로에 붙여넣어)
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { loadTossPayments } from "@tosspayments/payment-sdk";
+import { confirmTossPayment } from "../../../service/paymentService";
 import {
   getMyOrderDetail,
   getTracking,
@@ -66,6 +68,8 @@ const OrderCard = ({ order, onChanged }) => {
   const [detail, setDetail] = useState(null);
   const [track, setTrack] = useState(null);
   const [feedbackDone, setFeedbackDone] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [payMsg, setPayMsg] = useState("");
 
   const [openConfirm, setOpenConfirm] = useState(false);
   const [openTrack, setOpenTrack] = useState(false);
@@ -171,6 +175,52 @@ const OrderCard = ({ order, onChanged }) => {
   const items = detail?.items ?? [];
   const totalPrice = Number(detail?.payAmount ?? detail?.totalPrice ?? order?.payAmount ?? 0);
 
+  // PENDING 재결제용 주문명
+  const buildOrderName = () => {
+    const its = detail?.items ?? [];
+    if (its.length === 0) return "주문 결제";
+    const first = its[0]?.productName || "주문 결제";
+    return its.length === 1 ? first : `${first} 외 ${its.length - 1}건`;
+  };
+
+  // PENDING 재결제 핸들러
+  const handleRetryPay = async () => {
+    setPayMsg("");
+    try {
+      if (!detail) throw new Error("주문 상세를 불러오는 중입니다. 잠시만요.");
+      const oid = detail.orderUid || order.orderUid;
+      const amount = Number(detail?.payAmount ?? order?.payAmount ?? 0);
+      if (!oid) throw new Error("주문번호가 없습니다.");
+
+      // 0원 결제 안전처리(거의 없지만 대비)
+      if (amount <= 0) {
+        const r = await confirmTossPayment({ paymentKey: "ZERO", orderId: oid, amount: 0 });
+        const dbId = r?.orderDbId ?? r?.orderId;
+        const url = `${window.location.origin}/user/pay/complete?status=success&orderId=${encodeURIComponent(oid)}&orderDbId=${encodeURIComponent(dbId ?? "")}&paymentKey=ZERO&amount=0`;
+        window.location.href = url;
+        return;
+      }
+
+      const clientKey = (import.meta.env.VITE_TOSS_CLIENT_KEY || "").trim();
+      if (!clientKey) throw new Error("VITE_TOSS_CLIENT_KEY가 비어 있습니다.");
+      setPaying(true);
+      const toss = await loadTossPayments(clientKey);
+      await toss.requestPayment("카드", {
+        orderId: oid,
+        orderName: buildOrderName(),
+        amount,
+        successUrl: `${window.location.origin}/user/pay/complete?status=success`,
+        failUrl: `${window.location.origin}/user/pay/complete?status=fail`,
+        customerName: detail?.receiver ?? "",
+        customerMobilePhone: (detail?.phone || "").replace(/[^0-9]/g, ""),
+      });
+    } catch (e) {
+      setPayMsg(e?.response?.data?.message || e?.message || "결제 처리 중 오류가 발생했습니다.");
+    } finally {
+      setPaying(false);
+    }
+  };
+
   const handleOpenExchangeModal = async () => {
     try {
       const exchanges = await getMyExchanges();
@@ -240,7 +290,15 @@ const OrderCard = ({ order, onChanged }) => {
         </div>
         
         <div className="space-x-2">
-          {order.status === "PENDING" && <Button className="flex-1">다시 주문하기</Button>}
+          {order.status === "PENDING" && (
+            <Button
+              className="flex-1"
+              onClick={handleRetryPay}
+              disabled={!detail || paying}
+            >
+              {paying ? "처리 중…" : "다시 결제하기"}
+            </Button>
+          )}
           {order.status === "READY" && <Button className="flex-1" variant="signUp" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
           {order.status === "IN_TRANSIT" && <Button className="flex-1" variant="signUp" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
           
@@ -300,6 +358,12 @@ const OrderCard = ({ order, onChanged }) => {
           <Button className="flex-1" variant="unselected" onClick={() => navi(`/user/mypage/orders/${order.id}`)}>주문 상세 보기</Button>
         </div>
       </div>
+
+      {payMsg && (
+        <div className="mt-2 text-sm text-red-600">
+          {payMsg}
+        </div>
+      )}
 
       <ConfirmPurchaseModal
         open={openConfirm}
