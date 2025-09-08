@@ -28,9 +28,9 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
     // 성공 리다이렉트 URL (yml에 주입, 기본값 제공)
 
-    @Value("${spring.security.oauth2.success.web-url:http://localhost:5173/oauth-success}")
+    @Value("${spring.security.oauth2.success.web-url:https://firsttry.smhrd.com/oauth-success}")
     private String webSuccessUrl;
-    @Value("${spring.security.oauth2.success.app-url:meonjeo://oauth-success}")
+    @Value("${spring.security.oauth2.success.app-url:firsttry://oauth-success}")
     private String appSuccessUrl;
 
     @Override

@@ -49,6 +49,7 @@ public class SecurityConfig {
             "https://www.meonjeo.com",
             "https://dev.meonjeo.com",
             "https://firsttry.smhrd.com",
+            "https://firsttry.smhrd.com:5173",
             "http://3.36.134.163:5173",
             "http://hash-proj-v2.eba-ijnehrgn.ap-northeast-2.elasticbeanstalk.com/"
     );
@@ -128,6 +129,11 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
         config.setAllowedOrigins(resolveAllowedOrigins());
+        config.setAllowedOriginPatterns(List.of(
+            "https://firsttry.smhrd.com",
+            "https://*.meonjeo.com",
+            "https://*.elasticbeanstalk.com"
+        ));
         config.setAllowedHeaders(List.of(
                 "Authorization", "Content-Type", "X-Requested-With",
                 "Accept", "Origin"

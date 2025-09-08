@@ -2,11 +2,11 @@
 import axios from 'axios'
 import useAuthStore from '../stores/authStore'
 
-// ── BASE URL (.env 폴백: VITE_AI_API_BASE_URL → VITE_AI_BASE_URL → 127.0.0.1:8000)
+// ── BASE URL (.env 폴백: VITE_AI_API_BASE_URL → VITE_AI_BASE_URL)
 const RAW =
   String(import.meta?.env?.VITE_AI_API_BASE_URL ?? '').trim() ||
   String(import.meta?.env?.VITE_AI_BASE_URL ?? '').trim()
-const BASE_URL = (RAW || 'http://127.0.0.1:8000').replace(/\/+$/, '')
+const BASE_URL = (RAW || '/api/ai').replace(/\/+$/, '')
 
 if (import.meta?.env?.DEV) {
   // eslint-disable-next-line no-console
@@ -21,6 +21,12 @@ const axiosAI = axios.create({
 
 // Authorization 주입 (+ FormData일 때 Content-Type 제거)
 axiosAI.interceptors.request.use((config) => {
+
+
+  if (typeof config.url === 'string' && BASE_URL.endsWith('/api/ai') && config.url.startsWith('/api/ai/')) {
+    config.url = config.url.replace(/^\/api\/ai/, '')
+  }
+
   // FormData면 Content-Type 제거 (boundary 자동)
   const isFD = typeof FormData !== 'undefined' && config?.data instanceof FormData
   if (isFD) {

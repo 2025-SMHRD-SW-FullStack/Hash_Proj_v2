@@ -7,7 +7,7 @@ from typing import Tuple, Optional, Dict, Any
 logger = logging.getLogger(__name__)
 
 # ── BASE URL: SPRING_BASE_URL → API_SERVER_URL → default
-_BASE_ENV = (os.getenv("SPRING_BASE_URL") or os.getenv("API_SERVER_URL") or "http://localhost:7777").strip()
+_BASE_ENV = (os.getenv("SPRING_BASE_URL") or os.getenv("API_SERVER_URL") or "https://firsttry.smhrd.com:8080").strip()
 BASE = _BASE_ENV.rstrip("/")
 
 # 경로 상수
