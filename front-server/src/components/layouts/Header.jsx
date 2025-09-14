@@ -14,6 +14,7 @@ import useAuthStore from '../../stores/authStore'
 import useAppModeStore from '../../stores/appModeStore'
 import QRCodeDisplay from '../common/QRCode'
 import { motion, AnimatePresence } from 'framer-motion'
+import LeftIcon from '../../assets/icons/ic_arrow_left.svg'
 
 const Header = () => {
   const navigate = useNavigate()
@@ -24,6 +25,26 @@ const Header = () => {
   const [isQRDropdownOpen, setIsQRDropdownOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const qrRef = useRef(null)
+
+  // ✅ 홈(메인) 최상단으로 확실히 이동하는 유틸
+  const goHomeTop = () => {
+    setIsQRDropdownOpen(false)
+    setIsMobileMenuOpen(false)
+    // ScrollToTop에 'top' 신호 전달 + 타이밍 안전망
+    const snapTop = () => {
+      const root =
+        document.querySelector('[data-scroll-root]') ||
+        document.getElementById('scroll-root') ||
+        document.scrollingElement ||
+        document.documentElement
+      try { root.scrollTo({ top: 0, left: 0, behavior: 'auto' }) } catch { root.scrollTop = 0 }
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    }
+    navigate('/', { state: { scroll: 'top', forceTop: true, ts: Date.now() } })
+    // 즉시 + 다음 프레임 한번 더 (더블 세이프티)
+    snapTop()
+    requestAnimationFrame(() => setTimeout(snapTop, 0))
+  }
 
   // 로그인 후 권한 보정
   useEffect(() => {
@@ -50,8 +71,7 @@ const Header = () => {
 
   const logout = () => {
     storeLogout()
-    navigate('/')
-    setIsMobileMenuOpen(false)
+    goHomeTop()
   }
 
   const toggleMode = () => {
@@ -60,7 +80,7 @@ const Header = () => {
       navigate('/seller')
     } else {
       setMode('user')
-      navigate('/')
+      goHomeTop()
     }
     setIsMobileMenuOpen(false)
   }
@@ -71,7 +91,7 @@ const Header = () => {
       navigate('/admin')
     } else {
       setMode('user')
-      navigate('/')
+      goHomeTop()
     }
     setIsMobileMenuOpen(false)
   }
@@ -84,7 +104,8 @@ const Header = () => {
         <div className="flex flex-1 items-center space-x-2 sm:space-x-3">
 
           {/* 모바일 버튼 */}
-          <div className="sm:hidden">
+          <div className="sm:hidden flex items-center">
+            <Icon src={LeftIcon} onClick={() => navigate(-1)}/>
             {isLoggedIn && isAdmin && (
               <Button variant={mode === 'user' ? 'admin' : 'signUp'} size="sm" onClick={handleAdminToggle}>
                 {mode === 'user' ? '관리자 페이지' : '유저 페이지'}
@@ -121,7 +142,7 @@ const Header = () => {
             src={Logo}
             alt="먼저써봄 로고"
             className="h-[30px] sm:h-[65px] cursor-pointer"
-            onClick={() => navigate('/')}
+            onClick={goHomeTop}
           />
         </div>
 
@@ -155,20 +176,34 @@ const Header = () => {
                   />
                   {isQRDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-72 rounded-lg border border-gray-200 bg-white shadow-lg">
-                      <QRCodeDisplay url={window.location.href} />
+                      <QRCodeDisplay url={`${window.location.origin}/`} />
                     </div>
                   )}
                 </div>
               </div>
             </>
           ) : (
-            <div>
+            <div className="flex items-center">
               <Button size='md' className='hidden sm:block' onClick={() => navigate('/login')} >
                 로그인
               </Button>
               <Button size='sm' className='flex sm:hidden' onClick={() => navigate('/login')}>
                 로그인
               </Button>
+              {/* 👇 비로그인 상태에서도 QR 노출 (CSS 영향 최소: inline-block + ml-2만 추가) */}
+              <div className="relative inline-block ml-2">
+                <Icon
+                  src={QRcode}
+                  alt="QR 코드"
+                  onClick={() => setIsQRDropdownOpen(prev => !prev)}
+                />
+                {isQRDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-72 rounded-lg border border-gray-200 bg-white shadow-lg">
+                    {/* 🔒 항상 메인으로 고정 */}
+                    <QRCodeDisplay url={`${window.location.origin}/`} />
+                  </div>
+                )}
+              </div>
 
             </div>
             

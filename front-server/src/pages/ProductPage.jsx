@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Product from '../components/product/Product.jsx';
 import { useProductDetail } from '../hooks/useProductDetail.js';
 import Button from '../components/common/Button.jsx';
@@ -10,6 +10,9 @@ import { getActiveAds } from '../service/adsService.js';
 import { AD_SLOT_TYPES } from '../constants/ads.js';
 import CategorySelect from '../components/common/CategorySelect.jsx';
 import DefaultAdImg from "../assets/images/ReSsol_TestImg.png"
+import { fetchRandomPowerAds } from '../service/adsService.js';
+import { getProductDetail } from '../service/productService.js';
+
 
 // PowerAdProduct 컴포넌트는 이전과 동일하게 유지합니다.
 const PowerAdProduct = ({ ad, onClick }) => {
@@ -42,12 +45,39 @@ const PowerAdProduct = ({ ad, onClick }) => {
   );
 };
 
+// 서버/목록 응답의 다양한 이미지 필드에 대응
+const pickProductImage = (p) =>
+  p?.thumbnailUrl ||
+  p?.mainImageUrl ||
+  p?.imageUrl ||
+  (Array.isArray(p?.images) && (p.images[0]?.url || p.images[0])) ||
+  (Array.isArray(p?.imageUrls) && p.imageUrls[0]) ||
+  '';
+
+// 광고 배열에 상품명/이미지를 채워 넣기(필요 시 상세 호출)
+const hydratePowerAds = async (ads, byId) => {
+  const out = [];
+  for (const ad of (ads || [])) {
+    let p = ad.productId ? byId.get(ad.productId) : null;
+    if (!p && ad.productId) {
+      try {
+        // 목록에 없으면 상세 1회 호출(최대 5개라 부담 적음)
+        p = await getProductDetail(ad.productId);
+      } catch { /* 무시: 없으면 그대로 placeholder */ }
+    }
+    out.push({
+      ...ad,
+      productName: ad.productName ?? p?.name ?? p?.productName ?? '특별한 상품을 만나보세요!',
+      bannerImageUrl: ad.bannerImageUrl || pickProductImage(p) || '',
+    });
+  }
+  return out;
+};
 
 const ProductPage = () => {
   const goProductDetail = useProductDetail();
   const location = useLocation();
   const categoryFromState = location.state?.category || '전체';
-  
 
   const [products, setProducts] = useState([]);
   const [displayCount, setDisplayCount] = useState(20);
@@ -63,7 +93,6 @@ const ProductPage = () => {
   const [loadingAds, setLoadingAds] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const containerRef = useRef(null);
   const categories = [
     { value: "전체", label: "전체" },
     { value: "전자제품", label: "전자제품" },
@@ -83,59 +112,76 @@ const ProductPage = () => {
         if (selectedCategory.value !== '전체') {
           setLoadingAds(true);
           const adData = await getActiveAds(AD_SLOT_TYPES.CATEGORY_TOP, selectedCategory.value);
-          // ▽ 상품형 광고는 bannerImageUrl이 비어있을 수 있으니, productId로 보강
-          const hydrated = (adData || []).map(ad => {
-            const p = ad.productId ? byId.get(ad.productId) : null;
-            return {
-              ...ad,
-              productName: ad.productName ?? p?.name ?? '특별한 상품을 만나보세요!',
-              bannerImageUrl: ad.bannerImageUrl ?? p?.thumbnailUrl ?? '',
-            };
-          });
+          const hydrated = await hydratePowerAds(adData, byId);
           setPowerAds(hydrated);
-          setLoadingAds(false);
         } else {
-          setPowerAds([]);
+          setLoadingAds(true);
+          const adData = await fetchRandomPowerAds(5); // ✅ 전체에서 랜덤 5개
+          const hydrated = await hydratePowerAds(adData, byId);
+          setPowerAds(hydrated);
         }
 
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
+        setLoadingAds(false);
       }
     };
     fetchAllData();
   }, [selectedCategory]);
 
   const filteredProducts = products.filter((product) => {
-  // selectedCategory.value가 "전체"면 모든 카테고리 허용
   if (selectedCategory.value !== '전체' && product.category !== selectedCategory.value) return false;
   if (activeSearchTerm && !product.name.toLowerCase().includes(activeSearchTerm.toLowerCase())) return false;
   return true;
 });
 
+  // ---  무한 스크롤 ---
+  const loadMoreProducts = useCallback(() => {
+    if (isLoadingMore || displayCount >= filteredProducts.length) return;
+    
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setDisplayCount(prev => prev + 20);
+      setIsLoadingMore(false);
+    }, 500);
+  }, [isLoadingMore, displayCount, filteredProducts.length]);
+
   useEffect(() => {
     const handleScroll = () => {
-      if (window.innerHeight + document.documentElement.scrollTop + 100 >= document.documentElement.scrollHeight && !isLoadingMore) {
-        if (displayCount < filteredProducts.length) {
-            setIsLoadingMore(true);
-            setTimeout(() => {
-                setDisplayCount(prev => prev + 20);
-                setIsLoadingMore(false);
-            }, 500);
-        }
+      // 사용자가 페이지 끝까지 스크롤했는지 확인
+      if (window.innerHeight + document.documentElement.scrollTop + 200 >= document.documentElement.scrollHeight) {
+        loadMoreProducts();
       }
     };
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [displayCount, filteredProducts.length, isLoadingMore]);
+  }, [loadMoreProducts]);
+
+  // 스크롤바가 없을 때 추가 로드
+  useEffect(() => {
+    // 로딩이 끝나고, 필터된 상품이 있을 때만 실행
+    if (!loading && filteredProducts.length > 0) {
+      const checkScroll = () => {
+        if (document.documentElement.scrollHeight <= window.innerHeight) {
+          loadMoreProducts();
+        }
+      };
+      
+      // DOM 업데이트 후 높이를 정확히 계산하기 위해 짧은 지연시간을 줍니다.
+      const timeoutId = setTimeout(checkScroll, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [loading, filteredProducts, displayCount, loadMoreProducts]);
+  // --- END ---
 
   if (error) return <div>오류: {error}</div>;
 
   // 검색 실행 및 Enter 키 처리를 위한 함수들 (컴포넌트 내부에 위치)
   const handleSearch = () => {
-    const term = searchText.trim();
-    setActiveSearchTerm(term);
+    setActiveSearchTerm(searchText.trim());
   };
 
   const handleKeyDown = (e) => {
@@ -145,10 +191,9 @@ const ProductPage = () => {
   };
 
   return (
-    // ✅ 이 div에 max-w-7xl mx-auto를 추가하여 전체 너비를 제한합니다.
-    <div ref={containerRef} className='max-w-7xl mx-auto flex flex-col px-4 mb-4'>
-      {/* 모바일: CategorySelect + 검색바  */}
-      <div className="sm:hidden my-4  flex items-center gap-2 ">
+    <div className='max-w-7xl mx-auto flex flex-col px-4 mb-4'>
+      {/* 모바일: CategorySelect + 검색바 */}
+      <div className="sm:hidden my-4 flex items-center gap-2">
           <CategorySelect
             categories={categories}
             selected={selectedCategory}
@@ -156,7 +201,6 @@ const ProductPage = () => {
             className="w-[40%]"
           />
 
-        {/* 검색창, 내부 아이콘, 검색 버튼을 모두 포함하는 컨테이너 */}
         <div className="relative flex-1 flex items-center">
           <input
           type="text"
@@ -169,7 +213,7 @@ const ProductPage = () => {
           onKeyDown={handleKeyDown}
           />
 
-          {/* 3. 우측의 클릭 가능한 검색 버튼 */}
+          {/* 가능한 검색 버튼 */}
           <button
             onClick={handleSearch}
             className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-full 
@@ -182,9 +226,8 @@ const ProductPage = () => {
       </div>
       </div>
 
-
       {/* 데스크탑: 버튼 + 검색바 */}
-      <div className='hidden sm:flex flex-wrap items-center gap-2 my-4 w-full justify-between mx-4 '>
+      <div className='hidden sm:flex flex-wrap items-center gap-2 my-4 w-full justify-between '>
         <div className='flex items-center gap-2'>
           {categories.map((category) => (
             <Button
@@ -231,7 +274,7 @@ const ProductPage = () => {
       {loadingAds ? (
         <p className="w-full text-center py-4">광고를 불러오는 중입니다...</p>
       ) : (
-        powerAds.length > 0 && selectedCategory.value !== '전체' && (
+        powerAds.length > 0 && (
           <div className="w-full mb-8">
             <h2 className="text-lg font-bold mb-4 border-b pb-2">🔥 추천 상품</h2>
             <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">

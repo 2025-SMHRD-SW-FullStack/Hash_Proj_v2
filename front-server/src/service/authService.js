@@ -26,7 +26,6 @@ const fmtGender = (g) => {
 /** 로그인 */
 export async function loginRequest({ email, password }) {
   const res = await axiosInstance.post('/api/auth/login', { email, password })
-  console.log('응답 결과', res.data)
   return res.data // { token, ... }
 }
 
@@ -53,8 +52,6 @@ export async function signupRequest({
     gender: fmtGender(gender),
     profileImageUrl, // 필수 필드 추가
   }
-
-  console.log('회원가입 payload', payload)
 
   const res = await axiosInstance.post('/api/auth/signup', payload, {
     headers: { 'Content-Type': 'application/json' },

@@ -71,7 +71,7 @@ const MyPageLayout = () => {
   return (
     <div className="flex h-full flex-col md:flex-row bg-gray-50 p-4 md:p-8 md:gap-8">
       {/* 왼쪽 사이드바 */}
-      <aside className="h-full w-full md:w-1/5 flex-shrink-0">
+      <aside className="w-full md:w-1/5 flex-shrink-0 md:sticky md:top-8 md:self-start">
         <div className="flex flex-col p-4 border rounded-lg shadow bg-white">
           {/* 프로필 이미지와 닉네임 */}
           <div className="flex items-center w-full md:flex-col">
@@ -88,7 +88,7 @@ const MyPageLayout = () => {
           </div>
 
           {/* 포인트와 교환 버튼 */}
-          <div className="w-full flex flex-col lg:flex-row items-center justify-between mt-4 md:mt-0 md:border-t md:pt-4">
+          <div className="w-full flex flex-row items-center justify-between mt-4 md:mt-0 md:border-t md:pt-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">내 포인트</span>
               {loading ? (
@@ -124,7 +124,7 @@ const MyPageLayout = () => {
         </div>
 
         {/* 데스크탑 nav */}
-        <nav className="hidden md:block mt-4 mr-6">
+        <nav className="hidden md:block mt-4">
           <ul className="space-y-2 p-0 list-none">
             {navItems.map((item) => (
               <li key={item.to}>

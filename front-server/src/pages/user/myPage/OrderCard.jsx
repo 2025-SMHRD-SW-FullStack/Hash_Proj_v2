@@ -1,8 +1,6 @@
 // OrderCard.jsx (네가 쓰는 경로 그대로에 붙여넣어)
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loadTossPayments } from "@tosspayments/payment-sdk";
-import { confirmTossPayment } from "../../../service/paymentService";
 import {
   getMyOrderDetail,
   getTracking,
@@ -68,8 +66,6 @@ const OrderCard = ({ order, onChanged }) => {
   const [detail, setDetail] = useState(null);
   const [track, setTrack] = useState(null);
   const [feedbackDone, setFeedbackDone] = useState(false);
-  const [paying, setPaying] = useState(false);
-  const [payMsg, setPayMsg] = useState("");
 
   const [openConfirm, setOpenConfirm] = useState(false);
   const [openTrack, setOpenTrack] = useState(false);
@@ -90,6 +86,12 @@ const OrderCard = ({ order, onChanged }) => {
   const withinWindow = Boolean(confirmWindow?.open);
   const showEditForThisProduct = Boolean(firstItem && withinWindow && prodHasFeedback);
   const completedAny = Boolean(prodHasFeedback);
+
+  // [FEEDBACK-FIX] 주문 내 상품 집계 상태
+  const [allDone, setAllDone] = useState(false);      // 주문의 모든 productId가 작성됨?
+  const [hasWritable, setHasWritable] = useState(false); // 미작성 productId가 하나라도 있는가?
+  const [editTarget, setEditTarget] = useState(null); // { orderItemId, productId } (수정 진입용)
+  const [anyDone, setAnyDone] = useState(false);      // 하나라도 작성한 상품이 있는가?
 
   // 상품 단위 존재/ID 조회
   useEffect(() => {
@@ -121,6 +123,67 @@ const OrderCard = ({ order, onChanged }) => {
       }
     })();
   }, [order.id]);
+
+  useEffect(() => {
+    const items = detail?.items || [];
+    const pids = Array.from(new Set(items.map(it => it.productId).filter(Boolean)));
+
+    if (pids.length === 0) {
+      setAllDone(false);
+      setHasWritable(false);
+      setEditTarget(null);
+      setAnyDone(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const entries = await Promise.all(
+          pids.map(async (pid) => {
+            try { return [pid, !!(await hasMyFeedbackForProduct(pid))]; }
+            catch { return [pid, false]; }
+          })
+        );
+        const map = Object.fromEntries(entries);
+        const any = pids.some(pid => map[pid]);
+        const all = pids.every(pid => map[pid]);
+
+        setAnyDone(any);
+        setAllDone(all);
+        setHasWritable(!all);
+
+        // 전부 작성(all)인 경우, 수정 타깃(첫 작성된 상품의 orderItem) 선정
+        if (all) {
+          const pid = pids.find(p => map[p]);
+          const item = items.find(it => it.productId === pid);
+          if (item) setEditTarget({ orderItemId: item.id, productId: pid });
+        } else {
+          setEditTarget(null);
+        }
+      } catch (e) {
+        console.error(e);
+        setAnyDone(false);
+        setAllDone(false);
+        setHasWritable(false);
+        setEditTarget(null);
+      }
+    })();
+  }, [detail?.items]);
+
+  // [FEEDBACK-FIX] 상품(productId) 기준으로 피드백 ID를 확정해 에디터로 이동
+  const navToEditForProduct = async (productId, orderItemId) => {
+    try {
+      const fid = await getMyFeedbackIdByProduct(productId);
+      if (fid) {
+        navi(`/user/feedback/editor?feedbackId=${fid}&productId=${productId}${orderItemId ? `&orderItemId=${orderItemId}` : ''}&type=MANUAL`);
+        return;
+      }
+    } catch (e) {
+      console.error('getMyFeedbackIdByProduct failed', e);
+    }
+    // 극히 예외적인 경우만 보조 경로로 폴백
+    navi(`/user/feedback/editor?feedbackId=auto&productId=${productId}${orderItemId ? `&orderItemId=${orderItemId}` : ''}&type=MANUAL`);
+  };
 
   // 구매확정/피드백 가능 윈도우 조회
   useEffect(() => {
@@ -175,52 +238,6 @@ const OrderCard = ({ order, onChanged }) => {
   const items = detail?.items ?? [];
   const totalPrice = Number(detail?.payAmount ?? detail?.totalPrice ?? order?.payAmount ?? 0);
 
-  // PENDING 재결제용 주문명
-  const buildOrderName = () => {
-    const its = detail?.items ?? [];
-    if (its.length === 0) return "주문 결제";
-    const first = its[0]?.productName || "주문 결제";
-    return its.length === 1 ? first : `${first} 외 ${its.length - 1}건`;
-  };
-
-  // PENDING 재결제 핸들러
-  const handleRetryPay = async () => {
-    setPayMsg("");
-    try {
-      if (!detail) throw new Error("주문 상세를 불러오는 중입니다. 잠시만요.");
-      const oid = detail.orderUid || order.orderUid;
-      const amount = Number(detail?.payAmount ?? order?.payAmount ?? 0);
-      if (!oid) throw new Error("주문번호가 없습니다.");
-
-      // 0원 결제 안전처리(거의 없지만 대비)
-      if (amount <= 0) {
-        const r = await confirmTossPayment({ paymentKey: "ZERO", orderId: oid, amount: 0 });
-        const dbId = r?.orderDbId ?? r?.orderId;
-        const url = `${window.location.origin}/user/pay/complete?status=success&orderId=${encodeURIComponent(oid)}&orderDbId=${encodeURIComponent(dbId ?? "")}&paymentKey=ZERO&amount=0`;
-        window.location.href = url;
-        return;
-      }
-
-      const clientKey = (import.meta.env.VITE_TOSS_CLIENT_KEY || "").trim();
-      if (!clientKey) throw new Error("VITE_TOSS_CLIENT_KEY가 비어 있습니다.");
-      setPaying(true);
-      const toss = await loadTossPayments(clientKey);
-      await toss.requestPayment("카드", {
-        orderId: oid,
-        orderName: buildOrderName(),
-        amount,
-        successUrl: `${window.location.origin}/user/pay/complete?status=success`,
-        failUrl: `${window.location.origin}/user/pay/complete?status=fail`,
-        customerName: detail?.receiver ?? "",
-        customerMobilePhone: (detail?.phone || "").replace(/[^0-9]/g, ""),
-      });
-    } catch (e) {
-      setPayMsg(e?.response?.data?.message || e?.message || "결제 처리 중 오류가 발생했습니다.");
-    } finally {
-      setPaying(false);
-    }
-  };
-
   const handleOpenExchangeModal = async () => {
     try {
       const exchanges = await getMyExchanges();
@@ -232,7 +249,41 @@ const OrderCard = ({ order, onChanged }) => {
       setOpenExchangeModal(true);
     } catch (e) {
       alert('교환 내역을 조회하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-      console.error("교환 내역 조회 실패:", e);
+    }
+  };
+
+  // ✅ 다시 주문하기: 현재 주문의 아이템들을 세션에 저장하고 주문 페이지로 이동
+  const handleReorder = async () => {
+    try {
+      let od = detail;
+      if (!od || !Array.isArray(od.items)) {
+        od = await getMyOrderDetail(order.id);
+      }
+      const specItems = (od?.items || []).map((it) => {
+        // 옵션 스냅샷 → 객체
+        let opts = {};
+        try {
+          const raw = it.optionSnapshotJson;
+          const v = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          if (v && typeof v === 'object') opts = v;
+        } catch {}
+        return {
+          productId: Number(it.productId),
+          qty: Number(it.quantity ?? it.qty ?? 1),
+          options: opts,
+        };
+      }).filter(x => x.productId && x.qty > 0);
+
+      if (!specItems.length) {
+        alert('재주문할 상품 정보를 찾지 못했습니다.');
+        return;
+      }
+      const payload = { items: specItems, sourceOrderId: order.id, ts: Date.now() };
+      sessionStorage.setItem('REORDER_ITEMS', JSON.stringify(payload));
+      navi(`/user/order?mode=reorder&source=${order.id}`);
+    } catch (e) {
+      console.error('handleReorder failed', e);
+      alert('재주문 준비 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     }
   };
 
@@ -291,19 +342,13 @@ const OrderCard = ({ order, onChanged }) => {
         
         <div className="space-x-2">
           {order.status === "PENDING" && (
-            <Button
-              className="flex-1"
-              onClick={handleRetryPay}
-              disabled={!detail || paying}
-            >
-              {paying ? "처리 중…" : "다시 결제하기"}
-            </Button>
+          <Button className="flex-1" onClick={handleReorder}>다시 주문하기</Button>
           )}
           {order.status === "READY" && <Button className="flex-1" variant="signUp" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
           {order.status === "IN_TRANSIT" && <Button className="flex-1" variant="signUp" onClick={() => setOpenTrack(true)}>배송 조회</Button>}
           
           {/* 배송완료: 구매확정 유도 */}
-          {order.status === "DELIVERED" && !feedbackDone && (
+          {order.status === "DELIVERED" && (
             <>
               <Button className="flex-1" onClick={() => setOpenConfirm(true)}>
                 {showEditForThisProduct ? '구매확정 후 피드백 수정' : '구매확정 후 피드백 작성'}
@@ -313,43 +358,31 @@ const OrderCard = ({ order, onChanged }) => {
           )}
 
           {/* 구매확정 + 기간/완료 상태에 따른 버튼/라벨 */}
-          {order.status === "CONFIRMED" && !feedbackDone && withinWindow && firstItem && (
-            showEditForThisProduct ? (
-              <Button
-                className="flex-1"
-                variant="unselected"
-                onClick={() =>
-                  navi(`/user/feedback/editor?${prodFeedbackId ? `feedbackId=${prodFeedbackId}` : 'feedbackId=auto'}&productId=${firstItem.productId}`)
-                }
-              >
-                피드백 수정
-              </Button>
-            ) : (
+          {order.status === "CONFIRMED" && withinWindow && (
+            (!allDone) ? (
               <Button className="flex-1" onClick={() => navi(`/user/survey?orderId=${order.id}`)}>
                 피드백 작성
               </Button>
-            )
-          )}
-
-          {feedbackDone && withinWindow && firstItem && (
+            ) : (
+              editTarget && (
             <Button
               className="flex-1"
               variant="signUp"
-              onClick={() =>
-                navi(`/user/feedback/editor?orderItemId=${firstItem.id}&productId=${firstItem.productId}&feedbackId=auto&type=MANUAL`)
-              }
+              onClick={() => navToEditForProduct(editTarget.productId, editTarget.orderItemId)}
             >
               피드백 수정
             </Button>
+              )
+            )
           )}
 
-          {completedAny && !withinWindow && (
+          {anyDone && !withinWindow && (
             <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-green-100 text-green-800">
               피드백 작성 완료
             </span>
           )}
 
-          {!completedAny && !withinWindow && (
+          {!anyDone && !withinWindow && (
             <span className="inline-flex items-center text-sm rounded-full px-3 py-1 bg-rose-100 text-rose-700">
               기간 만료
             </span>
@@ -358,12 +391,6 @@ const OrderCard = ({ order, onChanged }) => {
           <Button className="flex-1" variant="unselected" onClick={() => navi(`/user/mypage/orders/${order.id}`)}>주문 상세 보기</Button>
         </div>
       </div>
-
-      {payMsg && (
-        <div className="mt-2 text-sm text-red-600">
-          {payMsg}
-        </div>
-      )}
 
       <ConfirmPurchaseModal
         open={openConfirm}
@@ -384,11 +411,9 @@ const OrderCard = ({ order, onChanged }) => {
             onChanged?.();
             if (firstItem) {
               if (prodHasFeedback) {
-                const url =
-                  `/user/feedback/editor?${prodFeedbackId ? `feedbackId=${prodFeedbackId}` : 'feedbackId=auto'}&productId=${firstItem.productId}`;
-                navi(url); // ✅ 재구매면 수정으로
+                await navToEditForProduct(firstItem.productId, firstItem.id);
               } else {
-                navi(`/user/survey?orderId=${order.id}`); // 신규 작성
+                navi(`/user/survey?orderId=${order.id}`);
               }
             }
           } catch (e) {

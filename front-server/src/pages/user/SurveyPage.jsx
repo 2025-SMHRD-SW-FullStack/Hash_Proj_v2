@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { getSurveyTemplate, submitSurvey } from "../../service/feedbackService";
+import { getSurveyTemplate, submitSurvey, hasMyFeedbackForProduct, getMyFeedbackIdByProduct } from "../../service/feedbackService";
 import { getMyOrderDetail } from "../../service/orderService";
 import FeedbackChoiceModal from "../../components/feedback/FeedbackChoiceModal";
 import Button from "../../components/common/Button";
@@ -47,9 +47,30 @@ export default function SurveyPage() {
     return saved ? Number(saved) : 0;
   });
 
+  const [doneMap, setDoneMap] = useState({});
+  const [allDone, setAllDone] = useState(false);
+
+  // 선택된 상품의 "작성완료" 파생값
+  const selectedPid = Number(productId || productIdQ || 0);
+  const selectedDone = !!doneMap[selectedPid];
+
   const [hoverScore, setHoverScore] = useState(0);
   const [openChoice, setOpenChoice] = useState(false);
   const scaleLabels = { 1: '매우 불만족', 2: '불만족', 3: '보통', 4: '만족', 5: '매우 만족' };
+
+  const goEditForSelected = async () => {
+    const pid = Number(productId || productIdQ);
+    const oid = orderItemId || orderItemIdQ || "";
+    if (!pid) { alert("수정할 상품을 선택해 주세요."); return; }
+    try {
+      const fid = await getMyFeedbackIdByProduct(pid);
+      if (fid) {
+        navigate(`/user/feedback/editor?feedbackId=${fid}&productId=${pid}${oid ? `&orderItemId=${oid}` : ''}&type=MANUAL`);
+        return;
+      }
+    } catch {}
+    alert("수정 가능한 피드백을 찾지 못했습니다. 마이페이지에서 확인해 주세요.");
+  };
 
   // 다건 주문이면 주문 상세 로딩 후 선택옵션 구성
   useEffect(() => {
@@ -71,10 +92,24 @@ export default function SurveyPage() {
           };
         });
         setOrderItems(items);
-        // 초기 선택(없으면 첫 번째)
-        if (!orderItemId && items[0]) {
-          setOrderItemId(items[0].value);
-          setProductId(items[0].productId);
+        const pids = Array.from(new Set(items.map(i => Number(i.productId)).filter(Boolean)));
+        const entries = await Promise.all(pids.map(async pid => {
+          try { return [pid, !!(await hasMyFeedbackForProduct(pid))]; } catch { return [pid, false]; }
+        }));
+        const map = Object.fromEntries(entries);
+        setDoneMap(map);
+        setAllDone(pids.length > 0 && pids.every(pid => map[pid]));
+
+        // 초기 선택: 미작성 상품이 있으면 그걸로
+        if (!orderItemId) {
+          const firstWritable = items.find(i => !map[Number(i.productId)]);
+          if (firstWritable) {
+            setOrderItemId(firstWritable.value);
+            setProductId(firstWritable.productId);
+          } else if (items[0]) {
+            setOrderItemId(items[0].value);
+            setProductId(items[0].productId);
+          }
         }
       } catch (e) {
         console.error(e);
@@ -131,6 +166,17 @@ export default function SurveyPage() {
       alert("상품의 총점을 매겨주세요.");
       return;
     }
+    // 이미 작성한 상품이면 작성 대신 "수정"으로 유도
+    try {
+      if (await hasMyFeedbackForProduct(effProductId)) {
+          if (confirm("이미 이 상품에 대한 피드백이 있습니다. 수정 화면으로 이동할까요?")) {
+            await goEditForSelected();
+          }
+          return;
+        }
+      } catch {
+        // 네트워크 오류 시엔 계속 진행
+      }
     try {
       await submitSurvey(effOrderItemId, {
         productId: effProductId,
@@ -167,7 +213,15 @@ export default function SurveyPage() {
                 }}
               >
                 <option value="" disabled>상품 선택</option>
-                {orderItems.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {orderItems.map(o => {
+                  const pid = Number(o.productId);
+                  const done = !!doneMap[pid];
+                    return (
+                      <option key={o.value} value={o.value} disabled={done}>
+                        {o.label}{done ? ' - 작성완료' : ''}
+                      </option>
+                    );
+                })}
               </select>
             )}
           </div>
@@ -223,13 +277,26 @@ export default function SurveyPage() {
         </div>
 
         <div className="flex justify-end pt-4">
-          <Button
-            size="lg"
-            onClick={handleSubmit}
-            className="w-full md:w-auto px-10 py-4 text-lg font-bold"
-          >
-            제출하고 피드백 작성하기
-          </Button>
+          <div className="flex flex-col md:flex-row gap-3 justify-end">
+            <Button
+              size="lg"
+              onClick={handleSubmit}
+              className="w-full md:w-auto px-10 py-4 text-lg font-bold"
+              disabled={allDone || selectedDone}
+            >
+              제출하고 피드백 작성하기
+            </Button>
+            {(allDone || selectedDone) && (
+              <Button
+                size="lg"
+                variant="unselected"
+                onClick={goEditForSelected}
+                className="w-full md:w-auto px-10 py-4 text-lg font-bold"
+              >
+                수정하러 가기
+              </Button>
+            )}
+          </div>
         </div>
 
         <FeedbackChoiceModal

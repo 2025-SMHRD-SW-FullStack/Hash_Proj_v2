@@ -119,4 +119,18 @@ public class AdController {
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(200, size), Sort.by(Sort.Direction.DESC, "id"));
         return service.adminBookings(q, status, pageable);
     }
+    
+    @Operation(
+            summary = "파워광고 무작위 샘플(전체 카테고리에서 랜덤 N개)",
+            description = "CATEGORY_TOP에서 활성인 예약들을 무작위로 섞어 반환합니다."
+    )
+    @GetMapping("/samples/random")
+    public List<ServeItem> randomSamples(
+            @RequestParam(defaultValue = "5") int count,
+            @RequestParam(required = false) LocalDate date
+    ) {
+        var d = (date != null) ? date : LocalDate.now();
+        return service.randomActive(AdSlotType.CATEGORY_TOP, Math.max(1, Math.min(50, count)), d);
+    }
+    
 }

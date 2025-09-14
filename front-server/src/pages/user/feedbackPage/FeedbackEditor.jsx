@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { submitFeedback, getMyFeedbacks, getFeedbackDetail, updateFeedback } from "../../../service/feedbackService";
+import { submitFeedback, getMyFeedbacks, getFeedbackDetail, updateFeedback, getMyFeedbackIdByProduct } from "../../../service/feedbackService";
 import { uploadImages } from "../../../service/uploadService";
 import { getMyPointBalance } from "../../../service/pointService";
 import Button from "../../../components/common/Button";
@@ -99,19 +99,29 @@ const FeedbackEditor = () => {
     (async () => {
       if (!isEdit) return;
       let fid = feedbackIdQ;
-
-      if (fid === "auto") {
-        try {
-          const page = await getMyFeedbacks();
-          const list = page?.content ?? page?.items ?? [];
-          const mine = list.find((f) => String(f?.orderItemId) === String(orderItemId));
-          fid = mine?.id;
-        } catch (e) {
-          console.error(e);
+      const pidNum = productId ? Number(productId) : undefined;
+      // ① productId로 직접 조회(정석)
+      if (!fid || fid === 'auto') {
+        if (pidNum) {
+          try {
+            const byPid = await getMyFeedbackIdByProduct(pidNum);
+            if (byPid) fid = byPid;
+          } catch { /* ignore */ }
+        }
+      }
+      // ② 보조: 기존 auto 로직(목록에서 orderItemId로 탐색)
+      if (!fid || fid === 'auto') {
+        if (orderItemId) {
+          try {
+            const page = await getMyFeedbacks();
+            const list = page?.content ?? page?.items ?? [];
+            const mine = list.find((f) => String(f?.orderItemId) === String(orderItemId));
+            if (mine?.id) fid = mine.id;
+          } catch { /* ignore */ }
         }
       }
 
-      if (!fid) {
+      if (!fid || fid === 'auto') {
         alert("수정할 피드백을 찾지 못했습니다.");
         return;
       }
@@ -122,14 +132,13 @@ const FeedbackEditor = () => {
         setManualContent(detail?.content ?? "");
         try {
           const imgs = JSON.parse(detail?.imagesJson || "[]");
-          const arr = Array.isArray(imgs) ? imgs : [];
-          setImagePreviews(arr);
+          setImagePreviews(Array.isArray(imgs) ? imgs : []);
         } catch { /* noop */ }
       } catch (e) {
         console.error(e);
       }
     })();
-  }, [isEdit, feedbackIdQ, orderItemId]);
+  }, [isEdit, feedbackIdQ, orderItemId, productId]);
 
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files).slice(0, 5 - selectedFiles.length);
@@ -244,14 +253,14 @@ const FeedbackEditor = () => {
   return (
     <>
       {type === "AI" ? (
-        <div className="p-8 max-w-4xl mx-auto">
+        <div className="h-full flex flex-col px-4 sm:px-8 py-4 sm:py-8 max-w-4xl mx-auto">
           <h1 className="text-2xl font-bold mb-2">AI 피드백 작성</h1>
           <p className="text-gray-600 mb-8">AI와 대화하며 피드백을 완성하고 제출해주세요.</p>
 
           {!userId || !orderItemId ? (
             <div className="text-red-600">유효하지 않은 접근입니다. (로그인/주문항목 확인)</div>
           ) : (
-            <div className="h-[75vh] min-h-[600px] border rounded-2xl shadow-lg overflow-hidden">
+            <div className="flex-1 min-h-0 border rounded-2xl shadow-lg overflow-hidden">
               <AIChatBox
                 userId={userId}
                 orderItemId={Number(orderItemId)}
@@ -344,11 +353,11 @@ const FeedbackEditor = () => {
         isOpen={isSuccessModalOpen}
         onClose={() => {
           setSuccessModalOpen(false);
-          navigate(`/product/${productId}`);
+          navigate(`/product/${productId}#feedback`, { replace: true, state: { scroll: 'bottom' } });
         }}
         earnedPoints={feedbackResult.awarded}
         totalPoints={feedbackResult.total}
-        onGoToProduct={() => navigate(`/product/${productId}`)}
+        onGoToProduct={() => navigate(`/product/${productId}#feedback`, { replace: true, state: { scroll: 'bottom' } })}
         onGoToMyPage={() => navigate("/user/mypage/orders")}
       />
     </>

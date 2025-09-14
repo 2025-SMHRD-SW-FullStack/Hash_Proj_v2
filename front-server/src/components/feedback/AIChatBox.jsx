@@ -12,6 +12,19 @@ function mapAssistantMessages(apiMsgs) {
   })
 }
 
+// ✅ 요약 본문만을 위해 안내문/CTA를 제거
+function sanitizeSummary(raw) {
+  if (!raw) return ''
+  let t = String(raw).replace(/\r\n/g, '\n')
+  t = t.replace(/^\s*(?:수정\s*했(?:습니다|어요)|수정\s*완료|수정안\s*적용(?:되었습니다|했어요)?)\.?\s*한?\s*번?\s*더\s*확인해\s*주세?요[.!]?\s*\n*/gim,'')
+  t = t.replace(/^\s*수정.*확인해\s*주세?요.*\n*/gim,'')
+  t = t.replace(/^\s*(?:✍️|📝)?\s*작성한\s*후기\s*초안입니다[:：]?\s*\n*/im,'')
+  t = t.replace(/\n?\s*(?:바로\s*게시할까요|이제\s*게시할까요|이\s*요약으로\s*게시할까요)[\s\S]*$/i,'')
+  t = t.replace(/^\s*(?:수정\s*원하시면.*|원하시는\s*문장.*|추가로\s*바꿀\s*점이\s*있으면.*|지시\s*가능합니다.*)\s*$/gim,'')
+  t = t.replace(/\n{3,}/g, '\n\n')
+  return t.trim()
+}
+
 /**
  * props:
  *  - userId, orderItemId, productId
@@ -63,8 +76,7 @@ export default function AIChatBox({ userId, orderItemId, productId, preSurvey, o
       setMessages((p) => [...p, ...newMsgs])
       if (r.summary_ready) {
         const lastTxt = [...newMsgs].reverse().find((m) => m.text)?.text || ''
-        const pure = lastTxt.split('\n\n이 요약으로 게시할까요')[0] || lastTxt
-        setSummary(pure)
+        setSummary(sanitizeSummary(lastTxt))
       }
     } catch (e) {
       setMessages((p) => [...p, { id: `err-${Date.now()}`, sender: 'you', text: `❌ ${e.message}` }])
@@ -82,8 +94,7 @@ export default function AIChatBox({ userId, orderItemId, productId, preSurvey, o
       const newMsgs = mapAssistantMessages(r.messages)
       setMessages((p) => [...p, ...newMsgs])
       const lastTxt = [...newMsgs].reverse().find((m) => m.text)?.text || ''
-      const pure = lastTxt.split('\n\n이제 게시할까요')[0] || lastTxt
-      setSummary(pure)
+      setSummary(sanitizeSummary(lastTxt))
     } catch (e) {
       setMessages((p) => [...p, { id: `err-${Date.now()}`, sender: 'you', text: `❌ ${e.message}` }])
     }
@@ -130,9 +141,18 @@ export default function AIChatBox({ userId, orderItemId, productId, preSurvey, o
     }
   }
 
+  // ✅ Enter=전송, Shift+Enter=줄바꿈 (IME 조합 보호)
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.nativeEvent.isComposing) return
+      e.preventDefault()
+      ;(step === 'EDIT_OR_ACCEPT' ? onEdit : onSend)()
+    }
+  }
+
   return (
     <div className="flex flex-col border rounded-2xl overflow-hidden h-full">
-      <div className="px-4 py-3 border-b font-semibold">AI 피드백 챗봇</div>
+      <div className="px-4 py-3 border-b font-semibold flex-shrink-0">AI 피드백 챗봇</div>
 
       <div ref={scroller} className="flex-1 overflow-auto bg-gray-50 p-3">
         {messages.map((m) => (
@@ -150,7 +170,7 @@ export default function AIChatBox({ userId, orderItemId, productId, preSurvey, o
       </div>
 
       {step === 'EDIT_OR_ACCEPT' && (
-        <div className="border-t bg-white p-4 space-y-3">
+        <div className="border-t bg-white p-4 space-y-3 flex-shrink-0 overflow-y-auto max-h-[40vh]">
           <div>
             <div className="font-semibold mb-2">요약 본문</div>
             <textarea
@@ -204,9 +224,10 @@ export default function AIChatBox({ userId, orderItemId, productId, preSurvey, o
         </div>
       )}
 
-      <div className="border-t bg-white p-3 flex gap-2">
+      <div className="border-t bg-white p-3 flex gap-2 flex-shrink-0">
+        <div className="w-full max-w-4xl mx-auto flex gap-2">
         <input
-          className="flex-1 border-[#CCC] rounded-lg px-3 py-2"
+          className="flex-1 border-[#CCC] rounded-lg px-3 py-3 h-12 text-base leading-6"
           placeholder={step === 'EDIT_OR_ACCEPT' ? '수정 요청 사항을 입력하세요' : '메시지를 입력하세요'}
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -215,6 +236,7 @@ export default function AIChatBox({ userId, orderItemId, productId, preSurvey, o
         <Button onClick={step === 'EDIT_OR_ACCEPT' ? onEdit : onSend}>
           {step === 'EDIT_OR_ACCEPT' ? '수정' : '전송'}
         </Button>
+      </div>
       </div>
     </div>
   )

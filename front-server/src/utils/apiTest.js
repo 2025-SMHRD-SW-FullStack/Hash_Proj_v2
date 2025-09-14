@@ -17,7 +17,6 @@ export const testSellerOrderAPIs = async () => {
 
   try {
     // 1. 주문 그리드 API 테스트
-    console.log('🔍 테스트: 셀러 주문 그리드 API')
     const ordersRes = await fetchSellerOrders({ size: 5 })
     results.ordersGrid = {
       success: true,
@@ -33,7 +32,6 @@ export const testSellerOrderAPIs = async () => {
 
   try {
     // 2. 정산 요약 API 테스트
-    console.log('🔍 테스트: 일별 정산 요약 API')
     const today = new Date().toISOString().split('T')[0]
     const settlementRes = await fetchDailySettlementSummary(today)
     results.settlementSummary = {
@@ -41,14 +39,12 @@ export const testSellerOrderAPIs = async () => {
       date: settlementRes?.day || today,
       data: settlementRes
     }
-    console.log('✅ 정산 요약 API 성공:', results.settlementSummary)
   } catch (error) {
     results.errors.push(`정산 요약 API 실패: ${error.message}`)
     console.error('❌ 정산 요약 API 실패:', error)
   }
 
   // 3. 상태 매핑 테스트
-  console.log('🔍 테스트: 상태 매핑 함수')
   const statusTests = [
     { input: 'PAID', expected: '결제완료' },
     { input: 'READY', expected: '배송준비중' },
@@ -66,7 +62,6 @@ export const testSellerOrderAPIs = async () => {
     return { input: test.input, output: result, expected: test.expected, success }
   })
 
-  console.log('✅ 상태 매핑 테스트 완료:', statusResults)
 
   return results
 }
@@ -110,7 +105,6 @@ export const checkAPIEndpoints = async () => {
  * 전체 API 연동 상태 요약
  */
 export const getAPIConnectionStatus = async () => {
-  console.log('🚀 백엔드 API 연동 상태 확인 시작...')
   
   const [orderTest, endpointCheck] = await Promise.all([
     testSellerOrderAPIs(),
@@ -126,14 +120,6 @@ export const getAPIConnectionStatus = async () => {
     overall: orderTest.errors.length === 0 && 
              orderTest.ordersGrid?.success && 
              orderTest.settlementSummary?.success
-  }
-
-  console.log('📊 API 연동 상태 요약:', summary)
-  
-  if (summary.overall) {
-    console.log('🎉 모든 API가 정상적으로 연동되었습니다!')
-  } else {
-    console.log('⚠️ 일부 API 연동에 문제가 있습니다:', summary.errors)
   }
 
   return summary

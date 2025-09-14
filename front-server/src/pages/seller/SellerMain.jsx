@@ -12,6 +12,7 @@ import { fetchDailySettlementSummary } from '../../service/settlementService'
 import { useOrderStore } from '../../stores/orderStore'
 import useAuthStore from '../../stores/authStore'
 import chatSocket from '../../service/chatSocket'   // ✅ 실시간 갱신용
+import { previewText } from '../../util/chatPreview';
 
 const box = 'rounded-xl border bg-white p-4 shadow-sm'
 const kpi = 'flex items-center justify-center py-2 text-sm text-center w-full'
@@ -122,7 +123,7 @@ export default function SellerMain() {
           id,
           sender: r.other?.nickname || '고객',
           product: r.product?.name || r.productName || '',
-          lastMessage: r.lastMessagePreview || '',
+          lastMessage: previewText(r.lastMessagePreview || '', ''),
           unread: Number(r.unreadCount ?? r.unread ?? 0),
           updatedAt: r.lastMessageTime ?? r.updatedAt,
         }
@@ -130,7 +131,10 @@ export default function SellerMain() {
           try {
             const msgs = await listMessages(id, null, 1) // 백엔드가 최신 1개 반환(ASC/DSC 무관)
             if (Array.isArray(msgs) && msgs.length > 0) {
-              base.lastMessage = msgs[msgs.length - 1]?.content || base.lastMessage
+              base.lastMessage = previewText(
+                msgs[msgs.length - 1]?.content || base.lastMessage,
+                base.lastMessage
+              )
             }
           } catch {}
         }
@@ -427,7 +431,7 @@ export default function SellerMain() {
                             <strong className="text-gray-900">{t.sender}</strong>
                             {t.product && <span className="text-gray-500">· {t.product}</span>}
                           </div>
-                          <div className="mt-0.5 line-clamp-1 text-[13px] text-gray-600">{t.lastMessage}</div>
+                          <div className="mt-0.5 line-clamp-1 text-[13px] text-gray-600">{previewText(t.lastMessage ?? '', '')}</div>
                         </div>
                         <div className="ml-2 shrink-0">
                           {t.unread > 0 && (

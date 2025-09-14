@@ -1,0 +1,79 @@
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
+
+function scrollAllToTop(behavior = 'auto') {
+  // 브라우저 기본 복원 끄기
+  if ('scrollRestoration' in window.history) {
+    try { window.history.scrollRestoration = 'manual' } catch {}
+  }
+  // window/문서 루트
+  window.scrollTo({ top: 0, left: 0, behavior })
+  document.documentElement.scrollTop = 0
+  document.body.scrollTop = 0
+
+  // ✅ 메인 스크롤 컨테이너만 타겟(있으면)
+  const root =
+    document.querySelector('[data-scroll-root]') ||
+    document.getElementById('scroll-root') ||
+    document.getElementById('app-scroll-root') ||
+    document.scrollingElement ||
+    document.documentElement
+  try { root.scrollTo({ top: 0, left: 0, behavior }) } catch { root.scrollTop = 0 }
+}
+
+function scrollAllToBottom(behavior = 'auto') {
+  const root =
+    document.querySelector('[data-scroll-root]') ||
+    document.getElementById('scroll-root') ||
+    document.getElementById('app-scroll-root') ||
+    document.scrollingElement
+  if (root) {
+    try { root.scrollTo({ top: root.scrollHeight, left: 0, behavior }) }
+    catch { root.scrollTop = root.scrollHeight }
+  }
+  // window도 함께 보정
+  const h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)
+  window.scrollTo({ top: h, left: 0, behavior })
+}
+
+export default function ScrollToTop({ behavior = 'auto' }) {
+  const { pathname, hash, state, key } = useLocation()
+
+  useEffect(() => {
+    // 0) 홈 로고 등: 명시적 상단
+    if (state?.scroll === 'top' || state?.forceTop) {
+        // 메인 레이아웃이 업데이트된 다음 프레임에서 스크롤 적용
+        requestAnimationFrame(() => setTimeout(() => scrollAllToTop(behavior), 0))
+        return
+    }
+
+    // 1) 피드백 완료 등: 명시적 하단
+    if (state?.scroll === 'bottom') {
+      requestAnimationFrame(() => setTimeout(() => scrollAllToBottom(behavior), 0))
+      return
+    }
+
+    // 2) #앵커가 있으면 해당 요소
+    if (hash) {
+      const id = decodeURIComponent(hash.slice(1))
+      let tries = 0
+      const tryScroll = () => {
+        const el = document.getElementById(id)
+        if (el) {
+          el.scrollIntoView({ behavior })
+        } else if (tries++ < 10) {
+          requestAnimationFrame(tryScroll)
+        } else {
+          scrollAllToTop(behavior)
+        }
+      }
+      tryScroll()
+      return
+    }
+
+    // 3) 기본: 상단
+    scrollAllToTop(behavior)
+  }, [pathname, hash, state, key, behavior])
+
+  return null
+}

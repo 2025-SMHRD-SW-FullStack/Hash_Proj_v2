@@ -56,7 +56,6 @@ const OrderCompletePage = () => {
 
     const processOrder = async () => {
       if (!tossOrderId || paymentKey == null || Number.isNaN(amount)) {
-        console.log('결제 정보가 올바르지 않습니다.');
         setStatus('fail');
         setError('결제 정보가 올바르지 않습니다.');
         setLoading(false);

@@ -105,7 +105,7 @@ public class ExchangeService {
 
         exchangeRepo.save(ex);
         // ⬇️ 주문 상태: 교환요청
-        item.getOrder().setStatus(OrderStatus.EXCHANGE);
+        // item.getOrder().setStatus(OrderStatus.EXCHANGE);
         return toDto(ex);
     }
 

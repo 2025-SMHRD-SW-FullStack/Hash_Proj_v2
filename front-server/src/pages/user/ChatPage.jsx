@@ -19,7 +19,7 @@ const ChatPage = () => {
   return (
     <div className='bg-gray-50'>
       <div className="relative mx-auto h-full w-full max-w-2xl overflow-hidden pt-8 ">
-        <strong className="hidden sm:block ml-4 mb-4 text-2xl font-bold">채팅 목록</strong>
+        <strong className="ml-4 mb-4 text-2xl font-bold">채팅 목록</strong>
         <div className="space-y-2 rounded-lg border p-4">
           <ChatList onOpenRoom={open} />
         </div>

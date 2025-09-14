@@ -52,20 +52,21 @@ const formatOptionsText = (optionsJson) => {
 const OrderPage = () => {
   const [sp] = useSearchParams();
   const mode = (sp.get('mode') || sp.get('source') || '').toLowerCase();
-  const isCartMode = mode === 'cart';
+  const isReorderMode = mode === 'reorder';
+  const isCartMode = mode === 'cart' || isReorderMode;
   const addressIdParam = sp.get('addressId');
   const productId = sp.get('productId');
   const itemsQuery = sp.get('items');
 
   // 선택 결제: ?items=1,2,3 → [1,2,3]
   const selectedCartItemIds = useMemo(() => {
-    if (!isCartMode) return [];
+    if (!isCartMode || isReorderMode) return [];
     const raw = itemsQuery || '';
     if (!raw) return [];
     return raw.split(',').map(s => parseInt(s, 10)).filter(Boolean);
-  }, [isCartMode, itemsQuery]);
+  }, [isCartMode, isReorderMode, itemsQuery]);
 
-  const isSelectedCart = isCartMode && selectedCartItemIds.length > 0;
+  const isSelectedCart = isCartMode && !isReorderMode && selectedCartItemIds.length > 0;
 
   const [busy, setBusy] = useState(false);
   const [uiMsg, setUiMsg] = useState('');
@@ -116,12 +117,107 @@ const OrderPage = () => {
     })();
   }, [addressIdParam]);
 
+    // ⬇️ 여기 추가
+  const readReorderSpec = () => {
+    try {
+      const raw = sessionStorage.getItem('REORDER_ITEMS');
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || !Array.isArray(data.items) || data.items.length === 0) return null;
+      return data;
+    } catch { return null; }
+  };
+
+  const matchVariantByOptions = (product, optsObj = {}, variants = []) => {
+    const vs = variants || [];
+    const norm = (s) => (s == null ? '' : String(s)).trim().toLowerCase();
+    const want = Object.fromEntries(Object.entries(optsObj).map(([k,v]) => [norm(k), norm(v)]));
+    return vs.find(v => {
+      for (let i = 1; i <= 5; i++) {
+        const label = product?.[`option${i}Name`];
+        const w = label ? want[norm(label)] : '';
+        const hav = norm(v?.[`option${i}Value`]);
+        if (!label && !hav) continue;
+        if (w && w !== hav) return false;
+        if (!w && hav) return false;
+      }
+      return true;
+    }) || null;
+  };
+
   // cart 모드 데이터
   useEffect(() => {
     if (!isCartMode) return;
     (async () => {
       try {
         setCartLoading(true);
+
+        // ✅ 재주문 모드: 세션 스펙으로 가짜 카트 구성
+        if (isReorderMode) {
+          const spec = readReorderSpec();
+          if (!spec) {
+            setError('재주문할 상품 정보가 없습니다. 다시 시도해 주세요.');
+            setCartLoading(false);
+            return;
+          }
+          const lines = [];
+          let sum = 0;
+          const sellers = new Set();
+
+          for (const [idx, it] of spec.items.entries()) {
+            const pid = Number(it.productId);
+            const qty = Number(it.qty || it.quantity || 1);
+            const opts = it.options || {};
+            try {
+              const pd = await getProductDetail(pid);
+              const product = pd.product || pd;
+              const variants = pd.variants || product?.variants || [];
+              const variant = matchVariantByOptions(product, opts, variants);
+
+              const base = Number(product?.salePrice > 0 ? product.salePrice : product?.basePrice || 0);
+              const add  = Number(variant?.addPrice || 0);
+              const unit = base + add;
+              const subtotal = unit * qty;
+              sum += subtotal;
+
+              if (product?.sellerId) sellers.add(product.sellerId);
+
+              const optionsText = formatOptionsText(opts) || '';
+              lines.push({
+                cartItemId: 100000 + idx,      // 가상 ID
+                inStock: (variant ? (variant.stock > 0) : true),
+                productId: pid,
+                productName: product?.name || '상품',
+                qty,
+                subtotal,
+                optionsJson: opts,       // 화면엔 텍스트로 표시
+              });
+            } catch (e) {
+              console.error('reorder line skipped', e);
+            }
+          }
+
+          // 배송비: 전부 '무형자산'이면 0, 아니면 셀러 수 × 3000
+          let intangibleOnly = true;
+          try {
+            for (const it of spec.items) {
+              const pd = await getProductDetail(Number(it.productId));
+              const product = pd.product || pd;
+              if ((product?.category || '').trim() !== '무형자산') {
+                intangibleOnly = false;
+                break;
+              }
+            }
+          } catch { intangibleOnly = false; }
+
+          const shippingFee = intangibleOnly ? 0 : (Math.max(1, sellers.size) * SHIPPING_FEE);
+          const next = { items: lines, totalPrice: sum, shippingFee, payableBase: sum + shippingFee };
+          setCartData(next);
+          setCartLoading(false);
+          return;
+        }
+
+        // 🧺 일반 카트 모드
         const data = await getCart();
         let next = data || { items: [], totalPrice: 0, shippingFee: 0, payableBase: 0 };
 
@@ -144,7 +240,7 @@ const OrderPage = () => {
         setCartLoading(false);
       }
     })();
-  }, [isCartMode, selectedCartItemIds]);
+  }, [isCartMode, isReorderMode, selectedCartItemIds]);
 
 
   // 단건 모드 데이터
@@ -210,6 +306,12 @@ const OrderPage = () => {
     if (!isCartMode && productInfo?.category === '무형자산') {
       return 0;
     }
+
+    // ✅ [수정] 장바구니의 모든 상품이 '무형자산'이면 배송비 0원 로직 추가
+    if (isCartMode && cartData.items.length > 0 && cartData.items.every(item => item.category === '무형자산')) {
+        return 0;
+    }
+
     // 장바구니 모드이거나 그 외 모든 상품
     return isCartMode ? (cartData.shippingFee ?? SHIPPING_FEE) : SHIPPING_FEE;
   }, [isCartMode, productInfo, cartData.shippingFee]);
@@ -281,7 +383,49 @@ const OrderPage = () => {
           alert('장바구니에 품절/재고 부족 항목이 있습니다. 수정/삭제 후 다시 시도해 주세요.');
           return;
         }
+        // ✅ 재주문: checkoutCart 대신 checkout 사용
+        if (isReorderMode) {
+          const spec = readReorderSpec();
+          if (!spec || !Array.isArray(spec.items) || spec.items.length === 0) {
+            alert('재주문할 상품이 없습니다.');
+            return;
+          }
+          const res = await checkout({
+            addressId: selectedAddress.id,
+            requestMemo: (requestMemo || '').slice(0, 200),
+            useAllPoint,
+            usePoint: useAllPoint ? 0 : finalUsePoint,
+            items: spec.items.map(it => ({
+              productId: Number(it.productId),
+              qty: Number(it.qty || 1),
+              options: it.options || {},
+            })),
+          });
+          const oid = String(res?.orderId || res?.orderUid || '').trim();
+          if (!oid) throw new Error('주문번호 생성 실패');
 
+          if ((res?.payAmount ?? 0) <= 0) {
+            const confirmRes = await confirmTossPayment({ paymentKey: 'ZERO', orderId: oid, amount: 0 });
+            const dbId = confirmRes?.orderDbId ?? confirmRes?.orderId;
+            const successUrl =
+              `${window.location.origin}/user/pay/complete` +
+              `?status=success&orderId=${encodeURIComponent(oid)}` +
+              `&orderDbId=${encodeURIComponent(dbId ?? '')}&paymentKey=ZERO&amount=0`;
+            window.location.href = successUrl;
+            return;
+          }
+
+          await requestToss({
+            orderId: oid,
+            amount: res.payAmount,
+            orderName: buildOrderName(),
+            customerName: selectedAddress?.receiver,
+            customerMobilePhone: selectedAddress?.phone,
+          });
+          return;
+        }
+
+        // 🧺 일반 카트
         const res = await checkoutCart({
           addressId: selectedAddress.id,
           requestMemo: (requestMemo || '').slice(0, 200),
@@ -434,7 +578,12 @@ const OrderPage = () => {
                       <div key={row.cartItemId} className="rounded-xl border p-4 bg-white shadow-sm flex justify-between items-center">
                         <div>
                           <div className="font-medium text-gray-800">{row.productName}</div>
-                          <div className="text-xs text-gray-500 break-words">{row.optionsJson}</div>
+                          {(() => {
+                            const txt = formatOptionsText(row.optionsJson); // 객체/JSON/문자열 모두 대응
+                            return txt ? (
+                              <div className="text-xs text-gray-500 break-words">{txt}</div>
+                            ) : null; // ✅ 옵션이 없으면 아예 표시 안 함
+                          })()}
                           {!row.inStock && (
                             <div className="text-xs text-red-600 mt-1">품절 또는 재고 부족</div>
                           )}

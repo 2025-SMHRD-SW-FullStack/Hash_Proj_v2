@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Button from "../../../components/common/Button";
 import { getMyPointBalance, requestPointRedemption, getMyRedemptionHistory } from "../../../service/pointService";
+import useAuthStore from "../../../stores/authStore";
 
 const EXCHANGE_OPTIONS = [5000, 10000, 30000];
 
@@ -24,6 +25,9 @@ const PointExchangePage = () => {
   const [selectedAmount, setSelectedAmount] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // ✅ 객체 반환 X: 단일 값만 선택(참조 안정)
+  const ensureMe = useAuthStore(state => state.ensureMe);
 
   const fetchInitialData = async () => {
     try {
@@ -34,8 +38,10 @@ const PointExchangePage = () => {
       ]);
       setBalance(balanceData);
       setHistory(historyData.content || []);
+      return balanceData;
     } catch (error) {
       alert("데이터를 불러오는 데 실패했습니다.");
+      return null;
     } finally {
       setLoading(false);
     }
@@ -59,8 +65,20 @@ const PointExchangePage = () => {
       try {
         setLoading(true);
         await requestPointRedemption(selectedAmount);
+        // ✅ 전역 me 정보 새로고침(프로필 카드가 me를 쓰는 구조면 즉시 반영)
+        if (typeof ensureMe === 'function') {
+          await ensureMe();
+        }
         alert("교환 신청이 완료되었습니다.");
-        fetchInitialData(); // 교환 후 데이터 새로고침
+        // ✅ 이 페이지의 중앙 포인트/내역도 즉시 리프레시
+        const newBalance = await fetchInitialData();
+
+        // ✅ 프로필 카드가 독자 잔액 state를 가진 경우를 대비(옵션)
+        if (typeof window !== 'undefined' && newBalance != null) {
+          window.dispatchEvent(new CustomEvent('point:balance-updated', {
+            detail: { balance: newBalance }
+          }));
+        }
         setSelectedAmount(null); // 선택 초기화
       } catch (error) {
         alert(error.response?.data?.message || "교환 신청 중 오류가 발생했습니다.");

@@ -11,14 +11,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import org.springframework.web.multipart.MultipartFile;
-import java.util.UUID;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.web.multipart.MultipartFile;
+import com.meonjeo.meonjeo.file.UploadService;
+import com.meonjeo.meonjeo.file.ImageType;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +31,7 @@ public class QnaService {
     private final QnaRepository qnaRepository;
     private final AuthSupport authSupport;
     private final UserRepository userRepository;
+    private final UploadService uploadService;
 
     // 문의 생성
     @Transactional
@@ -114,28 +118,8 @@ public class QnaService {
         qnaRepository.save(qna);
     }
 
-    // 이미지 업로드 (간단한 구현)
     public String uploadImage(MultipartFile image) {
-        try {
-            // 업로드 디렉토리 생성
-            String uploadDir = "uploads/qna";
-            Path uploadPath = Paths.get(uploadDir);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-            
-            // 파일명 생성
-            String originalFilename = image.getOriginalFilename();
-            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            String filename = UUID.randomUUID().toString() + extension;
-            
-            // 파일 저장
-            Path filePath = uploadPath.resolve(filename);
-            Files.copy(image.getInputStream(), filePath);
-            
-            return "/uploads/qna/" + filename;
-        } catch (IOException e) {
-            throw new RuntimeException("이미지 업로드 실패: " + e.getMessage());
-        }
+        // 공용 업로더 사용 → 운영(prod)에서는 S3(NCP)로 저장되고 공개 절대 URL 반환
+        return uploadService.upload(ImageType.QNA, List.of(image)).get(0).url();
     }
 }

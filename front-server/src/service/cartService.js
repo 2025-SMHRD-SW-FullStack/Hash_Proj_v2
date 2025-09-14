@@ -28,6 +28,7 @@ const normalizeCart = (raw) => {
       cartItemId: it.cartItemId ?? it.id ?? it.itemId,
       productName: it.productName ?? it.productNameSnapshot ?? it.name,
       thumbnailUrl: it.thumbnailUrl ?? it.thumbnail ?? it.imageUrl,
+      category: it.category ?? it.productCategory ?? null,
       qty,
       subtotal,
       inStock: it.inStock ?? it.available ?? true,
@@ -51,8 +52,6 @@ const normalizeCart = (raw) => {
 /** 장바구니 조회 */
 export const getCart = async () => {
   const res = await api.get("/api/me/cart");
-  // 디버깅이 필요하면 아래 주석을 잠깐 해제
-  console.log('[getCart raw]', res.status, res.data);
   return normalizeCart(res.data);
 };
 

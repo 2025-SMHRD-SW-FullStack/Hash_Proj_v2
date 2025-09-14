@@ -112,7 +112,6 @@ export default function FeedbacksManagePage() {
     const rs = String(row?.reportStatus ?? row?.report?.status ?? row?.report_status ?? '').toUpperCase();
     if (['PENDING', 'APPROVED', 'REJECTED'].includes(rs)) return; // 이미 신고 이력 있음 → 모달
     const feedbackId = row?.feedbackId ?? row?.feedback?.id ?? row?.id;
-    console.log('[OPEN_REPORT_MODAL]', { feedbackId, row });
     setReportTarget({ ...row, feedbackId });
     setReportOpen(true);
   };

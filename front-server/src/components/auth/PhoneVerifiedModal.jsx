@@ -17,7 +17,6 @@ const PhoneVerifiedModal = ({ phoneNumber, code }) => {
     const verify = async () => {
       try {
         const result = await phoneVerify({ phoneNumber, code })
-        console.log('인증 성공:', result)
         setMessage('휴대폰 인증이 완료되었습니다!')
         setStatus('success')
         setPhoneVerifyToken(result.phoneVerifyToken) // 서버에서 내려주는 임시 토큰

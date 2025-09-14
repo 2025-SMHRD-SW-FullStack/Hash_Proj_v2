@@ -24,7 +24,7 @@ const MainLayout = () => {
     <div className="flex flex-col h-screen bg-white">
       <Header />
 
-      <main className={`flex-1 ${isFooterHidden ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+      <main data-scroll-root className={`flex-1 ${isFooterHidden ? 'overflow-hidden' : 'overflow-y-auto'}`}>
         <div className={isFooterHidden ? 'h-full' : 'min-h-[750px]'}>
           <Outlet />
         </div>

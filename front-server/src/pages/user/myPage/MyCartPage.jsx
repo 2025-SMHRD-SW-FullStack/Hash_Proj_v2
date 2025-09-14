@@ -103,8 +103,7 @@ const MyCartPage = () => {
   }, [selectedItems]);
 
   const computedShippingFee = useMemo(() => {
-    console.log("Recalculating shipping fee...");
-    console.log("Selected items:", selectedItems);
+
     if (selectedItems.length === 0) return 0;
 
     // 무형자산 포함 → 배송비 0원 (이제 it.category에 접근 가능)

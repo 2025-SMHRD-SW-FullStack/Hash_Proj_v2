@@ -107,7 +107,6 @@ const FeedbackItem = ({ feedback, onFeedbackDeleted }) => {
                     e.stopPropagation();
                     e.nativeEvent?.stopImmediatePropagation?.();
                     requestAnimationFrame(() => setOpenEdit(true));
-                    console.log('EDIT CLICK');
                   }}
                   className="text-xs text-gray-600 hover:text-gray-900"
                   variant="signUp"

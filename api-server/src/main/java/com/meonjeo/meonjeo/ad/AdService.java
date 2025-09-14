@@ -28,7 +28,7 @@ public class AdService {
     private final AuthSupport auth;
     private final SellerService sellerService;
 
-    /** 로그인한 셀러의 userId (승인 검증 포함) */
+    /** 로그?�한 ?�?�의 userId (?�인 검�??�함) */
     private Long currentSellerId(){
         Long uid = auth.currentUserId();
         if (uid == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
@@ -38,7 +38,7 @@ public class AdService {
         return uid;
     }
 
-    /** 해당 productId가 현재 셀러 소유인지 검증 */
+    /** ?�당 productId가 ?�재 ?�???�유?��? 검�?*/
     private void assertProductOwnedByMe(Long productId, Long mySellerId){
         if (productId == null) return;
         var p = productRepo.findById(productId)
@@ -51,7 +51,7 @@ public class AdService {
     @Transactional
     public List<SlotAvailability> inventory(AdSlotType type, String category, LocalDate start, LocalDate end){
         if (type == AdSlotType.CATEGORY_TOP && (category == null || category.isBlank())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CATEGORY_TOP은 category가 필요합니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CATEGORY_TOP?� category가 ?�요?�니??");
         }
 
         List<AdSlot> slots = slotsOrProvision(type, category);
@@ -69,14 +69,14 @@ public class AdService {
         Long sellerId = currentSellerId();
 
         AdSlot slot = slotRepo.findById(req.slotId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "슬롯 없음: id=" + req.slotId()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "?�롯 ?�음: id=" + req.slotId()));
 
-        // 내 상품인지 확인
+        // ???�품?��? ?�인
         assertProductOwnedByMe(req.productId(), sellerId);
 
-        // 🔒 잠금 잡고 겹침 체크
+        // ?�� ?�금 ?�고 겹침 체크
         if(!bookingRepo.findOverlappedForUpdate(slot.getId(), req.startDate(), req.endDate()).isEmpty()){
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 선점된 슬롯/기간입니다.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "?��? ?�점???�롯/기간?�니??");
         }
 
         int price = pricePolicy.computePrice(slot.getType(), req.startDate(), req.endDate());
@@ -96,10 +96,10 @@ public class AdService {
     public void activate(Long bookingId){
         AdBooking b = bookingRepo.findById(bookingId).orElseThrow();
         if (b.getStatus() == AdBookingStatus.ACTIVE) return; // 멱등
-        // 여기도 한 번 더 충돌 체크(동시성 대비)
+        // ?�기????�???충돌 체크(?�시???��?
         if(!bookingRepo.findOverlapped(b.getSlot().getId(), b.getStartDate(), b.getEndDate()).stream()
                 .allMatch(x -> Objects.equals(x.getId(), b.getId()))){
-            throw new IllegalStateException("결제 중 충돌 발생: 다른 예약이 선점했습니다.");
+            throw new IllegalStateException("결제 �?충돌 발생: ?�른 ?�약???�점?�습?�다.");
         }
         b.setStatus(AdBookingStatus.ACTIVE);
         bookingRepo.save(b);
@@ -127,7 +127,7 @@ public class AdService {
         return cnt;
     }
 
-    // 결제 확정 시 호출: 선점 체크 한번 더 하고 RESERVED_PAID로 전환
+    // 결제 ?�정 ???�출: ?�점 체크 ?�번 ???�고 RESERVED_PAID�??�환
     @Transactional
     public void markPaid(Long bookingId){
         AdBooking b = bookingRepo.findById(bookingId).orElseThrow();
@@ -135,7 +135,7 @@ public class AdService {
 
         if(!bookingRepo.findOverlapped(b.getSlot().getId(), b.getStartDate(), b.getEndDate()).stream()
                 .allMatch(x -> java.util.Objects.equals(x.getId(), b.getId()))){
-            throw new IllegalStateException("결제 중 충돌 발생: 다른 예약이 선점했습니다.");
+            throw new IllegalStateException("결제 �?충돌 발생: ?�른 ?�약???�점?�습?�다.");
         }
         b.setStatus(AdBookingStatus.RESERVED_PAID);
         bookingRepo.save(b);
@@ -240,17 +240,17 @@ public class AdService {
         var today = java.time.LocalDate.now();
         boolean editable = (b.getStatus() == AdBookingStatus.RESERVED_UNPAID || b.getStatus() == AdBookingStatus.RESERVED_PAID)
                 && today.isBefore(b.getStartDate());
-        if (!editable) throw new IllegalStateException("게재 중/종료/취소 상태거나 시작일 경과: 수정 불가");
+        if (!editable) throw new IllegalStateException("게재 �?종료/취소 ?�태거나 ?�작??경과: ?�정 불�?");
 
         if (req.productId() != null) {
-            // 🔐 이 셀러 소유 상품인지 검증
+            // ?�� ???�???�유 ?�품?��? 검�?            
             assertProductOwnedByMe(req.productId(), sellerId);
             b.setProductId(req.productId());
         }
         if (req.bannerImageUrl() != null) {
             if (b.getSlot().getType() == AdSlotType.MAIN_ROLLING || b.getSlot().getType() == AdSlotType.MAIN_SIDE) {
                 if (!req.bannerImageUrl().startsWith("http"))
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바른 이미지 URL이 아닙니다.");
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "?�바�??��?지 URL???�닙?�다.");
                 b.setBannerImageUrl(req.bannerImageUrl());
             } else {
                 b.setBannerImageUrl(null);
@@ -325,7 +325,7 @@ public class AdService {
                 ? bookingRepo.findByStatus(status, sort)
                 : bookingRepo.findAll(sort);
 
-        // (선택) productName 매핑이 필요 없다면 이 블록 통째로 삭제하고 아래에서 null 넣어도 됩니다.
+        // (?�택) productName 매핑???�요 ?�다�???블록 ?�째�???��?�고 ?�래?�서 null ?�어???�니??
         var productIds = page.getContent().stream()
                 .map(AdBooking::getProductId)
                 .filter(Objects::nonNull)
@@ -335,14 +335,14 @@ public class AdService {
         for (var p : products) {
             try {
                 var idGetter = p.getClass().getMethod("getId");
-                var nameGetter = p.getClass().getMethod("getName"); // 프로젝트에 따라 getTitle 등으로 바꾸세요
+                var nameGetter = p.getClass().getMethod("getName"); // ?�로?�트???�라 getTitle ?�으�?바꾸?�요
                 Long pid = (Long) idGetter.invoke(p);
                 String name = (String) nameGetter.invoke(p);
                 productNameById.put(pid, name);
-            } catch (Exception ignore) { /* 이름 접근 실패 시 null 유지 */ }
+            } catch (Exception ignore) { /* ?�름 ?�근 ?�패 ??null ?��? */ }
         }
 
-        // 1) 먼저 DTO 리스트로 매핑
+        // 1) 먼�? DTO 리스?�로 매핑
         var items = page.getContent().stream()
                 .map(b -> new AdminBookingItem(
                         b.getId(),
@@ -350,7 +350,7 @@ public class AdService {
                         b.getSlot().getPosition(),
                         b.getSlot().getCategory(),
                         b.getSellerId(),
-                        null, // shopName은 필요 시 SellerService로 채우세요
+                        null, // shopName?� ?�요 ??SellerService�?채우?�요
                         b.getProductId(),
                         productNameById.get(b.getProductId()),
                         b.getStartDate(),
@@ -359,7 +359,7 @@ public class AdService {
                 ))
                 .toList();
 
-        // 2) q가 있으면 리스트에서 필터링
+        // 2) q가 ?�으�?리스?�에???�터�?        
         java.util.List<AdminBookingItem> filtered = items;
         if (q != null && !q.isBlank()) {
             String qq = q.toLowerCase();
@@ -370,15 +370,15 @@ public class AdService {
                                     String.valueOf(item.sellerId()).contains(qq)
                     )
                     .toList();
-            // 필터링했으니 totalElements도 필터링된 개수로
+            // ?�터링했?�니 totalElements???�터링된 개수�?            
             return new PageImpl<>(filtered, sort, filtered.size());
         }
 
-        // 3) 검색 없으면 기존 total 유지
+        // 3) 검???�으�?기존 total ?��?
         return new PageImpl<>(filtered, sort, page.getTotalElements());
     }
 
-    /** 타입(+카테고리)별 슬롯 조회; 없으면 기본 용량만큼 자동 생성(멱등) */
+    /** ?�??+카테고리)�??�롯 조회; ?�으�?기본 ?�량만큼 ?�동 ?�성(멱등) */
     private List<AdSlot> slotsOrProvision(AdSlotType type, String category) {
         List<AdSlot> slots = (type == AdSlotType.CATEGORY_TOP)
                 ? slotRepo.findByTypeAndCategoryOrderByPositionAsc(type, category)
@@ -401,6 +401,31 @@ public class AdService {
         return (type == AdSlotType.CATEGORY_TOP)
                 ? slotRepo.findByTypeAndCategoryOrderByPositionAsc(type, category)
                 : slotRepo.findByTypeOrderByPositionAsc(type);
+    }
+
+    /**
+     * ��ü ī�װ������� Ȱ�� ���� ������ �������� ���� count�� ��ȯ.
+     * category=null �� ��ȸ�ϸ� ��� ī�װ����� Ȱ�� ������ ��ȯ�˴ϴ�.
+     */
+    public List<ServeItem> randomActive(
+            AdSlotType type,
+            int count,
+            LocalDate date
+    ) {
+        var list = bookingRepo.findActiveFor(type, null, date);
+        Collections.shuffle(list, ThreadLocalRandom.current());
+        int take = Math.min(Math.max(1, count), list.size());
+        List<ServeItem> out = new ArrayList<>();
+        for (int i = 0; i < take; i++) {
+            var b = list.get(i);
+            out.add(new ServeItem(
+                    b.getSlot().getId(),
+                    b.getSlot().getPosition(),
+                    b.getProductId(),
+                    b.getBannerImageUrl()
+            ));
+        }
+        return out;
     }
 
 }

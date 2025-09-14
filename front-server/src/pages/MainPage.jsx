@@ -198,7 +198,7 @@ const MainPage = () => {
       </section>
 
       {/* 사이드 영역 */}
-      <aside className="top-8 hidden w-1/5 flex-shrink-0 sm:block space-y-4">
+      <aside className="hidden w-1/5 flex-shrink-0 sm:block space-y-4 sm:sticky sm:top-8 sm:self-start">
         <div className="h-[250px] border-[#CCC] border-solid border-[1px] mb-12 flex flex-col items-center justify-center rounded-lg p-4 text-center space-y-3 sm:space-y-4">
         {isLoggedIn ? (
           <>

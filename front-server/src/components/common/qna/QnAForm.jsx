@@ -65,9 +65,7 @@ const QnAForm = ({ onSubmit, onCancel }) => {
         imagesJson: imagesJson
       };
 
-      console.log('QnA 등록 데이터:', qnaData);
       const result = await qnaService.createQna(qnaData);
-      console.log('QnA 등록 결과:', result);
 
       // 성공 시 초기화
       setTitle('');

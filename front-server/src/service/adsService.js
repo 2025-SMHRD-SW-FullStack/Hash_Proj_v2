@@ -125,6 +125,27 @@ export const createAdWithImage = async ({
   return { ...booking, imageUrl }
 }
 
+/** ✅ 전체 카테고리용: 파워광고 무작위 N개 */
+export const fetchRandomPowerAds = async (count = 5) => {
+  try {
+    const { data } = await api.get(`${ADS_BASE}/samples/random`, { params: { count } });
+
+    // 하우스 배너의 상대경로 보정
+    const API_STATIC_ORIGIN =
+      (import.meta.env.VITE_API_STATIC_ORIGIN || '').replace(/\/$/, '') || window.location.origin;
+    const absolutize = (url) =>
+      !url ? url : /^https?:\/\//.test(url) ? url : url.startsWith('/') ? `${API_STATIC_ORIGIN}${url}` : url;
+
+    const arr = Array.isArray(data) ? data : [];
+    return arr.map(it => (it?.house && it?.bannerImageUrl
+      ? { ...it, bannerImageUrl: absolutize(it.bannerImageUrl) }
+      : it));
+  } catch (e) {
+    console.error('fetchRandomPowerAds error:', e);
+    return [];
+  }
+};
+
 // (선택) 내 예약 목록
 export const fetchMyAdBookings = async ({ page = 0, size = 20 } = {}) => {
   const res = await api.get(`${ADS_BASE}/me/bookings`, { params: { page, size } })

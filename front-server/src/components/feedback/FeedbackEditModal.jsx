@@ -15,7 +15,6 @@ export default function FeedbackEditModal({
   onUpdated,
   enforceGuard = false // 상품 상세 등에서는 false 유지
 }) {
-  console.log('[EditModal] open =', open, 'enforceGuard =', enforceGuard);
 
   // 초기 이미지(URL 배열) 파싱
   const initialImages = useMemo(() => {
@@ -37,7 +36,6 @@ export default function FeedbackEditModal({
     if (!open) return;
 
     if (!enforceGuard) {
-      console.log('[EditModal] guard skipped (enforceGuard=false)');
       return;
     }
 
@@ -48,10 +46,9 @@ export default function FeedbackEditModal({
       } catch (e) {
         console.error('[EditModal] canEditFeedback error:', e);
       }
-      console.log('[EditModal] guard result =', allowed);
       if (!allowed) onClose?.();
     } else {
-      console.log('[EditModal] no orderItem → guard not applied');
+      
     }
   }, [open, enforceGuard, orderItem, feedback, onClose]);
 

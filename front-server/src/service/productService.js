@@ -4,7 +4,6 @@ import api from '../config/axiosInstance'
 /** 공개 상품 목록 */
 export const getProducts = async (params = {}) => {
   const { data } = await api.get('/api/products', { params })
-  console.log(data)
   if (Array.isArray(data)) return data
   if (Array.isArray(data?.content)) return data.content
   if (Array.isArray(data?.items)) return data.items

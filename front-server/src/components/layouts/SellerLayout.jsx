@@ -87,7 +87,7 @@ export default function SellerLayout({ children }) {
       {/* ✅ 레이아웃 구조 수정: flexbox 기반으로 변경 */}
       <div className="flex flex-1">
         {/* 사이드바(데스크톱) */}
-        <aside className="hidden lg:block w-56 shrink-0 p-4">
+        <aside className="hidden lg:block w-56 shrink-0 p-4 lg:sticky lg:top-6 lg:self-start">
           <nav className="space-y-2">
             {navItems.map((it) => {
               // 'group' 타입이 아닌 일반 메뉴 아이템

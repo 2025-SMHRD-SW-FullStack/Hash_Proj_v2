@@ -1,5 +1,5 @@
 // src/pages/ProductDetailPage.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
 // --- 서비스 및 스토어 ---
@@ -150,6 +150,36 @@ const ProductDetailPage = () => {
       setFeedbacksLoading(false);
     }
   };
+  const didScrollRef = useRef(false);
+
+  useEffect(() => {
+    // 피드백 작성/수정 완료로 돌아온 경우(#feedback 또는 state.scroll='bottom')
+    const shouldScroll =
+      location.hash === '#feedback' || location.state?.scroll === 'bottom';
+    if (!shouldScroll || didScrollRef.current) return;
+
+    let tries = 0;
+    const attempt = () => {
+      const el = document.getElementById('feedback');
+      if (el) {
+        el.scrollIntoView({ behavior: 'auto' });  // 앵커로 이동
+        didScrollRef.current = true;
+      } else if (tries++ < 20) {
+        requestAnimationFrame(attempt);           // 지연 렌더(목록/이미지) 대기
+      } else {
+        // 앵커가 끝내 없으면 바닥으로
+        const h = Math.max(
+          document.documentElement.scrollHeight,
+          document.body.scrollHeight
+        );
+        window.scrollTo({ top: h, left: 0, behavior: 'auto' });
+        didScrollRef.current = true;
+      }
+    };
+
+    requestAnimationFrame(attempt); // 첫 페인트 이후 시도
+  // location.key: 동일 경로로 재방문해도 이펙트 트리거, feedbacks.length: 목록 늦게 와도 재시도
+  }, [location.key, location.hash, location.state, feedbacks.length]);
 
   // --- 이벤트 핸들러 ---
   const handleProductDelete = async () => {
@@ -497,7 +527,7 @@ const ProductDetailPage = () => {
           </div>
 
           <hr className="my-8 border-t border-gray-300" />
-          <div className="feedback-section">
+          <div className="feedback-section"  id="feedback">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold">피드백 모음 ({feedbacks.length})</h3>
               <Button variant="outline" onClick={handleWriteFeedback} className="font-semibold">

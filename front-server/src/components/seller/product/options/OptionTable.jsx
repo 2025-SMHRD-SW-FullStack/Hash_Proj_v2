@@ -68,9 +68,6 @@ export default function OptionTable({
               const found = pickRow(c)
               const row = found ?? { addPrice: 0, stock: 0 }
 
-              // 디버깅이 필요하면 주석 해제
-               if (i < 3) console.log('[KEYMAP]', { key: c.key, label: c.label, hasKey: !!rowMap?.has?.(c.key), hasLabel: !!rowMap?.has?.(c.label), row })
-              console.log('[RM-keys]', Array.from(rowMap?.keys?.() || []).slice(0, 10))
               return (
                 <tr key={c.key} className={i % 2 ? 'bg-white' : 'bg-gray-50/50'}>
                   <td className="px-3 py-2 text-center truncate" title={c.label}>

@@ -10,6 +10,4 @@ export function logoutHandler() {
         localStorage.removeItem(`favorites_${userId}`);
     }
 
-    // 로그아웃 시 콘솔 로그
-    console.log('로그아웃 완료: localStorage 초기화');
 }

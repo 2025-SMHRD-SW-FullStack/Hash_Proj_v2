@@ -205,7 +205,7 @@ export default function ChatRoom({ roomId, onClose, role }) {
 
         const data = await listMessages(rid, null, 50);
         const decorated = (data || []).map(m => ({ ...m, isMine: me?.id && m.senderId === me.id,
-          senderProfileUrl: (me?.id && m.senderId === me.id) ? me.profileImageUrl : merged?.other?.profileImageUrl,
+          senderProfileUrl: m.senderProfileUrl || ((me?.id && m.senderId === me.id) ? me.profileImageUrl : (merged?.other?.profileImageUrl)),
          }));
         
         setMsgs(decorated);
@@ -235,7 +235,7 @@ export default function ChatRoom({ roomId, onClose, role }) {
         }
 
         const isMine = me?.id && evt.senderId === me.id;
-        const profileUrl = isMine ? me.profileImageUrl : roomInfoRef.current?.other?.profileImageUrl;
+        const profileUrl = evt.senderProfileUrl || (isMine ? me.profileImageUrl : roomInfoRef.current?.other?.profileImageUrl);
 
         setMsgs(prev => {
           const next = [...prev, { ...evt, isMine, senderProfileUrl: profileUrl }];

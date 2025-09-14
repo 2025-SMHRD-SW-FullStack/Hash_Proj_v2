@@ -2,6 +2,11 @@ import { NavLink } from "react-router-dom";
 import Logo from '../../assets/images/Meonjeo_Logo.png';
 
 const Footer = () => {
+  // 페이지 이동 차단
+  const blockNav = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
   return (
     <footer className="sm:h-[225px] bg-gray-800 text-gray-400 py-4 sm:py-8 mt-auto text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -22,13 +27,13 @@ const Footer = () => {
             <NavLink to="/support/qna" className="text-white hover:text-gray-300 no-underline">
               Q&A
             </NavLink>
-            <NavLink to="/about" className="text-white hover:text-gray-300 no-underline">
+            <NavLink to="/about" onClick={blockNav} className="text-white hover:text-gray-300 no-underline">
               회사소개
             </NavLink>
-            <NavLink to="/terms" className="text-white hover:text-gray-300 no-underline">
+            <NavLink to="/terms" onClick={blockNav} className="text-white hover:text-gray-300 no-underline">
               이용약관
             </NavLink>
-            <NavLink to="/privacy" className="text-white hover:text-gray-300 no-underline">
+            <NavLink to="/privacy" onClick={blockNav} className="text-white hover:text-gray-300 no-underline">
               개인정보처리방침
             </NavLink>
           </div>

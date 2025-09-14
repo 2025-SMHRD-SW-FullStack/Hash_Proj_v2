@@ -35,7 +35,7 @@ export default function AdminLayout() {
       {/* aside + main 컨테이너 */}
       <div className="flex flex-col lg:flex-row w-full h-full gap-2">
         {/* 사이드바(데스크톱) */}
-        <aside className="hidden lg:block w-60 pr-4 shrink-0 shadow-sm bg-white ">
+        <aside className="hidden lg:block w-60 pr-4 shrink-0 shadow-sm bg-white lg:sticky lg:top-6 lg:self-start">
           <nav className=" space-y-2 p-4  pr-10 ">
             {adminNav.map(({ to, label }) => (
               <NavLink

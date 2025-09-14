@@ -4,6 +4,7 @@ import Button from '../../../components/common/Button';
 import TestImg from '../../../assets/images/ReSsol_TestImg.png';
 import { checkFeedbackDone, getMyOrderDetail, confirmPurchase, getConfirmWindow } from '../../../service/orderService';
 import ConfirmPurchaseModal from '../../../components/modals/ConfirmPurchaseModal';
+import { hasMyFeedbackForProduct, getMyFeedbackIdByProduct } from '../../../service/feedbackService';
 
 const statusLabel = (s) => ({
   PENDING: '결제 대기',
@@ -65,6 +66,22 @@ const MyOrderDetailPage = () => {
 
   const [confirmWindow, setConfirmWindow] = useState({ open: true });
 
+   // [FEEDBACK-FIX] 주문 내 상품 집계 상태
+   const [allDone, setAllDone] = useState(false);      // 전부 작성됨?
+   const [hasWritable, setHasWritable] = useState(false); // 미작성 상품 존재?
+   const [editTarget, setEditTarget] = useState(null); // { orderItemId, productId }
+ 
+   const navToEditForProduct = async (productId, orderItemId) => {
+     try {
+       const fid = await getMyFeedbackIdByProduct(productId);
+       if (fid) {
+         navigate(`/user/feedback/editor?feedbackId=${fid}&productId=${productId}${orderItemId ? `&orderItemId=${orderItemId}` : ''}&type=MANUAL`);
+         return;
+       }
+     } catch (e) { console.error(e); }
+     navigate(`/user/feedback/editor?feedbackId=auto&productId=${productId}${orderItemId ? `&orderItemId=${orderItemId}` : ''}&type=MANUAL`);
+   }; 
+
   const groupedItems = useMemo(() => {
     if (!order?.items) return [];
     const groups = order.items.reduce((acc, item) => {
@@ -103,7 +120,26 @@ const MyOrderDetailPage = () => {
       setLoading(true);
       const data = await getMyOrderDetail(orderId);
       setOrder(data);
-
+      if (data?.items?.length) {
+        const pids = Array.from(new Set(data.items.map(it => it.productId).filter(Boolean)));
+        const entries = await Promise.all(pids.map(async (pid) => {
+          try { return [pid, !!(await hasMyFeedbackForProduct(pid))]; }
+          catch { return [pid, false]; }
+        }));
+        const map = Object.fromEntries(entries);
+        const anyNotDone = pids.some(pid => !map[pid]);
+        setHasWritable(anyNotDone);
+        setAllDone(pids.length > 0 && pids.every(pid => map[pid]));
+        if (!anyNotDone) {
+          const pid = pids.find(p => map[p]);
+          const item = data.items.find(it => it.productId === pid);
+          if (item) setEditTarget({ orderItemId: item.id, productId: pid });
+        } else {
+          setEditTarget(null);
+        }
+      } else {
+        setAllDone(false); setHasWritable(false); setEditTarget(null);
+      }
       if (data && data.items && data.items.length > 0) {
         const first = data.items[0];
         // ✅ 반드시 orderItemId로 체크
@@ -139,12 +175,30 @@ const MyOrderDetailPage = () => {
 
   const handleConfirmAndFeedback = async () => {
     try {
+      // (선택) 윈도우가 닫혔는지 재확인 – 서버 정책 보강
+      try {
+        const w = await getConfirmWindow(orderId);
+        if (w && w.open === false) {
+          alert('지금은 구매확정을 할 수 없습니다. (배송완료 후 7일 이내만 가능)');
+          return;
+        }
+      } catch (_) {
+        // 윈도우 조회 실패는 구매확정 시도 쪽에서 처리
+      }
       await confirmPurchase(orderId);
-      navigate(`/user/survey?orderId=${orderId}`);
+      setOpenConfirm(false);
+
+      // ✅ 구매확정 직후 분기
+      if (!hasWritable && editTarget) {
+        // 이 주문의 모든 상품이 이미 작성됨 → '수정'으로 이동 (productId 기준으로 feedbackId 확정)
+        await navToEditForProduct(editTarget.productId, editTarget.orderItemId);
+      } else {
+        // 미작성 상품이 하나라도 있으면 설문으로 이동 (같이 산 상품 중 미작성만 작성)
+        navigate(`/user/survey?orderId=${orderId}`);
+      }
     } catch (e) {
       alert("구매 확정 중 오류가 발생했습니다.");
     } finally {
-      setOpenConfirm(false);
       fetchOrderDetail();
     }
   };
@@ -195,26 +249,23 @@ const MyOrderDetailPage = () => {
 
         {/* 액션 영역 */}
         <div className="text-center pt-4 border-t flex flex-wrap gap-2 justify-center">
-          {order.status === 'CONFIRMED' && !feedbackDone && withinWindow && (
-            <Button size="lg" onClick={handleWriteFeedback} className="mr-2">피드백 작성</Button>
+          {order.status === 'CONFIRMED' && withinWindow && (
+            hasWritable ? (
+              <Button size="lg" onClick={handleWriteFeedback} className="mr-2">피드백 작성</Button>
+            ):(
+              editTarget && (
+                <Button size="lg" variant="unselected" onClick={() => navToEditForProduct(editTarget.productId, editTarget.orderItemId)}>
+                  피드백 수정
+                </Button>
+              )
+            )
           )}
-          {feedbackDone && withinWindow && firstItem && (
-            <Button
-              size="lg"
-              variant="unselected"
-              onClick={() =>
-                navigate(`/user/feedback/editor?orderItemId=${firstItem.id}&productId=${firstItem.productId}&feedbackId=auto&type=MANUAL`)
-              }
-            >
-              피드백 수정
-            </Button>
-          )}
-          {feedbackDone && !withinWindow && (
+          {["DELIVERED","CONFIRMED"].includes(order.status) && feedbackDone && !withinWindow && (
             <span className="inline-flex items-center rounded-full px-3 py-1 bg-emerald-100 text-emerald-700 mr-2">
               피드백 작성 완료
             </span>
           )}
-          {!feedbackDone && !withinWindow && (
+          {["DELIVERED","CONFIRMED"].includes(order.status) && !feedbackDone && !withinWindow && (
             <span className="inline-flex items-center rounded-full px-3 py-1 bg-rose-100 text-rose-700 mr-2">
               기간 만료
             </span>
